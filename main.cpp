@@ -2,9 +2,18 @@
 // Created by rudyc on 2019/9/5.
 //
 
-#include <cstdio>
+#include "src/core/core.hpp"
+#include "src/testclassa.hpp"
+
+#include "src/lex/token.hpp"
 
 int main() {
-    printf("Hello Compiler!");
+    println("{xx}", 2);
+    auto a = buaac::TestClassA(2);
+    debugln("{}", 456);
+    std::cout << a << std::endl;
+    debugln("2");
+//    std::string x = buaac::fmt::Format::streamToString(2);
+
     return 0;
 }

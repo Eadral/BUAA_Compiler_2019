@@ -3,13 +3,13 @@ cmake_minimum_required(VERSION 3.10)
 project(buaac)
 set(CMAKE_CXX_STANDARD 14)
 
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -g -rdynamic")
+#include_directories(3rdparty)
+#include_directories(include src)
 
-set(SRC_LIST main.cpp)
-message(STATUS "This is BINARY dir " ${BUAAC_BINARY_DIR})
-message(STATUS "This is SOURCE dir " ${BUAAC_SOURCE_DIR})
-
-project(untitled)
-
-
+#add_subdirectory(src)
 add_executable(buaac main.cpp)
+#target_link_libraries(buaac fmt)
 
+enable_testing()
+add_subdirectory(tests)
