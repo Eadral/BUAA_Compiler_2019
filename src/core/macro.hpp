@@ -34,7 +34,7 @@
         exit(-1);        \
     } while(0)
 
-#ifdef DEBUG
+#ifdef _DEBUG
 #define debugln(...)      \
     do {        \
         eprintf("DEBUG[ {}:{} ]\t", __FILE__, __LINE__);  \

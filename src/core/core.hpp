@@ -5,10 +5,13 @@
 #ifndef BUAAC_CORE_HPP
 #define BUAAC_CORE_HPP
 
-#include <cstdio>
-#include <cstdlib>
+#ifndef WIN32
 #include <execinfo.h>
 #include <zconf.h>
+#endif
+
+#include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <array>
 #include <memory>
@@ -22,6 +25,9 @@ namespace buaac {
     public:
         /// An ugly function for debugging
         static void printStack() {
+#ifdef WIN32
+			std::cout << "unimplemented in win32." << std::endl;
+#else
             void *backtrace_address[1024];
             int backtrace_size;
             char **backtrace_address_buffer;
@@ -55,6 +61,7 @@ namespace buaac {
             }
             std::cout << result << std::endl;
             free(backtrace_address_buffer);
+#endif
         }
     };
 }
