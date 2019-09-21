@@ -6,22 +6,22 @@
 #define BUAAC_DISPLAY_HPP
 
 #include "format.hpp"
-#include "../core/interface.hpp"
+#include "../interface.hpp"
 #include <string>
 #include <iostream>
 
-namespace buaac {
+namespace meow {
     namespace fmt {
         interface Display {
         public:
-            virtual std::string toString() {
-                panic("Display unimplemented.");
-            }
+			virtual std::string toString() = 0;
         };
+    	
         std::ostream& operator<<(std::ostream& out, Display &display) {
             out << display.toString();
             return out;
         }
+    	
     }
 
 }

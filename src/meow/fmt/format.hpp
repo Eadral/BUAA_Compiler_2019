@@ -5,17 +5,17 @@
 #ifndef BUAAC_FORMAT_HPP
 #define BUAAC_FORMAT_HPP
 
-#include "../core/core.hpp"
+#include "../core.hpp"
 #include <string>
 #include <vector>
 #include <sstream>
 
-namespace buaac {
+namespace meow {
     namespace fmt {
         class Format {
         public:
             static std::string format(const char *fmt) {
-                return streamToString(fmt);
+                return toString(fmt);
             }
 
             template<typename ...Args>
@@ -52,34 +52,28 @@ namespace buaac {
                 }
                 return out.str();
             }
-        private:
-            template<typename T>
-            static std::string streamToString(T t) {
-                std::stringstream out;
-                out << t;
-                return out.str();
-            }
+        
+        template<typename T>
+        static std::string toString(T t) {
+            std::stringstream out;
+            out << t;
+            return out.str();
+        }
 
-
+		private:
             template<typename T>
             static std::vector<std::string> &expandToString(std::vector<std::string> &out, T t) {
-                out.emplace_back(streamToString(t));
+                out.emplace_back(toString(t));
                 return out;
             }
 
             template<typename T, typename ...Types>
             static std::vector<std::string> &expandToString(std::vector<std::string> &out, T t, Types... types) {
-                out.emplace_back(streamToString(t));
+                out.emplace_back(toString(t));
                 expandToString(out, types...);
                 return out;
             }
         };
-
-
-
-
-
-
 
 
     }
