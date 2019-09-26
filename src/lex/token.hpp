@@ -50,7 +50,7 @@ namespace buaac {
 			LPARENT,
 			RPARENT,
 			LBRACK,
-			RBARCK,
+			RBRACK,
 			LBRACE,
 			RBRACE,
 		ENUM_MED(TokenType)
@@ -87,7 +87,7 @@ namespace buaac {
 		ENUM_DEFAULT_OUTPUT(LPARENT)
 		ENUM_DEFAULT_OUTPUT(RPARENT)
 		ENUM_DEFAULT_OUTPUT(LBRACK)
-		ENUM_DEFAULT_OUTPUT(RBARCK)
+		ENUM_DEFAULT_OUTPUT(RBRACK)
 		ENUM_DEFAULT_OUTPUT(LBRACE)
 		ENUM_DEFAULT_OUTPUT(RBRACE)
 		ENUM_END()
@@ -98,14 +98,16 @@ namespace buaac {
 
 			Token() = default;
 
-			Token(TokenType token_type) {
+			Token(const TokenType& token_type) {
 				token_type_ = token_type;
 				value_ = "";
+				has_value_ = false;
 			}
 
-			Token(TokenType token_type, std::string& value) {
+			Token(const TokenType& token_type, std::string& value) {
 				token_type_ = token_type;
 				value_ = value;
+				has_value_ = true;
 			}
 
 			Token(const Token& other)
@@ -149,39 +151,26 @@ namespace buaac {
 			std::string toString() {
 				return fmt::Format::toString(token_type_);
 			}
+
+			bool hasValue() const {
+				return has_value_;
+			}
+
+			std::string output() {
+				if (has_value_) {
+					return fmt::Format::format("{} {}", token_type_, value_);
+				} else {
+					return fmt::Format::format("{}", token_type_);
+				}
+			}
 		private:
 			TokenType token_type_;
 			std::string value_;
-			bool has_value_;
+			bool has_value_{};
 		};
 
 
-		ENUM_START(LexError)
-			UNEXPECTED,
-		ENUM_MED(LexError)
-			ENUM_DEFAULT_OUTPUT(UNEXPECTED)
-		ENUM_END()
-
-		using LexResult = Result<Token, LexError>;
-
-		LexResult eat_by_regex(std::string& in) {
-			std::smatch result;
-			
-			if (std::regex_search(in, result, std::regex("^if"))) {
-				return LexResult::Ok(Token(TokenType::IFTK));
-			}
-
-			
-			if (std::regex_search(in, result, std::regex("^return"))) {
-				return LexResult::Ok(Token(TokenType::RETURNTK));
-			}
-
-			return LexResult::Err(LexError::UNEXPECTED);
-		}
 		
-		LexResult eat(std::string& in) {
-			return eat_by_regex(in);
-		}
 
 	}
 

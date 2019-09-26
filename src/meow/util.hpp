@@ -1,6 +1,6 @@
+#ifndef MEOW_UTIL_HPP
+#define MEOW_UTIL_HPP
 
-
-#pragma once
 
 #include <string>
 #include <fstream>
@@ -20,3 +20,6 @@ namespace meow {
 
 
 }
+
+
+#endif

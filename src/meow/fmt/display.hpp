@@ -2,8 +2,8 @@
 // Created by rudyc on 2019/9/5.
 //
 
-#ifndef BUAAC_DISPLAY_HPP
-#define BUAAC_DISPLAY_HPP
+#ifndef MEOW_DISPLAY_HPP
+#define MEOW_DISPLAY_HPP
 
 #include "format.hpp"
 #include "../interface.hpp"
@@ -14,7 +14,8 @@ namespace meow {
     namespace fmt {
         interface Display {
         public:
-			virtual std::string toString() = 0;
+	        virtual ~Display() = default;
+	        virtual std::string toString() = 0;
         };
     	
         std::ostream& operator<<(std::ostream& out, Display &display) {
@@ -26,7 +27,4 @@ namespace meow {
 
 }
 
-
-
-
-#endif //BUAAC_DISPLAY_HPP
+#endif

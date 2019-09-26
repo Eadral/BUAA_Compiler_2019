@@ -1,5 +1,5 @@
-#pragma once
-
+#ifndef MEOW_ENUM_HPP
+#define MEOW_ENUM_HPP
 
 #define ENUM_START(name)	\
 struct name: implement fmt::Display {	\
@@ -29,3 +29,4 @@ std::string toString() override { \
 	Type type_;	\
 	};
 
+#endif

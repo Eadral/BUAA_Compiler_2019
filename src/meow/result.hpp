@@ -9,8 +9,6 @@
 #include "interface.hpp"
 #include "fmt/display.hpp"
 
-#include <any>
-
 namespace meow {
 
 	enum ResultType {
@@ -21,6 +19,10 @@ namespace meow {
     template <typename Value, typename Error>
     class Result: implement fmt::Display {
     public:
+
+		Result() {
+			
+		}
     	
 	    Result(ResultType result_type, Value value) {
 			value_ = value;
