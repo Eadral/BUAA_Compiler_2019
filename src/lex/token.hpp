@@ -15,7 +15,6 @@ namespace buaac {
 	namespace lex {
 		#pragma region TokenType
 		ENUM_START(TokenType)
-			IDENFR,
 			INTCON,
 			CHARCON,
 			STRCON,
@@ -53,6 +52,8 @@ namespace buaac {
 			RBRACK,
 			LBRACE,
 			RBRACE,
+			IDENFR,
+
 		ENUM_MED(TokenType)
 		ENUM_DEFAULT_OUTPUT(IDENFR)
 		ENUM_DEFAULT_OUTPUT(INTCON)
@@ -149,20 +150,24 @@ namespace buaac {
 			}
 
 			std::string toString() {
-				return fmt::Format::toString(token_type_);
-			}
-
-			bool hasValue() const {
-				return has_value_;
-			}
-
-			std::string output() {
 				if (has_value_) {
 					return fmt::Format::format("{} {}", token_type_, value_);
 				} else {
 					return fmt::Format::format("{}", token_type_);
 				}
 			}
+
+			bool hasValue() const {
+				return has_value_;
+			}
+
+			// std::string output() {
+			// 	if (has_value_) {
+			// 		return fmt::Format::format("{} {}", token_type_, value_);
+			// 	} else {
+			// 		return fmt::Format::format("{}", token_type_);
+			// 	}
+			// }
 		private:
 			TokenType token_type_;
 			std::string value_;

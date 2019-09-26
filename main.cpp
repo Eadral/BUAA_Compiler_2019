@@ -24,11 +24,13 @@ int main() {
 	lex::LexResult lexResult;
 	while ((lexResult = lex::eat(source)).isOk()) {
 		auto token = lexResult.unwrap();
-		fout << token.output() << endl;
+		fout << token << endl;
+		
 	}
 
 	
 	fout << source;
+
 
 
     return 0;
