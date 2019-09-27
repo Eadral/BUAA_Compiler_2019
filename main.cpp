@@ -20,18 +20,16 @@ int main() {
 	auto source = readFileToString("testfile.txt");
 	ofstream fout("output.txt");
 
+
+	lex::LexParser lexParser(source);
 	
 	lex::LexResult lexResult;
-	while ((lexResult = lex::eat(source)).isOk()) {
+	while ((lexResult = lexParser.lookToken()).isOk()) {
+		lexParser.eatToken();
 		auto token = lexResult.unwrap();
 		fout << token << endl;
 		
 	}
-
-	
-	fout << source;
-
-
 
     return 0;
 }
