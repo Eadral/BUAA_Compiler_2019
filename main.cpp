@@ -17,7 +17,7 @@ using namespace buaac;
 
 int main() {
 
-	auto source = readFileToString("testfile.txt");
+	string source = readFileToString("testfile.txt");
 	ofstream fout("output.txt");
 
 

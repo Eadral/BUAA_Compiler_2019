@@ -78,20 +78,6 @@ namespace buaac {
 				begin = in.cbegin();
 				end = in.cend();
 
-				// simpleMatch("const", CONSTTK);
-				// simpleMatch("int", INTTK);
-				// simpleMatch("char", CHARTK);
-				// simpleMatch("void", VOIDTK);
-				// simpleMatch("main", MAINTK);
-				// simpleMatch("if", IFTK);
-				// simpleMatch("else", ELSETK);
-				// simpleMatch("do", DOTK);
-				// simpleMatch("while", WHILETK);
-				// simpleMatch("for", FORTK);
-				// simpleMatch("scanf", SCANFTK);
-				// simpleMatch("printf", PRINTFTK);
-				// simpleMatch("return", RETURNTK);
-
 				simpleMatch("+", PLUS);
 				simpleMatch("-", MINU);
 				simpleMatch("*", MULT);
@@ -113,7 +99,7 @@ namespace buaac {
 				simpleMatch("}", RBRACE);
 
 
-				
+				// TODO(zyc): Error Handle
 
 				if (isalpha(in[0]) || in[0] == '_') {
 					std::istringstream sin(in);
