@@ -47,7 +47,7 @@ namespace buaac {
 			}
 
 			LexResult eatToken() {
-				LexResult result = eat(pointer_);
+				LexResult result = eat(pointer_, true);
 				auto token = result.unwrap();
 				std::cout << token << std::endl;
 				return result;
@@ -65,8 +65,10 @@ namespace buaac {
 		private:
 			const std::string source_;
 			std::string pointer_;
+			int line = 1;
+			int col = 1;
 
-			LexResult eat(std::string& in) {
+			LexResult eat(std::string& in, bool advance = false) {
 				if (in.length() == 0) {
 					return LexResult::Err(LexError::END);
 				}
@@ -74,8 +76,14 @@ namespace buaac {
 				auto begin = in.cbegin();
 				auto end = in.cend();
 
-				while (begin < end && isspace(*begin))
+				while (begin < end && isspace(*begin)) {
+					if (*begin == '\n' && advance) {
+						line++;
+						col = 1;
+					}
 					++begin;
+				}
+					
 
 				in = in.substr(begin - in.cbegin());
 				begin = in.cbegin();

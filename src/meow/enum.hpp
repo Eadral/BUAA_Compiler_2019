@@ -4,13 +4,13 @@
 #define ENUM_START(name)	\
 struct name: implement fmt::Display {	\
 	enum Type {		\
-		UNDEF,
+		__UNDEF,
 
 
 
 #define ENUM_MED(name) \
 	};	\
-name(): type_(UNDEF) {} \
+name(): type_(__UNDEF) {} \
 name(Type type): type_(type) {} \
 std::string toString() override { \
 	switch (type_) {	

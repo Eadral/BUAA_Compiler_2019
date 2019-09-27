@@ -32,6 +32,7 @@
         eprintf("\t");              \
         eprintf(__VA_ARGS__);        \
         eprintf("\n");    \
+		throw;	\
         exit(-1);        \
     } while(0)
 
