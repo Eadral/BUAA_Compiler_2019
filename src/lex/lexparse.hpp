@@ -47,7 +47,10 @@ namespace buaac {
 			}
 
 			LexResult eatToken() {
-				return eat(pointer_);
+				LexResult result = eat(pointer_);
+				auto token = result.unwrap();
+				std::cout << token << std::endl;
+				return result;
 			}
 
 			LexResult lookToken(int ahead = 0) {
@@ -194,15 +197,6 @@ namespace buaac {
 			}
 
 		};
-
-
-
-
-		
-
-		// LexResult eat(std::string& in) {
-		// 	return eat_by_regex(in);
-		// }
 
 	}
 }

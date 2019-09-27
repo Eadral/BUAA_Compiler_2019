@@ -5,11 +5,8 @@
 #include <iostream>
 
 #include "src/meow/core.hpp"
-
-#include <regex>
-
-#include "src/lex/token.hpp"
 #include "src/lex/lexparse.hpp"
+#include "src/syntax/syntaxparse.hpp"
 
 using namespace std;
 using namespace buaac;
@@ -17,19 +14,16 @@ using namespace buaac;
 
 int main() {
 
+	
 	string source = readFileToString("testfile.txt");
 	ofstream fout("output.txt");
+	cout.rdbuf(fout.rdbuf());
 
 
-	lex::LexParser lexParser(source);
+	lex::LexParser lex_parser(source);
+	syntax::SyntaxParser syntax_parser(lex_parser);
 	
-	lex::LexResult lexResult;
-	while ((lexResult = lexParser.lookToken()).isOk()) {
-		lexParser.eatToken();
-		auto token = lexResult.unwrap();
-		fout << token << endl;
-		
-	}
+	syntax_parser.start();
 
     return 0;
 }
