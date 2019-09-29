@@ -3,6 +3,7 @@
 
 #include "../meow/core.hpp"
 #include "../lex/lexparse.hpp"
+#include <map>
 
 namespace buaac {
 namespace syntax{
@@ -13,7 +14,7 @@ namespace syntax{
 		using TokenType = lex::TokenType;
 		
 	public:
-		SyntaxParser(lex::LexParser& lex_parser): lex_parser_(lex_parser) {
+		SyntaxParser(lex::LexParser& lex_parser, bool output = true): lex_parser_(lex_parser), output_(output) {
 
 		}
 
@@ -23,26 +24,38 @@ namespace syntax{
 
 	private:
 
+		std::map<std::string, bool> funcName2IsRet;
+
 		bool stack_output_constDec_ = false;
 		bool stack_output_verDec_ = false;
 		bool stack_output_statementCol_ = false;
 
+		bool output_ = false;
+
+		void resetOuput() {
+			stack_output_constDec_ = false;
+			stack_output_verDec_ = false;
+			stack_output_statementCol_ = false;
+		}
+		
 		void syntaxOutput(std::string output) {
-			if (output == "<≥£¡øÀµ√˜>") {
+			if (!output_)
+				return;
+			if (output == "<Â∏∏ÈáèËØ¥Êòé>") {
 				if (!stack_output_constDec_) {
 					std::cout << output << std::endl;
 					stack_output_constDec_ = true;
 				}
 				stack_output_verDec_ = false;
 				stack_output_statementCol_ = false;
-			} else if (output == "<±‰¡øÀµ√˜>") {
+			} else if (output == "<ÂèòÈáèËØ¥Êòé>") {
 				if (!stack_output_verDec_) {
 					std::cout << output << std::endl;
 					stack_output_verDec_ = true;
 				}
 				stack_output_constDec_ = false;
 				stack_output_statementCol_ = false;
-			} else if (output == "<”Ôæ‰¡–>") {
+			} else if (output == "<ËØ≠Âè•Âàó>") {
 				if (!stack_output_statementCol_) {
 					std::cout << output << std::endl;
 					stack_output_statementCol_ = true;
@@ -51,11 +64,8 @@ namespace syntax{
 				stack_output_verDec_ = false;
 			} else {
 				std::cout << output << std::endl;
-				stack_output_constDec_ = false;
-				stack_output_verDec_ = false;
-				stack_output_statementCol_ = false;
 			}
-		}
+		} 
 		
 #pragma region GeneratedSyntax
 
@@ -115,38 +125,25 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<◊÷∑˚¥Æ>");
+			syntaxOutput("<Â≠óÁ¨¶‰∏≤>");
 		}
 		void program() {
 			switch (lookToken()) {
 			case TokenType::CONSTTK:
-				constDec();
-				verDec();
-				funcDefGroup();
-				mainFunc();
-				break;
 			case TokenType::INTTK:
-				constDec();
-				verDec();
-				funcDefGroup();
-				mainFunc();
-				break;
 			case TokenType::CHARTK:
-				constDec();
-				verDec();
-				funcDefGroup();
-				mainFunc();
-				break;
 			case TokenType::VOIDTK:
 				constDec();
+				resetOuput();
 				verDec();
+				resetOuput();
 				funcDefGroup();
 				mainFunc();
 				break;
 			default:
 				error();
 			}
-			syntaxOutput("<≥Ã–Ú>");
+			syntaxOutput("<Á®ãÂ∫è>");
 		}
 		void funcDefGroup() {
 			switch (lookToken()) {
@@ -242,7 +239,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<≥£¡øÀµ√˜>");
+			syntaxOutput("<Â∏∏ÈáèËØ¥Êòé>");
 		}
 		void constDef() {
 			switch (lookToken()) {
@@ -257,7 +254,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<≥£¡ø∂®“Â>");
+			syntaxOutput("<Â∏∏ÈáèÂÆö‰πâ>");
 		}
 		void uninteger() {
 			switch (lookToken()) {
@@ -267,7 +264,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<Œﬁ∑˚∫≈’˚ ˝>");
+			syntaxOutput("<Êó†Á¨¶Âè∑Êï¥Êï∞>");
 		}
 		void integer() {
 			switch (lookToken()) {
@@ -285,7 +282,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<’˚ ˝>");
+			syntaxOutput("<Êï¥Êï∞>");
 		}
 		void constDefInt() {
 			switch (lookToken()) {
@@ -343,20 +340,22 @@ namespace syntax{
 				error();
 			}
 		}
-		void decHead() {
+		Token decHead() {
+			Token idenfr;
 			switch (lookToken()) {
 			case TokenType::INTTK:
 				eatToken(TokenType::INTTK);
-				eatToken(TokenType::IDENFR);
+				idenfr = eatToken(TokenType::IDENFR);
 				break;
 			case TokenType::CHARTK:
 				eatToken(TokenType::CHARTK);
-				eatToken(TokenType::IDENFR);
+				idenfr = eatToken(TokenType::IDENFR);
 				break;
 			default:
 				error();
 			}
-			syntaxOutput("<…˘√˜Õ∑≤ø>");
+			syntaxOutput("<Â£∞ÊòéÂ§¥ÈÉ®>");
+			return idenfr;
 		}
 		void verDec() {
 			switch (lookToken()) {
@@ -429,7 +428,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<±‰¡øÀµ√˜>");
+			syntaxOutput("<ÂèòÈáèËØ¥Êòé>");
 		}
 		void verDef() {
 			switch (lookToken()) {
@@ -446,7 +445,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<±‰¡ø∂®“Â>");
+			syntaxOutput("<ÂèòÈáèÂÆö‰πâ>");
 		}
 		void verDefName() {
 			switch (lookToken()) {
@@ -502,9 +501,11 @@ namespace syntax{
 			}
 		}
 		void retFuncDef() {
+			Token name;
 			switch (lookToken()) {
 			case TokenType::INTTK:
-				decHead();
+				name = decHead();
+				funcName2IsRet[name.getValue()] = true;
 				eatToken(TokenType::LPARENT);
 				paraList();
 				eatToken(TokenType::RPARENT);
@@ -513,7 +514,8 @@ namespace syntax{
 				eatToken(TokenType::RBRACE);
 				break;
 			case TokenType::CHARTK:
-				decHead();
+				name = decHead();
+				funcName2IsRet[name.getValue()] = true;
 				eatToken(TokenType::LPARENT);
 				paraList();
 				eatToken(TokenType::RPARENT);
@@ -524,13 +526,15 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<”–∑µªÿ÷µ∫Ø ˝∂®“Â>");
+			// debugln("!{}", name.getValue());
+			syntaxOutput("<ÊúâËøîÂõûÂÄºÂáΩÊï∞ÂÆö‰πâ>");
 		}
 		void nonRetFuncDef() {
+			Token name;
 			switch (lookToken()) {
 			case TokenType::VOIDTK:
 				eatToken(TokenType::VOIDTK);
-				eatToken(TokenType::IDENFR);
+				name = eatToken(TokenType::IDENFR);
 				eatToken(TokenType::LPARENT);
 				paraList();
 				eatToken(TokenType::RPARENT);
@@ -541,84 +545,37 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<Œﬁ∑µªÿ÷µ∫Ø ˝∂®“Â>");
+			// debugln("!{}", name.getValue());
+			funcName2IsRet[name.getValue()] = false;
+			syntaxOutput("<Êó†ËøîÂõûÂÄºÂáΩÊï∞ÂÆö‰πâ>");
 		}
 		void compStatement() {
 			switch (lookToken()) {
 			case TokenType::IDENFR:
-				constDec();
-				verDec();
-				statementCol();
-				break;
 			case TokenType::CONSTTK:
-				constDec();
-				verDec();
-				statementCol();
-				break;
 			case TokenType::INTTK:
-				constDec();
-				verDec();
-				statementCol();
-				break;
 			case TokenType::CHARTK:
-				constDec();
-				verDec();
-				statementCol();
-				break;
 			case TokenType::IFTK:
-				constDec();
-				verDec();
-				statementCol();
-				break;
 			case TokenType::DOTK:
-				constDec();
-				verDec();
-				statementCol();
-				break;
 			case TokenType::WHILETK:
-				constDec();
-				verDec();
-				statementCol();
-				break;
 			case TokenType::FORTK:
-				constDec();
-				verDec();
-				statementCol();
-				break;
 			case TokenType::SCANFTK:
-				constDec();
-				verDec();
-				statementCol();
-				break;
 			case TokenType::PRINTFTK:
-				constDec();
-				verDec();
-				statementCol();
-				break;
 			case TokenType::RETURNTK:
-				constDec();
-				verDec();
-				statementCol();
-				break;
 			case TokenType::SEMICN:
-				constDec();
-				verDec();
-				statementCol();
-				break;
 			case TokenType::LBRACE:
-				constDec();
-				verDec();
-				statementCol();
-				break;
 			case TokenType::RBRACE:
 				constDec();
+				resetOuput();
 				verDec();
+				resetOuput();
 				statementCol();
+				resetOuput();
 				break;
 			default:
 				error();
 			}
-			syntaxOutput("<∏¥∫œ”Ôæ‰>");
+			syntaxOutput("<Â§çÂêàËØ≠Âè•>");
 		}
 		void paraList() {
 			switch (lookToken()) {
@@ -633,12 +590,11 @@ namespace syntax{
 				paraListGroup();
 				break;
 			case TokenType::RPARENT:
-				return;
 				break;
 			default:
 				error();
 			}
-			syntaxOutput("<≤Œ ˝±Ì>");
+			syntaxOutput("<ÂèÇÊï∞Ë°®>");
 		}
 		void paraListGroup() {
 			switch (lookToken()) {
@@ -669,7 +625,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<÷˜∫Ø ˝>");
+			syntaxOutput("<‰∏ªÂáΩÊï∞>");
 		}
 		void exprPrefix() {
 			switch (lookToken()) {
@@ -730,7 +686,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<±Ì¥Ô Ω>");
+			syntaxOutput("<Ë°®ËææÂºè>");
 		}
 		void exprGroup() {
 			switch (lookToken()) {
@@ -807,7 +763,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<œÓ>");
+			syntaxOutput("<È°π>");
 		}
 		void termGroup() {
 			switch (lookToken()) {
@@ -963,7 +919,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<“Ú◊”>");
+			syntaxOutput("<Âõ†Â≠ê>");
 		}
 		void statement() {
 			switch (lookToken()) {
@@ -1012,12 +968,13 @@ namespace syntax{
 			case TokenType::LBRACE:
 				eatToken(TokenType::LBRACE);
 				statementCol();
+				resetOuput();
 				eatToken(TokenType::RBRACE);
 				break;
 			default:
 				error();
 			}
-			syntaxOutput("<”Ôæ‰>");
+			syntaxOutput("<ËØ≠Âè•>");
 		}
 		void assignWithIdent() {
 			switch (lookToken()) {
@@ -1045,7 +1002,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<∏≥÷µ”Ôæ‰>");
+			syntaxOutput("<ËµãÂÄºËØ≠Âè•>");
 		}
 		void condStat() {
 			switch (lookToken()) {
@@ -1060,7 +1017,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<Ãıº˛”Ôæ‰>");
+			syntaxOutput("<Êù°‰ª∂ËØ≠Âè•>");
 		}
 		void condStatElse() {
 			switch (lookToken()) {
@@ -1134,7 +1091,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<Ãıº˛>");
+			syntaxOutput("<Êù°‰ª∂>");
 		}
 		void condExprEnd() {
 			switch (lookToken()) {
@@ -1209,7 +1166,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<—≠ª∑”Ôæ‰>");
+			syntaxOutput("<Âæ™ÁéØËØ≠Âè•>");
 		}
 		void step() {
 			switch (lookToken()) {
@@ -1219,12 +1176,13 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<≤Ω≥§>");
+			syntaxOutput("<Ê≠•Èïø>");
 		}
 		void funcCall() {
+			Token name;
 			switch (lookToken()) {
 			case TokenType::IDENFR:
-				eatToken(TokenType::IDENFR);
+				name = eatToken(TokenType::IDENFR);
 				eatToken(TokenType::LPARENT);
 				valParaList();
 				eatToken(TokenType::RPARENT);
@@ -1232,8 +1190,12 @@ namespace syntax{
 			default:
 				error();
 			}
-			// TODO(zyc): «ø––”–∑µªÿ÷µ
-			syntaxOutput("<”–∑µªÿ÷µ∫Ø ˝µ˜”√”Ôæ‰>");
+			// debugln("!{}", name.getValue());
+			if (funcName2IsRet[name.getValue()]) {
+				syntaxOutput("<ÊúâËøîÂõûÂÄºÂáΩÊï∞Ë∞ÉÁî®ËØ≠Âè•>");
+			} else {
+				syntaxOutput("<Êó†ËøîÂõûÂÄºÂáΩÊï∞Ë∞ÉÁî®ËØ≠Âè•>");
+			}
 		}
 		void valParaList() {
 			switch (lookToken()) {
@@ -1262,12 +1224,11 @@ namespace syntax{
 				valParaListGroup();
 				break;
 			case TokenType::RPARENT:
-				return;
 				break;
 			default:
 				error();
 			}
-			syntaxOutput("<÷µ≤Œ ˝±Ì>");
+			syntaxOutput("<ÂÄºÂèÇÊï∞Ë°®>");
 		}
 		void valParaListGroup() {
 			switch (lookToken()) {
@@ -1331,7 +1292,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<”Ôæ‰¡–>");
+			syntaxOutput("<ËØ≠Âè•Âàó>");
 		}
 		void scanfStat() {
 			switch (lookToken()) {
@@ -1345,7 +1306,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<∂¡”Ôæ‰>");
+			syntaxOutput("<ËØªËØ≠Âè•>");
 		}
 		void identGroup() {
 			switch (lookToken()) {
@@ -1371,7 +1332,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<–¥”Ôæ‰>");
+			syntaxOutput("<ÂÜôËØ≠Âè•>");
 		}
 		void printfStatEnd() {
 			switch (lookToken()) {
@@ -1430,7 +1391,7 @@ namespace syntax{
 			default:
 				error();
 			}
-			syntaxOutput("<∑µªÿ”Ôæ‰>");
+			syntaxOutput("<ËøîÂõûËØ≠Âè•>");
 		}
 		void retStatEnd() {
 			switch (lookToken()) {
@@ -1453,11 +1414,12 @@ namespace syntax{
 			return lex_parser_.lookToken(ahead).unwrap().getTokenType().type_;
 		}
 
-		void eatToken(TokenType excepted_token_type) {
-			Token token_type = lex_parser_.eatToken().unwrap();
-			if (token_type.getTokenType().type_ != excepted_token_type.type_) {
+		Token eatToken(TokenType excepted_token_type) {
+			Token token = lex_parser_.eatToken().unwrap();
+			if (token.getTokenType().type_ != excepted_token_type.type_) {
 				panic("unimplemented");
 			}
+			return token;
 		}
 
 		void error() {

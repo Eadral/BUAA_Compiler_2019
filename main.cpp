@@ -21,7 +21,7 @@ int main() {
 
 
 	lex::LexParser lex_parser(source);
-	syntax::SyntaxParser syntax_parser(lex_parser);
+	syntax::SyntaxParser syntax_parser(lex_parser, true);
 	
 	syntax_parser.start();
 
