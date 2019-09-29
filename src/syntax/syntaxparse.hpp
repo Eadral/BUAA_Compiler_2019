@@ -1287,7 +1287,7 @@ namespace syntax{
 				statementCol();
 				break;
 			case TokenType::RBRACE:
-				return;
+				// return;
 				break;
 			default:
 				error();
