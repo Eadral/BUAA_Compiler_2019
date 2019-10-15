@@ -19,7 +19,6 @@ int main() {
 	ofstream fout("output.txt");
 	cout.rdbuf(fout.rdbuf());
 
-
 	lex::LexParser lex_parser(source);
 	syntax::SyntaxParser syntax_parser(lex_parser, true);
 	

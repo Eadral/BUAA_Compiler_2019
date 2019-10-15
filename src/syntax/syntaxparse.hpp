@@ -5,6 +5,8 @@
 #include "../lex/lexparse.hpp"
 #include <map>
 
+#define ERROR break;	// ignore all error
+
 namespace buaac {
 namespace syntax{
 	
@@ -68,7 +70,7 @@ namespace syntax{
 		} 
 		
 #pragma region GeneratedSyntax
-
+		// ＜加法运算符＞ ::= +｜-
 		void plusOp() {
 			switch (lookToken()) {
 			case TokenType::PLUS:
@@ -78,9 +80,10 @@ namespace syntax{
 				eatToken(TokenType::MINU);
 				break;
 			default:
-				error();
+				ERROR
 			}
 		}
+		// ＜乘法运算符＞  ::= *｜/
 		void mulOp() {
 			switch (lookToken()) {
 			case TokenType::MULT:
@@ -90,9 +93,10 @@ namespace syntax{
 				eatToken(TokenType::DIV);
 				break;
 			default:
-				error();
+				ERROR
 			}
 		}
+		// ＜关系运算符＞  ::=  <｜<=｜>｜>=｜!=｜==
 		void relationOp() {
 			switch (lookToken()) {
 			case TokenType::LSS:
@@ -114,19 +118,21 @@ namespace syntax{
 				eatToken(TokenType::NEQ);
 				break;
 			default:
-				error();
+				ERROR
 			}
 		}
+		// ＜字符串＞   ::=  "｛十进制编码为32,33,35-126的ASCII字符｝"
 		void strconst() {
 			switch (lookToken()) {
 			case TokenType::STRCON:
 				eatToken(TokenType::STRCON);
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<字符串>");
 		}
+		// ＜程序＞    ::= ［＜常量说明＞］［＜变量说明＞］{＜有返回值函数定义＞|＜无返回值函数定义＞}＜主函数＞
 		void program() {
 			switch (lookToken()) {
 			case TokenType::CONSTTK:
@@ -141,16 +147,14 @@ namespace syntax{
 				mainFunc();
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<程序>");
 		}
+		// {＜有返回值函数定义＞|＜无返回值函数定义＞}
 		void funcDefGroup() {
 			switch (lookToken()) {
 			case TokenType::INTTK:
-				funcDef();
-				funcDefGroup();
-				break;
 			case TokenType::CHARTK:
 				funcDef();
 				funcDefGroup();
@@ -164,18 +168,17 @@ namespace syntax{
 				case TokenType::MAINTK:
 					return;
 				default:
-					error();
+					ERROR
 				}
 				break;
 			default:
-				error();
+				ERROR
 			}
 		}
+		// ＜有返回值函数定义＞|＜无返回值函数定义＞
 		void funcDef() {
 			switch (lookToken()) {
 			case TokenType::INTTK:
-				retFuncDef();
-				break;
 			case TokenType::CHARTK:
 				retFuncDef();
 				break;
@@ -183,64 +186,43 @@ namespace syntax{
 				nonRetFuncDef();
 				break;
 			default:
-				error();
+				ERROR
 			}
 		}
+		// ＜常量说明＞ ::=  const＜常量定义＞;{ const＜常量定义＞;}
 		void constDec() {
 			switch (lookToken()) {
-			case TokenType::IDENFR:
-				return;
-				break;
 			case TokenType::CONSTTK:
 				eatToken(TokenType::CONSTTK);
 				constDef();
 				eatToken(TokenType::SEMICN);
 				constDec();
 				break;
+			// Empty
+			case TokenType::IDENFR:
 			case TokenType::INTTK:
-				return;
-				break;
 			case TokenType::CHARTK:
-				return;
-				break;
 			case TokenType::VOIDTK:
-				return;
-				break;
 			case TokenType::IFTK:
-				return;
-				break;
 			case TokenType::DOTK:
-				return;
-				break;
 			case TokenType::WHILETK:
-				return;
-				break;
 			case TokenType::FORTK:
-				return;
-				break;
 			case TokenType::SCANFTK:
-				return;
-				break;
 			case TokenType::PRINTFTK:
-				return;
-				break;
 			case TokenType::RETURNTK:
-				return;
-				break;
 			case TokenType::SEMICN:
-				return;
-				break;
 			case TokenType::LBRACE:
-				return;
-				break;
 			case TokenType::RBRACE:
 				return;
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<常量说明>");
 		}
+		// ＜常量定义＞   ::=   int＜标识符＞＝＜整数＞{,＜标识符＞＝＜整数＞}
+		//		| char＜标识符＞＝＜字符＞{ ,＜标识符＞＝＜字符＞ }
+
 		void constDef() {
 			switch (lookToken()) {
 			case TokenType::INTTK:
@@ -252,20 +234,22 @@ namespace syntax{
 				constDefCharGroup();
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<常量定义>");
 		}
+		// ＜无符号整数＞  ::= ＜非零数字＞｛＜数字＞｝| 0
 		void uninteger() {
 			switch (lookToken()) {
 			case TokenType::INTCON:
 				eatToken(TokenType::INTCON);
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<无符号整数>");
 		}
+		// ＜整数＞        ::= ［＋｜－］＜无符号整数＞
 		void integer() {
 			switch (lookToken()) {
 			case TokenType::INTCON:
@@ -280,7 +264,7 @@ namespace syntax{
 				uninteger();
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<整数>");
 		}
@@ -293,14 +277,12 @@ namespace syntax{
 				integer();
 				break;
 			default:
-				error();
+				ERROR
 			}
 		}
+		// {,＜标识符＞＝＜整数＞}
 		void constDefIntGroup() {
 			switch (lookToken()) {
-			case TokenType::SEMICN:
-				return;
-				break;
 			case TokenType::COMMA:
 				eatToken(TokenType::COMMA);
 				eatToken(TokenType::IDENFR);
@@ -308,8 +290,11 @@ namespace syntax{
 				integer();
 				constDefIntGroup();
 				break;
+			// STOP
+			case TokenType::SEMICN:
+				return;
 			default:
-				error();
+				ERROR
 			}
 		}
 		void constDefChar() {
@@ -321,14 +306,12 @@ namespace syntax{
 				eatToken(TokenType::CHARCON);
 				break;
 			default:
-				error();
+				ERROR
 			}
 		}
+		// { ,＜标识符＞＝＜字符＞ }
 		void constDefCharGroup() {
 			switch (lookToken()) {
-			case TokenType::SEMICN:
-				return;
-				break;
 			case TokenType::COMMA:
 				eatToken(TokenType::COMMA);
 				eatToken(TokenType::IDENFR);
@@ -336,10 +319,14 @@ namespace syntax{
 				eatToken(TokenType::CHARCON);
 				constDefCharGroup();
 				break;
+			// STOP
+			case TokenType::SEMICN:
+				return;
 			default:
-				error();
+				ERROR
 			}
 		}
+		// ＜声明头部＞   ::=  int＜标识符＞ |char＜标识符＞
 		Token decHead() {
 			Token idenfr;
 			switch (lookToken()) {
@@ -352,16 +339,14 @@ namespace syntax{
 				idenfr = eatToken(TokenType::IDENFR);
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<声明头部>");
 			return idenfr;
 		}
+		// ＜变量说明＞  ::= ＜变量定义＞;{＜变量定义＞;}
 		void verDec() {
 			switch (lookToken()) {
-			case TokenType::IDENFR:
-				return;
-				break;
 			case TokenType::INTTK:
 				switch (lookToken(2)) {
 				case TokenType::SEMICN:
@@ -374,7 +359,7 @@ namespace syntax{
 				case TokenType::LPARENT:
 					return;
 				default:
-					error();
+					ERROR
 				}
 				break;
 			case TokenType::CHARTK:
@@ -389,105 +374,107 @@ namespace syntax{
 				case TokenType::LPARENT:
 					return;
 				default:
-					error();
+					ERROR
 				}
 				break;
+			// EMPTY
+			case TokenType::IDENFR:
 			case TokenType::VOIDTK:
-				return;
-				break;
 			case TokenType::IFTK:
-				return;
-				break;
 			case TokenType::DOTK:
-				return;
-				break;
 			case TokenType::WHILETK:
-				return;
-				break;
 			case TokenType::FORTK:
-				return;
-				break;
 			case TokenType::SCANFTK:
-				return;
-				break;
 			case TokenType::PRINTFTK:
-				return;
-				break;
 			case TokenType::RETURNTK:
-				return;
-				break;
 			case TokenType::SEMICN:
-				return;
-				break;
 			case TokenType::LBRACE:
-				return;
-				break;
 			case TokenType::RBRACE:
 				return;
-				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<变量说明>");
 		}
+		
+		//＜变量定义＞ ::= ＜类型标识符＞
+		//				(＜标识符＞|＜标识符＞'['＜无符号整数＞']')
+		//				{,(＜标识符＞|＜标识符＞'['＜无符号整数＞']' )} 
 		void verDef() {
 			switch (lookToken()) {
 			case TokenType::INTTK:
-				typeIdent();
-				verDefName();
-				verDefNameGroup();
-				break;
 			case TokenType::CHARTK:
+				// ＜类型标识符＞
 				typeIdent();
-				verDefName();
+				// (＜标识符＞|＜标识符＞'['＜无符号整数＞']')
+				switch (lookToken()) {
+				case TokenType::IDENFR:
+					// ＜标识符＞
+					eatToken(TokenType::IDENFR);
+					switch (lookToken()) {
+					case TokenType::LBRACK:
+						// '['＜无符号整数＞']'
+						eatToken(TokenType::LBRACK);
+						uninteger();
+						eatToken(TokenType::RBRACK);
+						break;
+					case TokenType::SEMICN:
+					case TokenType::COMMA:
+						break;
+					default:
+						ERROR
+					}
+					break;
+				default:
+					ERROR
+				}
+				//	{,(＜标识符＞|＜标识符＞'['＜无符号整数＞']' )} 
 				verDefNameGroup();
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<变量定义>");
 		}
-		void verDefName() {
-			switch (lookToken()) {
-			case TokenType::IDENFR:
-				eatToken(TokenType::IDENFR);
-				verDefNameArr();
-				break;
-			default:
-				error();
-			}
-		}
-		void verDefNameArr() {
-			switch (lookToken()) {
-			case TokenType::SEMICN:
-				return;
-				break;
-			case TokenType::COMMA:
-				return;
-				break;
-			case TokenType::LBRACK:
-				eatToken(TokenType::LBRACK);
-				uninteger();
-				eatToken(TokenType::RBRACK);
-				break;
-			default:
-				error();
-			}
-		}
+
+		// {,(＜标识符＞|＜标识符＞'['＜无符号整数＞']' )} 
 		void verDefNameGroup() {
 			switch (lookToken()) {
-			case TokenType::SEMICN:
-				return;
-				break;
 			case TokenType::COMMA:
+				// ,
 				eatToken(TokenType::COMMA);
-				verDefName();
+				switch (lookToken()) {
+				case TokenType::IDENFR:
+					// ＜标识符＞
+					eatToken(TokenType::IDENFR);
+					switch (lookToken()) {
+					case TokenType::LBRACK:
+						// '['＜无符号整数＞']' 
+						eatToken(TokenType::LBRACK);
+						uninteger();
+						eatToken(TokenType::RBRACK);
+						break;
+					case TokenType::SEMICN:
+					case TokenType::COMMA:
+						break;
+					default:
+						ERROR
+					}
+					break;
+				default:
+					ERROR
+				}
+				// Group
 				verDefNameGroup();
 				break;
+			case TokenType::SEMICN:
+				break;
 			default:
-				error();
+				ERROR
 			}
 		}
+
+		// ＜类型标识符＞ ::=  int | char
 		void typeIdent() {
 			switch (lookToken()) {
 			case TokenType::INTTK:
@@ -497,58 +484,60 @@ namespace syntax{
 				eatToken(TokenType::CHARTK);
 				break;
 			default:
-				error();
+				ERROR
 			}
 		}
+		// ＜有返回值函数定义＞ ::=  ＜声明头部＞'('＜参数表＞')' '{'＜复合语句＞'}'
 		void retFuncDef() {
 			Token name;
 			switch (lookToken()) {
 			case TokenType::INTTK:
-				name = decHead();
-				funcName2IsRet[name.getValue()] = true;
-				eatToken(TokenType::LPARENT);
-				paraList();
-				eatToken(TokenType::RPARENT);
-				eatToken(TokenType::LBRACE);
-				compStatement();
-				eatToken(TokenType::RBRACE);
-				break;
 			case TokenType::CHARTK:
+				//  ＜声明头部＞
 				name = decHead();
 				funcName2IsRet[name.getValue()] = true;
+				// '('＜参数表＞')' 
 				eatToken(TokenType::LPARENT);
 				paraList();
 				eatToken(TokenType::RPARENT);
+				// '{'＜复合语句＞'}'
 				eatToken(TokenType::LBRACE);
 				compStatement();
 				eatToken(TokenType::RBRACE);
 				break;
 			default:
-				error();
+				ERROR
 			}
 			// debugln("!{}", name.getValue());
 			syntaxOutput("<有返回值函数定义>");
 		}
+		// ＜无返回值函数定义＞  ::= void＜标识符＞'('＜参数表＞')''{'＜复合语句＞'}'
 		void nonRetFuncDef() {
 			Token name;
 			switch (lookToken()) {
 			case TokenType::VOIDTK:
+				// void
 				eatToken(TokenType::VOIDTK);
+				// ＜标识符＞
 				name = eatToken(TokenType::IDENFR);
+				// '('＜参数表＞')'
 				eatToken(TokenType::LPARENT);
 				paraList();
 				eatToken(TokenType::RPARENT);
+				// '{'＜复合语句＞'}'
 				eatToken(TokenType::LBRACE);
 				compStatement();
 				eatToken(TokenType::RBRACE);
 				break;
 			default:
-				error();
+				ERROR
 			}
 			// debugln("!{}", name.getValue());
 			funcName2IsRet[name.getValue()] = false;
 			syntaxOutput("<无返回值函数定义>");
 		}
+
+		// ＜复合语句＞   ::=  ［＜常量说明＞］［＜变量说明＞］＜语句列＞
 		void compStatement() {
 			switch (lookToken()) {
 			case TokenType::IDENFR:
@@ -565,316 +554,203 @@ namespace syntax{
 			case TokenType::SEMICN:
 			case TokenType::LBRACE:
 			case TokenType::RBRACE:
+				// ［＜常量说明＞］
 				constDec();
 				resetOuput();
+				// ［＜变量说明＞］
 				verDec();
 				resetOuput();
+				// ＜语句列＞
 				statementCol();
 				resetOuput();
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<复合语句>");
 		}
+		// ＜参数表＞::= ＜类型标识符＞＜标识符＞{,＜类型标识符＞＜标识符＞}| ＜空＞
 		void paraList() {
 			switch (lookToken()) {
 			case TokenType::INTTK:
-				typeIdent();
-				eatToken(TokenType::IDENFR);
-				paraListGroup();
-				break;
 			case TokenType::CHARTK:
+				// ＜类型标识符＞
 				typeIdent();
+				// ＜标识符＞
 				eatToken(TokenType::IDENFR);
+				// {, ＜类型标识符＞＜标识符＞}
 				paraListGroup();
 				break;
 			case TokenType::RPARENT:
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<参数表>");
 		}
+		//  {, ＜类型标识符＞＜标识符＞}
 		void paraListGroup() {
 			switch (lookToken()) {
 			case TokenType::COMMA:
+				// ,
 				eatToken(TokenType::COMMA);
+				// ＜类型标识符＞
 				typeIdent();
+				// ＜标识符＞
 				eatToken(TokenType::IDENFR);
+				// Group
 				paraListGroup();
 				break;
 			case TokenType::RPARENT:
 				return;
 				break;
 			default:
-				error();
+				ERROR
 			}
 		}
+		// ＜主函数＞ ::= void main‘(’‘)’ ‘{’＜复合语句＞‘}’
 		void mainFunc() {
 			switch (lookToken()) {
 			case TokenType::VOIDTK:
+				// void main‘(’‘)’
 				eatToken(TokenType::VOIDTK);
 				eatToken(TokenType::MAINTK);
 				eatToken(TokenType::LPARENT);
 				eatToken(TokenType::RPARENT);
+				// ‘{’＜复合语句＞‘}’
 				eatToken(TokenType::LBRACE);
 				compStatement();
 				eatToken(TokenType::RBRACE);
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<主函数>");
 		}
-		void exprPrefix() {
+		// ＜表达式＞    ::= ［＋｜－］＜项＞{＜加法运算符＞＜项＞} 
+		void expr() {
 			switch (lookToken()) {
 			case TokenType::IDENFR:
-				return;
-				break;
 			case TokenType::INTCON:
-				return;
-				break;
 			case TokenType::CHARCON:
-				return;
+			case TokenType::PLUS:
+			case TokenType::MINU:
+			case TokenType::LPARENT:
+				// ［＋｜－］
+				exprPrefix();
+				// ＜项＞
+				term();
+				// {＜加法运算符＞＜项＞} 
+				exprGroup();
 				break;
+			default:
+				ERROR
+			}
+			syntaxOutput("<表达式>");
+		}
+		// // ［＋｜－］
+		void exprPrefix() {
+			switch (lookToken()) {
 			case TokenType::PLUS:
 				eatToken(TokenType::PLUS);
 				break;
 			case TokenType::MINU:
 				eatToken(TokenType::MINU);
 				break;
+			case TokenType::IDENFR:
+			case TokenType::INTCON:
+			case TokenType::CHARCON:
 			case TokenType::LPARENT:
 				return;
 				break;
 			default:
-				error();
+				ERROR
 			}
 		}
-		void expr() {
-			switch (lookToken()) {
-			case TokenType::IDENFR:
-				exprPrefix();
-				term();
-				exprGroup();
-				break;
-			case TokenType::INTCON:
-				exprPrefix();
-				term();
-				exprGroup();
-				break;
-			case TokenType::CHARCON:
-				exprPrefix();
-				term();
-				exprGroup();
-				break;
-			case TokenType::PLUS:
-				exprPrefix();
-				term();
-				exprGroup();
-				break;
-			case TokenType::MINU:
-				exprPrefix();
-				term();
-				exprGroup();
-				break;
-			case TokenType::LPARENT:
-				exprPrefix();
-				term();
-				exprGroup();
-				break;
-			default:
-				error();
-			}
-			syntaxOutput("<表达式>");
-		}
+		// {＜加法运算符＞＜项＞} 
 		void exprGroup() {
 			switch (lookToken()) {
 			case TokenType::PLUS:
-				plusOp();
-				term();
-				exprGroup();
-				break;
 			case TokenType::MINU:
+				// ＜加法运算符＞
 				plusOp();
+				// ＜项＞
 				term();
+				// Group
 				exprGroup();
 				break;
 			case TokenType::LSS:
-				return;
-				break;
 			case TokenType::LEQ:
-				return;
-				break;
 			case TokenType::GEQ:
-				return;
-				break;
 			case TokenType::GRE:
-				return;
-				break;
 			case TokenType::EQL:
-				return;
-				break;
 			case TokenType::NEQ:
-				return;
-				break;
 			case TokenType::SEMICN:
-				return;
-				break;
 			case TokenType::COMMA:
-				return;
-				break;
 			case TokenType::RPARENT:
-				return;
-				break;
 			case TokenType::RBRACK:
 				return;
 				break;
 			default:
-				error();
+				ERROR
 			}
 		}
+		// ＜项＞::= ＜因子＞{＜乘法运算符＞＜因子＞}
 		void term() {
 			switch (lookToken()) {
 			case TokenType::IDENFR:
-				factor();
-				termGroup();
-				break;
 			case TokenType::INTCON:
-				factor();
-				termGroup();
-				break;
 			case TokenType::CHARCON:
-				factor();
-				termGroup();
-				break;
 			case TokenType::PLUS:
-				factor();
-				termGroup();
-				break;
 			case TokenType::MINU:
-				factor();
-				termGroup();
-				break;
 			case TokenType::LPARENT:
+				//  ＜因子＞
 				factor();
+				// {＜乘法运算符＞＜因子＞}
 				termGroup();
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<项>");
 		}
+		// {＜乘法运算符＞＜因子＞}
 		void termGroup() {
 			switch (lookToken()) {
-			case TokenType::PLUS:
-				return;
-				break;
-			case TokenType::MINU:
-				return;
-				break;
 			case TokenType::MULT:
+			case TokenType::DIV:
+				// ＜乘法运算符＞
 				mulOp();
+				// ＜因子＞
 				factor();
+				// Group
 				termGroup();
 				break;
-			case TokenType::DIV:
-				mulOp();
-				factor();
-				termGroup();
-				break;
-			case TokenType::LSS:
-				return;
-				break;
-			case TokenType::LEQ:
-				return;
-				break;
-			case TokenType::GEQ:
-				return;
-				break;
-			case TokenType::GRE:
-				return;
-				break;
-			case TokenType::EQL:
-				return;
-				break;
-			case TokenType::NEQ:
-				return;
-				break;
-			case TokenType::SEMICN:
-				return;
-				break;
-			case TokenType::COMMA:
-				return;
-				break;
-			case TokenType::RPARENT:
-				return;
-				break;
-			case TokenType::RBRACK:
-				return;
-				break;
-			default:
-				error();
-			}
-		}
-		void factorWithIdent() {
-			switch (lookToken()) {
 			case TokenType::PLUS:
-				return;
-				break;
 			case TokenType::MINU:
-				return;
-				break;
-			case TokenType::MULT:
-				return;
-				break;
-			case TokenType::DIV:
-				return;
-				break;
 			case TokenType::LSS:
-				return;
-				break;
 			case TokenType::LEQ:
-				return;
-				break;
 			case TokenType::GEQ:
-				return;
-				break;
 			case TokenType::GRE:
-				return;
-				break;
 			case TokenType::EQL:
-				return;
-				break;
 			case TokenType::NEQ:
-				return;
-				break;
 			case TokenType::SEMICN:
-				return;
-				break;
 			case TokenType::COMMA:
-				return;
-				break;
 			case TokenType::RPARENT:
-				return;
-				break;
-			case TokenType::LBRACK:
-				eatToken(TokenType::LBRACK);
-				expr();
-				eatToken(TokenType::RBRACK);
-				break;
 			case TokenType::RBRACK:
-				return;
-				break;
 			default:
-				error();
+				ERROR
 			}
 		}
+		// ＜因子＞    ::= ＜标识符＞｜＜标识符＞'['＜表达式＞']'
+		//					|'('＜表达式＞')'｜＜整数＞|＜字符＞
+		//				    ｜＜有返回值函数调用语句＞         
 		void factor() {
 			switch (lookToken()) {
 			case TokenType::IDENFR:
 				switch (lookToken(1)) {
 				case TokenType::LPARENT:
+					// ＜有返回值函数调用语句＞       
 					funcCall();
 					break;
 				case TokenType::LBRACK:
@@ -892,35 +768,63 @@ namespace syntax{
 				case TokenType::PLUS:
 				case TokenType::RBRACK:
 				case TokenType::SEMICN:
+					// ＜标识符＞
 					eatToken(TokenType::IDENFR);
-					factorWithIdent();
+					switch (lookToken()) {
+					case TokenType::LBRACK:
+						// '['＜表达式＞']'
+						eatToken(TokenType::LBRACK);
+						expr();
+						eatToken(TokenType::RBRACK);
+						break;
+					case TokenType::RBRACK:
+					case TokenType::PLUS:
+					case TokenType::MINU:
+					case TokenType::MULT:
+					case TokenType::DIV:
+					case TokenType::LSS:
+					case TokenType::LEQ:
+					case TokenType::GEQ:
+					case TokenType::GRE:
+					case TokenType::EQL:
+					case TokenType::NEQ:
+					case TokenType::SEMICN:
+					case TokenType::COMMA:
+					case TokenType::RPARENT:
+						break;
+					default:
+						ERROR
+					}
 					break;
 				default:
-					error();
+					ERROR
 				}
 				break;
+			case TokenType::PLUS:
+			case TokenType::MINU:
 			case TokenType::INTCON:
+				// ＜整数＞
 				integer();
 				break;
 			case TokenType::CHARCON:
+				// ＜字符＞
 				eatToken(TokenType::CHARCON);
 				break;
-			case TokenType::PLUS:
-				integer();
-				break;
-			case TokenType::MINU:
-				integer();
-				break;
 			case TokenType::LPARENT:
+				// '('＜表达式＞')'
 				eatToken(TokenType::LPARENT);
 				expr();
 				eatToken(TokenType::RPARENT);
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<因子>");
 		}
+
+		// ＜语句＞    ::= ＜条件语句＞｜＜循环语句＞| '{'＜语句列＞'}'| ＜有返回值函数调用语句＞; 
+		//		| ＜无返回值函数调用语句＞; ｜＜赋值语句＞; ｜＜读语句＞; ｜＜写语句＞; ｜＜空＞; | ＜返回语句＞;
+
 		void statement() {
 			switch (lookToken()) {
 			case TokenType::IDENFR:
@@ -935,7 +839,7 @@ namespace syntax{
 					eatToken(TokenType::SEMICN);
 					break;
 				default:
-					error();
+					ERROR
 				}
 				break;
 			case TokenType::IFTK:
@@ -972,166 +876,127 @@ namespace syntax{
 				eatToken(TokenType::RBRACE);
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<语句>");
 		}
-		void assignWithIdent() {
-			switch (lookToken()) {
-			case TokenType::ASSIGN:
-				eatToken(TokenType::ASSIGN);
-				expr();
-				break;
-			case TokenType::LBRACK:
-				eatToken(TokenType::LBRACK);
-				expr();
-				eatToken(TokenType::RBRACK);
-				eatToken(TokenType::ASSIGN);
-				expr();
-				break;
-			default:
-				error();
-			}
-		}
+		
+		// ＜赋值语句＞   ::=  ＜标识符＞＝＜表达式＞|＜标识符＞'['＜表达式＞']'=＜表达式＞
 		void assignStat() {
 			switch (lookToken()) {
 			case TokenType::IDENFR:
+				//  ＜标识符＞
 				eatToken(TokenType::IDENFR);
-				assignWithIdent();
+				switch (lookToken()) {
+				case TokenType::ASSIGN:
+					// ＝＜表达式＞
+					eatToken(TokenType::ASSIGN);
+					expr();
+					break;
+				case TokenType::LBRACK:
+					// '['＜表达式＞']'=＜表达式＞
+					eatToken(TokenType::LBRACK);
+					expr();
+					eatToken(TokenType::RBRACK);
+					eatToken(TokenType::ASSIGN);
+					expr();
+					break;
+				default:
+					ERROR
+				}
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<赋值语句>");
 		}
+		// ＜条件语句＞  ::= if '('＜条件＞')'＜语句＞［else＜语句＞］
 		void condStat() {
 			switch (lookToken()) {
 			case TokenType::IFTK:
+				// if '('＜条件＞')'＜语句＞
 				eatToken(TokenType::IFTK);
 				eatToken(TokenType::LPARENT);
 				cond();
 				eatToken(TokenType::RPARENT);
 				statement();
+				// ［else＜语句＞］
 				condStatElse();
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<条件语句>");
 		}
+		// ［else＜语句＞］
 		void condStatElse() {
 			switch (lookToken()) {
-			case TokenType::IDENFR:
-				return;
-				break;
-			case TokenType::IFTK:
-				return;
-				break;
 			case TokenType::ELSETK:
+				// else＜语句＞
 				eatToken(TokenType::ELSETK);
 				statement();
 				break;
+			// Empty
+			case TokenType::IDENFR:
+			case TokenType::IFTK:
 			case TokenType::DOTK:
-				return;
-				break;
 			case TokenType::WHILETK:
-				return;
-				break;
 			case TokenType::FORTK:
-				return;
-				break;
 			case TokenType::SCANFTK:
-				return;
-				break;
 			case TokenType::PRINTFTK:
-				return;
-				break;
 			case TokenType::RETURNTK:
-				return;
-				break;
 			case TokenType::SEMICN:
-				return;
-				break;
 			case TokenType::LBRACE:
-				return;
-				break;
 			case TokenType::RBRACE:
 				return;
 				break;
 			default:
-				error();
+				ERROR
 			}
 		}
+		// ＜条件＞    ::=  ＜表达式＞＜关系运算符＞＜表达式＞
+		//				｜＜表达式＞ //表达式为0条件为假，否则为真
 		void cond() {
 			switch (lookToken()) {
 			case TokenType::IDENFR:
-				expr();
-				condExprEnd();
-				break;
 			case TokenType::INTCON:
-				expr();
-				condExprEnd();
-				break;
 			case TokenType::CHARCON:
-				expr();
-				condExprEnd();
-				break;
 			case TokenType::PLUS:
-				expr();
-				condExprEnd();
-				break;
 			case TokenType::MINU:
-				expr();
-				condExprEnd();
-				break;
 			case TokenType::LPARENT:
+				// ＜表达式＞
 				expr();
-				condExprEnd();
+				switch (lookToken()) {
+				case TokenType::LSS:
+				case TokenType::LEQ:
+				case TokenType::GEQ:
+				case TokenType::GRE:
+				case TokenType::EQL:
+				case TokenType::NEQ:
+					//＜关系运算符＞＜表达式＞
+					relationOp();
+					expr();
+					break;
+				case TokenType::SEMICN:
+				case TokenType::RPARENT:
+					// Emtpy
+					break;
+				default:
+					ERROR
+				}
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<条件>");
 		}
-		void condExprEnd() {
-			switch (lookToken()) {
-			case TokenType::LSS:
-				relationOp();
-				expr();
-				break;
-			case TokenType::LEQ:
-				relationOp();
-				expr();
-				break;
-			case TokenType::GEQ:
-				relationOp();
-				expr();
-				break;
-			case TokenType::GRE:
-				relationOp();
-				expr();
-				break;
-			case TokenType::EQL:
-				relationOp();
-				expr();
-				break;
-			case TokenType::NEQ:
-				relationOp();
-				expr();
-				break;
-			case TokenType::SEMICN:
-				return;
-				break;
-			case TokenType::RPARENT:
-				return;
-				break;
-			default:
-				error();
-			}
-		}
+		// ＜循环语句＞   ::=  while '('＜条件＞')'＜语句＞
+		// | do＜语句＞while '('＜条件＞')'
+		// |for'('＜标识符＞＝＜表达式＞;＜条件＞;＜标识符＞＝＜标识符＞(+|-)＜步长＞')'＜语句＞
 		void cycleStat() {
 			switch (lookToken()) {
 			case TokenType::DOTK:
+				// do＜语句＞while '('＜条件＞')'
 				eatToken(TokenType::DOTK);
 				statement();
 				eatToken(TokenType::WHILETK);
@@ -1140,6 +1005,7 @@ namespace syntax{
 				eatToken(TokenType::RPARENT);
 				break;
 			case TokenType::WHILETK:
+				//  while '('＜条件＞')'＜语句＞
 				eatToken(TokenType::WHILETK);
 				eatToken(TokenType::LPARENT);
 				cond();
@@ -1147,6 +1013,7 @@ namespace syntax{
 				statement();
 				break;
 			case TokenType::FORTK:
+				// for'('＜标识符＞＝＜表达式＞;＜条件＞;＜标识符＞＝＜标识符＞(+|-)＜步长＞')'＜语句＞
 				eatToken(TokenType::FORTK);
 				eatToken(TokenType::LPARENT);
 				eatToken(TokenType::IDENFR);
@@ -1164,20 +1031,22 @@ namespace syntax{
 				statement();
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<循环语句>");
 		}
+		// ＜步长＞::= ＜无符号整数＞  
 		void step() {
 			switch (lookToken()) {
 			case TokenType::INTCON:
 				uninteger();
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<步长>");
 		}
+		// ＜有/无返回值函数调用语句＞ ::= ＜标识符＞'('＜值参数表＞')'
 		void funcCall() {
 			Token name;
 			switch (lookToken()) {
@@ -1188,7 +1057,7 @@ namespace syntax{
 				eatToken(TokenType::RPARENT);
 				break;
 			default:
-				error();
+				ERROR
 			}
 			// debugln("!{}", name.getValue());
 			if (funcName2IsRet[name.getValue()]) {
@@ -1197,117 +1066,90 @@ namespace syntax{
 				syntaxOutput("<无返回值函数调用语句>");
 			}
 		}
+		// ＜值参数表＞   ::= ＜表达式＞{,＜表达式＞}｜＜空＞
 		void valParaList() {
 			switch (lookToken()) {
 			case TokenType::IDENFR:
-				expr();
-				valParaListGroup();
-				break;
 			case TokenType::INTCON:
-				expr();
-				valParaListGroup();
-				break;
 			case TokenType::CHARCON:
-				expr();
-				valParaListGroup();
-				break;
 			case TokenType::PLUS:
-				expr();
-				valParaListGroup();
-				break;
 			case TokenType::MINU:
-				expr();
-				valParaListGroup();
-				break;
 			case TokenType::LPARENT:
+				// ＜表达式＞
 				expr();
+				// {,＜表达式＞}
 				valParaListGroup();
 				break;
 			case TokenType::RPARENT:
+				// ＜空＞
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<值参数表>");
 		}
+		// {,＜表达式＞}
 		void valParaListGroup() {
 			switch (lookToken()) {
 			case TokenType::COMMA:
+				// ,＜表达式＞
 				eatToken(TokenType::COMMA);
 				expr();
+				// Group
 				valParaListGroup();
 				break;
 			case TokenType::RPARENT:
 				return;
 				break;
 			default:
-				error();
+				ERROR
 			}
 		}
+		// ＜语句列＞ ::= ｛＜语句＞｝
 		void statementCol() {
 			switch (lookToken()) {
 			case TokenType::IDENFR:
-				statement();
-				statementCol();
-				break;
 			case TokenType::IFTK:
-				statement();
-				statementCol();
-				break;
 			case TokenType::DOTK:
-				statement();
-				statementCol();
-				break;
 			case TokenType::WHILETK:
-				statement();
-				statementCol();
-				break;
 			case TokenType::FORTK:
-				statement();
-				statementCol();
-				break;
 			case TokenType::SCANFTK:
-				statement();
-				statementCol();
-				break;
 			case TokenType::PRINTFTK:
-				statement();
-				statementCol();
-				break;
 			case TokenType::RETURNTK:
-				statement();
-				statementCol();
-				break;
 			case TokenType::SEMICN:
-				statement();
-				statementCol();
-				break;
 			case TokenType::LBRACE:
+				// 语句
 				statement();
+				// Group
 				statementCol();
 				break;
 			case TokenType::RBRACE:
 				// return;
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<语句列>");
 		}
+		// ＜读语句＞    ::=  scanf '('＜标识符＞{,＜标识符＞}')'
 		void scanfStat() {
 			switch (lookToken()) {
 			case TokenType::SCANFTK:
+				// scanf '('＜标识符＞
 				eatToken(TokenType::SCANFTK);
 				eatToken(TokenType::LPARENT);
 				eatToken(TokenType::IDENFR);
+				// {,＜标识符＞}
 				identGroup();
+				// ')'
 				eatToken(TokenType::RPARENT);
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<读语句>");
 		}
+		// {,＜标识符＞}
 		void identGroup() {
 			switch (lookToken()) {
 			case TokenType::COMMA:
@@ -1319,94 +1161,74 @@ namespace syntax{
 				return;
 				break;
 			default:
-				error();
+				ERROR
 			}
 		}
+		// ＜写语句＞    ::= printf '(' ＜字符串＞,＜表达式＞ ')'
+		//	| printf '('＜字符串＞ ')'
+		//	| printf '('＜表达式＞')'
 		void printfStat() {
 			switch (lookToken()) {
 			case TokenType::PRINTFTK:
 				eatToken(TokenType::PRINTFTK);
 				eatToken(TokenType::LPARENT);
-				printfStatEnd();
+				switch (lookToken()) {
+				case TokenType::STRCON:
+					strconst();
+					switch (lookToken()) {
+					case TokenType::COMMA:
+						eatToken(TokenType::COMMA);
+						expr();
+						eatToken(TokenType::RPARENT);
+						break;
+					case TokenType::RPARENT:
+						eatToken(TokenType::RPARENT);
+						break;
+					default:
+						ERROR
+					}
+					break;
+				case TokenType::IDENFR:
+				case TokenType::INTCON:
+				case TokenType::CHARCON:
+				case TokenType::PLUS:
+				case TokenType::MINU:
+				case TokenType::LPARENT:
+					expr();
+					eatToken(TokenType::RPARENT);
+					break;
+				default:
+					ERROR
+				}
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<写语句>");
 		}
-		void printfStatEnd() {
-			switch (lookToken()) {
-			case TokenType::IDENFR:
-				expr();
-				eatToken(TokenType::RPARENT);
-				break;
-			case TokenType::INTCON:
-				expr();
-				eatToken(TokenType::RPARENT);
-				break;
-			case TokenType::CHARCON:
-				expr();
-				eatToken(TokenType::RPARENT);
-				break;
-			case TokenType::STRCON:
-				strconst();
-				printfStr();
-				break;
-			case TokenType::PLUS:
-				expr();
-				eatToken(TokenType::RPARENT);
-				break;
-			case TokenType::MINU:
-				expr();
-				eatToken(TokenType::RPARENT);
-				break;
-			case TokenType::LPARENT:
-				expr();
-				eatToken(TokenType::RPARENT);
-				break;
-			default:
-				error();
-			}
-		}
-		void printfStr() {
-			switch (lookToken()) {
-			case TokenType::COMMA:
-				eatToken(TokenType::COMMA);
-				expr();
-				eatToken(TokenType::RPARENT);
-				break;
-			case TokenType::RPARENT:
-				eatToken(TokenType::RPARENT);
-				break;
-			default:
-				error();
-			}
-		}
+		// ＜返回语句＞   ::=  return['('＜表达式＞')']    
 		void retStat() {
 			switch (lookToken()) {
 			case TokenType::RETURNTK:
 				eatToken(TokenType::RETURNTK);
-				retStatEnd();
+				switch (lookToken()) {
+				case TokenType::LPARENT:
+					eatToken(TokenType::LPARENT);
+					expr();
+					eatToken(TokenType::RPARENT);
+					break;
+				case TokenType::SEMICN:
+					break;
+				default:
+					ERROR
+				}
 				break;
 			default:
-				error();
+				ERROR
 			}
 			syntaxOutput("<返回语句>");
 		}
-		void retStatEnd() {
-			switch (lookToken()) {
-			case TokenType::SEMICN:
-				return;
-				break;
-			case TokenType::LPARENT:
-				eatToken(TokenType::LPARENT);
-				expr();
-				eatToken(TokenType::RPARENT);
-				break;
-			default:
-				error();
-			}
-		}
+
 
 #pragma endregion 
 		
