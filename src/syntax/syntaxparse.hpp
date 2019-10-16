@@ -139,11 +139,15 @@ namespace syntax{
 			case TokenType::INTTK:
 			case TokenType::CHARTK:
 			case TokenType::VOIDTK:
+				// ［＜常量说明＞］
 				constDec();
 				resetOuput();
+				// ［＜变量说明＞］
 				verDec();
 				resetOuput();
+				// {＜有返回值函数定义＞|＜无返回值函数定义＞}
 				funcDefGroup();
+				// ＜主函数＞
 				mainFunc();
 				break;
 			default:
@@ -166,6 +170,7 @@ namespace syntax{
 					funcDefGroup();
 					break;
 				case TokenType::MAINTK:
+					// Empty
 					return;
 				default:
 					ERROR
@@ -226,17 +231,81 @@ namespace syntax{
 		void constDef() {
 			switch (lookToken()) {
 			case TokenType::INTTK:
+				// int＜标识符＞＝＜整数＞
 				constDefInt();
+				// {,＜标识符＞＝＜整数＞}
 				constDefIntGroup();
 				break;
 			case TokenType::CHARTK:
+				// char＜标识符＞＝＜字符＞
 				constDefChar();
+				// { ,＜标识符＞＝＜字符＞ }
 				constDefCharGroup();
 				break;
 			default:
 				ERROR
 			}
 			syntaxOutput("<常量定义>");
+		}
+		// int＜标识符＞＝＜整数＞
+		void constDefInt() {
+			switch (lookToken()) {
+			case TokenType::INTTK:
+				eatToken(TokenType::INTTK);
+				eatToken(TokenType::IDENFR);
+				eatToken(TokenType::ASSIGN);
+				integer();
+				break;
+			default:
+				ERROR
+			}
+		}
+		// char＜标识符＞＝＜字符＞
+		void constDefChar() {
+			switch (lookToken()) {
+			case TokenType::CHARTK:
+				eatToken(TokenType::CHARTK);
+				eatToken(TokenType::IDENFR);
+				eatToken(TokenType::ASSIGN);
+				eatToken(TokenType::CHARCON);
+				break;
+			default:
+				ERROR
+			}
+		}
+		// {,＜标识符＞＝＜整数＞}
+		void constDefIntGroup() {
+			switch (lookToken()) {
+			case TokenType::COMMA:
+				eatToken(TokenType::COMMA);
+				eatToken(TokenType::IDENFR);
+				eatToken(TokenType::ASSIGN);
+				integer();
+				constDefIntGroup();
+				break;
+				// STOP
+			case TokenType::SEMICN:
+				return;
+			default:
+				ERROR
+			}
+		}
+		// { ,＜标识符＞＝＜字符＞ }
+		void constDefCharGroup() {
+			switch (lookToken()) {
+			case TokenType::COMMA:
+				eatToken(TokenType::COMMA);
+				eatToken(TokenType::IDENFR);
+				eatToken(TokenType::ASSIGN);
+				eatToken(TokenType::CHARCON);
+				constDefCharGroup();
+				break;
+				// STOP
+			case TokenType::SEMICN:
+				return;
+			default:
+				ERROR
+			}
 		}
 		// ＜无符号整数＞  ::= ＜非零数字＞｛＜数字＞｝| 0
 		void uninteger() {
@@ -268,65 +337,9 @@ namespace syntax{
 			}
 			syntaxOutput("<整数>");
 		}
-		void constDefInt() {
-			switch (lookToken()) {
-			case TokenType::INTTK:
-				eatToken(TokenType::INTTK);
-				eatToken(TokenType::IDENFR);
-				eatToken(TokenType::ASSIGN);
-				integer();
-				break;
-			default:
-				ERROR
-			}
-		}
-		// {,＜标识符＞＝＜整数＞}
-		void constDefIntGroup() {
-			switch (lookToken()) {
-			case TokenType::COMMA:
-				eatToken(TokenType::COMMA);
-				eatToken(TokenType::IDENFR);
-				eatToken(TokenType::ASSIGN);
-				integer();
-				constDefIntGroup();
-				break;
-			// STOP
-			case TokenType::SEMICN:
-				return;
-			default:
-				ERROR
-			}
-		}
-		void constDefChar() {
-			switch (lookToken()) {
-			case TokenType::CHARTK:
-				eatToken(TokenType::CHARTK);
-				eatToken(TokenType::IDENFR);
-				eatToken(TokenType::ASSIGN);
-				eatToken(TokenType::CHARCON);
-				break;
-			default:
-				ERROR
-			}
-		}
-		// { ,＜标识符＞＝＜字符＞ }
-		void constDefCharGroup() {
-			switch (lookToken()) {
-			case TokenType::COMMA:
-				eatToken(TokenType::COMMA);
-				eatToken(TokenType::IDENFR);
-				eatToken(TokenType::ASSIGN);
-				eatToken(TokenType::CHARCON);
-				constDefCharGroup();
-				break;
-			// STOP
-			case TokenType::SEMICN:
-				return;
-			default:
-				ERROR
-			}
-		}
-		// ＜声明头部＞   ::=  int＜标识符＞ |char＜标识符＞
+		
+		
+		// ＜声明头部＞   ::=  int＜标识符＞ | char＜标识符＞
 		Token decHead() {
 			Token idenfr;
 			switch (lookToken()) {
@@ -348,25 +361,12 @@ namespace syntax{
 		void verDec() {
 			switch (lookToken()) {
 			case TokenType::INTTK:
-				switch (lookToken(2)) {
-				case TokenType::SEMICN:
-				case TokenType::COMMA:
-				case TokenType::LBRACK:
-					verDef();
-					eatToken(TokenType::SEMICN);
-					verDec();
-					break;
-				case TokenType::LPARENT:
-					return;
-				default:
-					ERROR
-				}
-				break;
 			case TokenType::CHARTK:
 				switch (lookToken(2)) {
 				case TokenType::SEMICN:
 				case TokenType::COMMA:
 				case TokenType::LBRACK:
+					// {＜变量定义＞;}
 					verDef();
 					eatToken(TokenType::SEMICN);
 					verDec();
@@ -824,7 +824,6 @@ namespace syntax{
 
 		// ＜语句＞    ::= ＜条件语句＞｜＜循环语句＞| '{'＜语句列＞'}'| ＜有返回值函数调用语句＞; 
 		//		| ＜无返回值函数调用语句＞; ｜＜赋值语句＞; ｜＜读语句＞; ｜＜写语句＞; ｜＜空＞; | ＜返回语句＞;
-
 		void statement() {
 			switch (lookToken()) {
 			case TokenType::IDENFR:
@@ -846,11 +845,7 @@ namespace syntax{
 				condStat();
 				break;
 			case TokenType::DOTK:
-				cycleStat();
-				break;
 			case TokenType::WHILETK:
-				cycleStat();
-				break;
 			case TokenType::FORTK:
 				cycleStat();
 				break;
