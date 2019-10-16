@@ -19,8 +19,11 @@ int main() {
 	ofstream fout("output.txt");
 	cout.rdbuf(fout.rdbuf());
 
-	lex::LexParser lex_parser(source);
-	syntax::SyntaxParser syntax_parser(lex_parser, true);
+	auto output_setting = "v";
+	// auto output_setting = "ve";
+	
+	lex::LexParser lex_parser(source, output_setting);
+	syntax::SyntaxParser syntax_parser(lex_parser, output_setting);
 	
 	syntax_parser.start();
 

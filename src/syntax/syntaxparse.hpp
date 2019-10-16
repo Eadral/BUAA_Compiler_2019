@@ -16,12 +16,21 @@ namespace syntax{
 		using TokenType = lex::TokenType;
 		
 	public:
-		SyntaxParser(lex::LexParser& lex_parser, bool output = true): lex_parser_(lex_parser), output_(output) {
-
+		SyntaxParser(lex::LexParser& lex_parser, std::string output): lex_parser_(lex_parser) {
+			if (output.find('v') != std::string::npos) {
+				output_syntax_ = true;
+			}
+			if (output.find('e') != std::string::npos) {
+				output_error_ = true;
+			}
 		}
 
 		void start() {
 			program();
+		}
+
+		int getLineNumber() const {
+			return lex_parser_.getLineNumber();
 		}
 
 	private:
@@ -32,7 +41,8 @@ namespace syntax{
 		bool stack_output_verDec_ = false;
 		bool stack_output_statementCol_ = false;
 
-		bool output_ = false;
+		bool output_syntax_ = false;
+		bool output_error_ = false;
 
 		void resetOuput() {
 			stack_output_constDec_ = false;
@@ -41,7 +51,7 @@ namespace syntax{
 		}
 		
 		void syntaxOutput(std::string output) {
-			if (!output_)
+			if (!output_syntax_)
 				return;
 			if (output == "<常量说明>") {
 				if (!stack_output_constDec_) {
@@ -1234,11 +1244,27 @@ namespace syntax{
 		Token eatToken(TokenType excepted_token_type) {
 			Token token = lex_parser_.eatToken().unwrap();
 			if (token.getTokenType().type_ != excepted_token_type.type_) {
-				panic("unimplemented");
+				switch (excepted_token_type.type_) {
+				case TokenType::SEMICN:
+					error('k');
+					break;
+				case TokenType::RPARENT:
+					error('l');
+					break;
+				case TokenType::RBRACK:
+					error('m');
+					break;
+				default:
+					panic("unimplemented");
+				}
 			}
 			return token;
 		}
 
+		void error(char code) {
+			if (output_error_) std::cout << getLineNumber() << " " << code << std::endl;
+		}
+		
 		void error() {
 			panic("unimplemented");
 		}
