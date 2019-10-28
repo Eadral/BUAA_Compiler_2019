@@ -161,6 +161,16 @@ namespace buaac {
 				return has_value_;
 			}
 
+			friend bool operator==(const Token& lhs, const Token& rhs) {
+				return lhs.token_type_ == rhs.token_type_
+					&& lhs.value_ == rhs.value_
+					&& lhs.has_value_ == rhs.has_value_;
+			}
+
+			friend bool operator!=(const Token& lhs, const Token& rhs) {
+				return !(lhs == rhs);
+			}
+
 			// std::string output() {
 			// 	if (has_value_) {
 			// 		return fmt::Format::format("{} {}", token_type_, value_);

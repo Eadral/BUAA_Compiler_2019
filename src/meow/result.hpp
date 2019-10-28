@@ -130,6 +130,21 @@ namespace meow {
     	
     };
 
+	template <typename ErrorType>
+	class Error: Result<int, ErrorType> {
+	public:
+
+		Error (Result<int, ErrorType> result) : Result<int, ErrorType>(result) {
+			
+		}
+		
+		static Result<int, ErrorType> Ok() {
+			return Result<int, ErrorType>(ResultType::OK, 0);
+		}
+		
+	};
+	
+
 
 
 }

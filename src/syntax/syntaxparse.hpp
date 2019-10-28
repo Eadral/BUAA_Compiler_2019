@@ -3,17 +3,25 @@
 
 #include "../meow/core.hpp"
 #include "../lex/lexparse.hpp"
+#include "symbol_table.hpp"
 #include <map>
+#include <cstdlib>
 
 #define ERROR break;	// ignore all error
 
 namespace buaac {
 namespace syntax{
+
+	using std::tuple;
+	using std::make_tuple;
+	using std::tie;
 	
 	class SyntaxParser {
 
 		using Token = lex::Token;
 		using TokenType = lex::TokenType;
+
+		SymbolTable _symbol_table;
 		
 	public:
 		SyntaxParser(lex::LexParser& lex_parser, std::string output): lex_parser_(lex_parser) {
@@ -259,29 +267,35 @@ namespace syntax{
 		}
 		// int＜标识符＞＝＜整数＞
 		void constDefInt() {
+			Token ident_token;
+			Token int_token;
 			switch (lookToken()) {
 			case TokenType::INTTK:
 				eatToken(TokenType::INTTK);
-				eatToken(TokenType::IDENFR);
+				ident_token = eatToken(TokenType::IDENFR);
 				eatToken(TokenType::ASSIGN);
-				integer();
+				int_token = integer();
 				break;
 			default:
 				ERROR
 			}
+			_symbol_table.push(Symbol(SymbolType::INT, ident_token.getValue(), int_token.getValue()));
 		}
 		// char＜标识符＞＝＜字符＞
 		void constDefChar() {
+			Token ident_token;
+			Token char_token;
 			switch (lookToken()) {
 			case TokenType::CHARTK:
 				eatToken(TokenType::CHARTK);
-				eatToken(TokenType::IDENFR);
+				ident_token = eatToken(TokenType::IDENFR);
 				eatToken(TokenType::ASSIGN);
-				eatToken(TokenType::CHARCON);
+				char_token = eatToken(TokenType::CHARCON);
 				break;
 			default:
 				ERROR
 			}
+			_symbol_table.push(Symbol(SymbolType::INT, ident_token.getValue(), char_token.getValue()));
 		}
 		// {,＜标识符＞＝＜整数＞}
 		void constDefIntGroup() {
@@ -318,54 +332,64 @@ namespace syntax{
 			}
 		}
 		// ＜无符号整数＞  ::= ＜非零数字＞｛＜数字＞｝| 0
-		void uninteger() {
+		Token uninteger() {
+			Token intcon;
+			std::string intcon_str;
 			switch (lookToken()) {
 			case TokenType::INTCON:
-				eatToken(TokenType::INTCON);
+				intcon = eatToken(TokenType::INTCON);
+				intcon_str = intcon.getValue();
+				if (intcon_str != "0" && intcon_str[0] == '0') {
+					error('a');
+				}
 				break;
 			default:
 				ERROR
 			}
 			syntaxOutput("<无符号整数>");
+			return intcon;
 		}
 		// ＜整数＞        ::= ［＋｜－］＜无符号整数＞
-		void integer() {
+		Token integer() {
+			Token ret;
 			switch (lookToken()) {
 			case TokenType::INTCON:
-				uninteger();
+				ret = uninteger();
 				break;
 			case TokenType::PLUS:
 				eatToken(TokenType::PLUS);
-				uninteger();
+				ret = uninteger();
 				break;
 			case TokenType::MINU:
 				eatToken(TokenType::MINU);
-				uninteger();
+				ret = uninteger();
 				break;
 			default:
 				ERROR
 			}
 			syntaxOutput("<整数>");
+			return ret;
 		}
 		
 		
 		// ＜声明头部＞   ::=  int＜标识符＞ | char＜标识符＞
-		Token decHead() {
+		tuple<Token, Token> decHead() {
+			Token type;
 			Token idenfr;
 			switch (lookToken()) {
 			case TokenType::INTTK:
-				eatToken(TokenType::INTTK);
+				type = eatToken(TokenType::INTTK);
 				idenfr = eatToken(TokenType::IDENFR);
 				break;
 			case TokenType::CHARTK:
-				eatToken(TokenType::CHARTK);
+				type = eatToken(TokenType::CHARTK);
 				idenfr = eatToken(TokenType::IDENFR);
 				break;
 			default:
 				ERROR
 			}
 			syntaxOutput("<声明头部>");
-			return idenfr;
+			return make_tuple(type, idenfr);
 		}
 		// ＜变量说明＞  ::= ＜变量定义＞;{＜变量定义＞;}
 		void verDec() {
@@ -411,25 +435,46 @@ namespace syntax{
 		//				(＜标识符＞|＜标识符＞'['＜无符号整数＞']')
 		//				{,(＜标识符＞|＜标识符＞'['＜无符号整数＞']' )} 
 		void verDef() {
+			Token type;
+			Token ident;
+			
+			Token uninteger_token;
+			
 			switch (lookToken()) {
 			case TokenType::INTTK:
 			case TokenType::CHARTK:
 				// ＜类型标识符＞
-				typeIdent();
+				type = typeIdent();
+				
 				// (＜标识符＞|＜标识符＞'['＜无符号整数＞']')
 				switch (lookToken()) {
 				case TokenType::IDENFR:
 					// ＜标识符＞
-					eatToken(TokenType::IDENFR);
+					ident = eatToken(TokenType::IDENFR);
 					switch (lookToken()) {
 					case TokenType::LBRACK:
 						// '['＜无符号整数＞']'
 						eatToken(TokenType::LBRACK);
-						uninteger();
+						uninteger_token = uninteger();
+						if (uninteger_token.hasValue() && uninteger_token.getValue() == "0") {
+							error('a');
+						}
 						eatToken(TokenType::RBRACK);
+						if (type.getTokenType() == TokenType::INTTK) {
+							_symbol_table.push(Symbol(SymbolType::INT, ident.getValue(), atoi(uninteger_token.getValue().c_str()) ));
+						}
+						else {
+							_symbol_table.push(Symbol(SymbolType::CHAR, ident.getValue(), atoi(uninteger_token.getValue().c_str()) ));
+						}
+						
 						break;
 					case TokenType::SEMICN:
 					case TokenType::COMMA:
+						if (type.getTokenType() == TokenType::INTTK) {
+							_symbol_table.push(Symbol(SymbolType::INT, ident.getValue()));
+						} else {
+							_symbol_table.push(Symbol(SymbolType::CHAR, ident.getValue()));
+						}
 						break;
 					default:
 						ERROR
@@ -485,40 +530,50 @@ namespace syntax{
 		}
 
 		// ＜类型标识符＞ ::=  int | char
-		void typeIdent() {
+		Token typeIdent() {
+			Token type;
 			switch (lookToken()) {
 			case TokenType::INTTK:
-				eatToken(TokenType::INTTK);
+				type = eatToken(TokenType::INTTK);
 				break;
 			case TokenType::CHARTK:
-				eatToken(TokenType::CHARTK);
+				type = eatToken(TokenType::CHARTK);
 				break;
 			default:
 				ERROR
 			}
+			return type;
 		}
 		// ＜有返回值函数定义＞ ::=  ＜声明头部＞'('＜参数表＞')' '{'＜复合语句＞'}'
 		void retFuncDef() {
+			Token type;
 			Token name;
+			
 			switch (lookToken()) {
 			case TokenType::INTTK:
 			case TokenType::CHARTK:
 				//  ＜声明头部＞
-				name = decHead();
-				funcName2IsRet[name.getValue()] = true;
+				tie(type, name) = decHead();
+				funcName2IsRet[name.getValue()] = true;	
 				// '('＜参数表＞')' 
 				eatToken(TokenType::LPARENT);
+				_status_paralist.clear();
 				paraList();
 				eatToken(TokenType::RPARENT);
+				_symbol_table.push(Symbol(token2SymbolType(type, true), name.getValue(), _status_paralist));
 				// '{'＜复合语句＞'}'
 				eatToken(TokenType::LBRACE);
+				_symbol_table.pushScope();
+				// debugln("push at {}", getLineNumber());
 				compStatement();
 				eatToken(TokenType::RBRACE);
+				_symbol_table.popScope();
+				// debugln("pop at {}", getLineNumber());
 				break;
 			default:
 				ERROR
 			}
-			// debugln("!{}", name.getValue());
+			// // debugln("!{}", name.getValue());
 			syntaxOutput("<有返回值函数定义>");
 		}
 		// ＜无返回值函数定义＞  ::= void＜标识符＞'('＜参数表＞')''{'＜复合语句＞'}'
@@ -532,17 +587,23 @@ namespace syntax{
 				name = eatToken(TokenType::IDENFR);
 				// '('＜参数表＞')'
 				eatToken(TokenType::LPARENT);
+				_status_paralist.clear();
 				paraList();
+				_symbol_table.push(Symbol(SymbolType::FUNC_VOID, name.getValue(), _status_paralist));
 				eatToken(TokenType::RPARENT);
 				// '{'＜复合语句＞'}'
 				eatToken(TokenType::LBRACE);
+				_symbol_table.pushScope();
+				// debugln("push at {}", getLineNumber());
 				compStatement();
 				eatToken(TokenType::RBRACE);
+				_symbol_table.popScope();
+				// debugln("pop at {}", getLineNumber());
 				break;
 			default:
 				ERROR
 			}
-			// debugln("!{}", name.getValue());
+			// // debugln("!{}", name.getValue());
 			funcName2IsRet[name.getValue()] = false;
 			syntaxOutput("<无返回值函数定义>");
 		}
@@ -580,12 +641,15 @@ namespace syntax{
 			syntaxOutput("<复合语句>");
 		}
 		// ＜参数表＞::= ＜类型标识符＞＜标识符＞{,＜类型标识符＞＜标识符＞}| ＜空＞
+		std::vector<SymbolType> _status_paralist;
 		void paraList() {
+			Token type;
 			switch (lookToken()) {
 			case TokenType::INTTK:
 			case TokenType::CHARTK:
 				// ＜类型标识符＞
-				typeIdent();
+				type = typeIdent();
+				_status_paralist.push_back(token2SymbolType(type));
 				// ＜标识符＞
 				eatToken(TokenType::IDENFR);
 				// {, ＜类型标识符＞＜标识符＞}
@@ -629,8 +693,12 @@ namespace syntax{
 				eatToken(TokenType::RPARENT);
 				// ‘{’＜复合语句＞‘}’
 				eatToken(TokenType::LBRACE);
+				_symbol_table.pushScope();
+				// debugln("push at {}", getLineNumber());
 				compStatement();
 				eatToken(TokenType::RBRACE);
+				_symbol_table.popScope();
+				// debugln("pop at {}", getLineNumber());
 				break;
 			default:
 				ERROR
@@ -1064,7 +1132,7 @@ namespace syntax{
 			default:
 				ERROR
 			}
-			// debugln("!{}", name.getValue());
+			// // debugln("!{}", name.getValue());
 			if (funcName2IsRet[name.getValue()]) {
 				syntaxOutput("<有返回值函数调用语句>");
 			} else {
@@ -1261,12 +1329,42 @@ namespace syntax{
 			return token;
 		}
 
+		std::vector<char> _error_status{};
+		
+		void errorByStatus() {
+			if (!_error_status.empty())
+				error(_error_status.back());
+		}
+
+		void pushErrorStatus(char code) {
+			_error_status.push_back(code);
+		}
+
+		void popErrorStatus(char code) {
+			if (_error_status.back() != code) {
+				panic("error status error");
+			}
+			_error_status.pop_back();
+		}
+		
 		void error(char code) {
 			if (output_error_) std::cout << getLineNumber() << " " << code << std::endl;
 		}
 		
 		void error() {
 			panic("unimplemented");
+		}
+
+		SymbolType token2SymbolType(Token token, bool is_func = false) {
+			if (token.getTokenType() == TokenType::INTTK) {
+				return is_func ? SymbolType::FUNC_INT : SymbolType::INT;
+			}
+			else if (token.getTokenType() == TokenType::CHARTK) {
+				return is_func ? SymbolType::FUNC_CHAR : SymbolType::CHAR;
+			}
+			else {
+				panic("aho");
+			}
 		}
 		
 		lex::LexParser& lex_parser_;

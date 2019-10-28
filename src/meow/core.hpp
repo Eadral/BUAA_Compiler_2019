@@ -47,6 +47,9 @@
 #define debugln(...)
 #endif
 
+#define assert(expr)	\
+	if (!(expr)) panic("assert failed {}", #expr)
+
 #pragma endregion 
 
 #include <cstdio>

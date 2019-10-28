@@ -12,6 +12,10 @@ struct name: implement fmt::Display {	\
 	};	\
 name(): type_(__UNDEF) {} \
 name(Type type): type_(type) {} \
+Type type_;	\
+	bool operator==(const name& lhs) const {	\
+		return type_ == lhs.type_;	\
+	}	\
 std::string toString() override { \
 	switch (type_) {	
 
@@ -21,12 +25,18 @@ std::string toString() override { \
 #define ENUM_DEFAULT_OUTPUT(name)	\
 	case name: return #name;
 
-#define ENUM_END(name) \
+
+
+#define ENUM_FUNC(name)		\
 	default:	\
 		panic("unimplemented");	\
 		}	\
-	}	\
-	Type type_;	\
+		}	
+
+#define ENUM_FUNC_END(name) \
 	};
 
+#define ENUM_END(name) \
+	ENUM_FUNC(name)	\
+	ENUM_FUNC_END(name)
 #endif
