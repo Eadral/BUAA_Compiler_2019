@@ -67,11 +67,16 @@
 #include "util.hpp"
 #include "enum.hpp"
 
+#include <tuple>
+
 namespace meow {
   
 }
 
 using namespace meow;
+using std::tuple;
+using std::tie;
+using std::make_tuple;
 
 
 #endif

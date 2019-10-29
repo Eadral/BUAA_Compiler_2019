@@ -2,6 +2,7 @@
 #define SYMBOL_TABLE_RESULT_HPP
 
 #include "../meow/core.hpp"
+#include "symbol.hpp"
 
 ENUM_START(SymbolTableError)
 REDEFINE,

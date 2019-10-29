@@ -3,7 +3,9 @@
 
 #include "../meow/core.hpp"
 #include "../lex/token.hpp"
+#include "../meow/fmt/display.hpp"
 #include "symbol_type.hpp"
+
 
 
 namespace buaac {
@@ -12,7 +14,7 @@ namespace buaac {
 	
 	namespace syntax {
 
-		class Symbol {
+		class Symbol : implement fmt::Display {
 
 			std::string _ident;
 			SymbolType _symbol_type;
@@ -124,6 +126,38 @@ namespace buaac {
 
 			friend bool operator!=(const Symbol& lhs, const Symbol& rhs) {
 				return !(lhs == rhs);
+			}
+
+			std::string getIdent() const {
+				return _ident;
+			}
+
+			SymbolType getType() const {
+				return _symbol_type;
+			}
+
+			bool isConst() const {
+				return _is_const;
+			}
+
+			std::string getConstValue() {
+				return _const_value;
+			}
+
+			bool isArray() const {
+				return _is_array;
+			}
+
+			int getArrayLen() const {
+				return _array_len;
+			}
+
+			std::vector<SymbolType> getParaList() const {
+				return _function_parameters;
+			}
+
+			std::string toString() {
+				return _ident;
 			}
 		};
 

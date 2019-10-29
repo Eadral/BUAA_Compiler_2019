@@ -16,6 +16,9 @@ Type type_;	\
 	bool operator==(const name& lhs) const {	\
 		return type_ == lhs.type_;	\
 	}	\
+	bool operator!=(const name& lhs) const {	\
+		return type_ != lhs.type_;	\
+	}	\
 std::string toString() override { \
 	switch (type_) {	
 

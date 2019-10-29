@@ -247,6 +247,7 @@ namespace buaac {
 
 			void error(char code = 'a') {
 				if (output_error_) std::cout << getLineNumber() << " " << code << std::endl;
+				// panic("aho");
 			}
 
 		};

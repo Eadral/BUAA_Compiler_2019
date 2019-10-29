@@ -83,6 +83,10 @@ namespace meow {
 			return Result(ResultType::OK, value);
 	    }
 
+		static Result Ok() {
+			return Result(ResultType::OK, Value{});
+		}
+
     	static Result Err(Error err) {
 			return Result(ResultType::ERR, err);
 	    }
