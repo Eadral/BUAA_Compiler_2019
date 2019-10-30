@@ -57,11 +57,11 @@ namespace buaac {
 				return make_tuple(false, Symbol{});
 			}
 
-			bool identExist(std::string ident) {
-				bool is_exist;
-				tie(is_exist, std::ignore) = findSymbol(ident);
-				return is_exist;
-			}
+			// bool identExist(std::string ident) {
+			// 	bool is_exist;
+			// 	tie(is_exist, std::ignore) = findSymbol(ident);
+			// 	return is_exist;
+			// }
 
 			tuple<bool, Symbol> findSymbolInScope(std::string ident) {
 				for (int i = _symbol_stack.size() - 1; i >= 0 && i >= _scope_index.back(); i--) {

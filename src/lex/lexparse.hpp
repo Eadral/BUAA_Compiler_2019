@@ -209,7 +209,7 @@ namespace buaac {
 
 					std::string value = buf.str();
 					if (!isChar(value[0])) {
-						error();
+						if (advance) error();
 					}
 					in = in.substr(value.length() + 2);
 					return LexResult::Ok(Token(TokenType::CHARCON, value));
@@ -241,7 +241,7 @@ namespace buaac {
 					return LexResult::Ok(Token(TokenType::STRCON, value));
 				}
 
-				error();
+				if (advance) error();
 				return LexResult::Err(LexError::UNEXPECTED);
 			}
 

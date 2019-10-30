@@ -15,11 +15,14 @@ namespace syntax{
 	using std::tuple;
 	using std::make_tuple;
 	using std::tie;
+
+
 	
 	class SyntaxParser {
 
 		using Token = lex::Token;
 		using TokenType = lex::TokenType;
+		
 
 		SymbolTable _symbol_table;
 		
@@ -43,6 +46,23 @@ namespace syntax{
 
 	private:
 
+		bool _push_success;
+#define checkPush(push_action)	\
+	do {	\
+	_push_success = push_action;	\
+		if (!_push_success) {	\
+			error('b');	\
+		}	\
+	} while (0)	
+
+		bool _find_success;
+#define checkFind()	\
+	do {	\
+		if (!_find_success) {	\
+			error('c');	\
+		}	\
+	} while (0)
+		
 		std::map<std::string, bool> funcName2IsRet;
 
 		bool stack_output_constDec_ = false;
@@ -283,47 +303,73 @@ namespace syntax{
 		void constDefInt() {
 			Token ident_token;
 			Token int_token;
+			bool int_success;
+
+			std::vector<TokenType> except_end = { TokenType::COMMA, TokenType::SEMICN };
 			
 			switch (lookTokenType()) {
 			case TokenType::INTTK:
 				eatToken(TokenType::INTTK);
 				ident_token = eatToken(TokenType::IDENFR);
 				eatToken(TokenType::ASSIGN);
-				int_token = integer();
+				tie(int_success, int_token) = integer();
+				if (!int_success || !exceptTokens(except_end)) {
+					error('o');
+					jumpUntil(except_end);
+				}
 				break;
 			default:
 				ERROR
 			}
 			
-			_symbol_table.push(Symbol(SymbolType::INT, ident_token.getValue(), int_token.getValue()));
+			checkPush(_symbol_table.push(Symbol(SymbolType::INT, ident_token.getValue(), int_token.getValue())));
 		}
 		// char＜标识符＞＝＜字符＞
 		void constDefChar() {
 			Token ident_token;
 			Token char_token;
+
+			std::vector<TokenType> except_end = { TokenType::COMMA, TokenType::SEMICN };
+			
 			switch (lookTokenType()) {
 			case TokenType::CHARTK:
 				eatToken(TokenType::CHARTK);
 				ident_token = eatToken(TokenType::IDENFR);
 				eatToken(TokenType::ASSIGN);
+				if (lookTokenType() != TokenType::CHARCON) {
+					error('o');
+					jumpUntil(except_end);
+					break;
+				}
 				char_token = eatToken(TokenType::CHARCON);
+				if (!exceptTokens(except_end)) {
+					error('o');
+					jumpUntil(except_end);
+				}
 				break;
 			default:
 				ERROR
 			}
-			_symbol_table.push(Symbol(SymbolType::CHAR, ident_token.getValue(), char_token.getValue()));
+			checkPush(_symbol_table.push(Symbol(SymbolType::CHAR, ident_token.getValue(), char_token.getValue())));
 		}
 		// {,＜标识符＞＝＜整数＞}
 		void constDefIntGroup() {
 			Token ident_token;
 			Token int_token;
+			bool int_success;
+
+			std::vector<TokenType> except_end = { TokenType::COMMA, TokenType::SEMICN };
 			
 			switch (lookTokenType()) {
 			case TokenType::COMMA:
 				eatToken(TokenType::COMMA);
 				ident_token = eatToken(TokenType::IDENFR);
 				eatToken(TokenType::ASSIGN);
-				int_token = integer();
+				tie(int_success, int_token) = integer();
+				if (!int_success || !exceptTokens(except_end)) {
+					error('o');
+					jumpUntil(except_end);
+				}
 				constDefIntGroup();
 				break;
 				// STOP
@@ -332,19 +378,30 @@ namespace syntax{
 			default:
 				ERROR
 			}
-			_symbol_table.push(Symbol(SymbolType::INT, ident_token.getValue(), int_token.getValue()));
+			checkPush(_symbol_table.push(Symbol(SymbolType::INT, ident_token.getValue(), int_token.getValue())));
 		}
 		// { ,＜标识符＞＝＜字符＞ }
 		void constDefCharGroup() {
 			Token ident_token;
 			Token char_token;
+
+			std::vector<TokenType> except_end = { TokenType::COMMA, TokenType::SEMICN };
 			
 			switch (lookTokenType()) {
 			case TokenType::COMMA:
 				eatToken(TokenType::COMMA);
 				ident_token = eatToken(TokenType::IDENFR);
 				eatToken(TokenType::ASSIGN);
+				if (lookTokenType() != TokenType::CHARCON) {
+					error('o');
+					jumpUntil(except_end);
+					break;
+				}
 				char_token = eatToken(TokenType::CHARCON);
+				if (!exceptTokens(except_end)) {
+					error('o');
+					jumpUntil(except_end);
+				}
 				constDefCharGroup();
 				break;
 				// STOP
@@ -353,7 +410,7 @@ namespace syntax{
 			default:
 				ERROR
 			}
-			_symbol_table.push(Symbol(SymbolType::CHAR, ident_token.getValue(), char_token.getValue()));
+			checkPush(_symbol_table.push(Symbol(SymbolType::CHAR, ident_token.getValue(), char_token.getValue())));
 		}
 		// ＜无符号整数＞  ::= ＜非零数字＞｛＜数字＞｝| 0
 		Token uninteger() {
@@ -374,7 +431,7 @@ namespace syntax{
 			return intcon;
 		}
 		// ＜整数＞        ::= ［＋｜－］＜无符号整数＞
-		Token integer() {
+		tuple<bool, Token> integer() {
 			Token ret;
 			switch (lookTokenType()) {
 			case TokenType::INTCON:
@@ -389,10 +446,10 @@ namespace syntax{
 				ret = uninteger();
 				break;
 			default:
-				ERROR
+				return make_tuple(false, Token{});
 			}
 			syntaxOutput("<整数>");
-			return ret;
+			return make_tuple(true, ret);
 		}
 		
 		
@@ -492,12 +549,12 @@ namespace syntax{
 						}
 						eatToken(TokenType::RBRACK);
 						
-						_symbol_table.push(Symbol(_status_vardef_type, ident.getValue(), atoi(uninteger_token.getValue().c_str())));
+						checkPush(_symbol_table.push(Symbol(_status_vardef_type, ident.getValue(), atoi(uninteger_token.getValue().c_str()))));
 						
 						break;
 					case TokenType::SEMICN:
 					case TokenType::COMMA:
-						_symbol_table.push(Symbol(_status_vardef_type, ident.getValue()));
+						checkPush(_symbol_table.push(Symbol(_status_vardef_type, ident.getValue())));
 
 						break;
 					default:
@@ -540,12 +597,12 @@ namespace syntax{
 						}
 						eatToken(TokenType::RBRACK);
 
-						_symbol_table.push(Symbol(_status_vardef_type, ident.getValue(), atoi(uninteger_token.getValue().c_str())));
+						checkPush(_symbol_table.push(Symbol(_status_vardef_type, ident.getValue(), atoi(uninteger_token.getValue().c_str()))));
 
 						break;
 					case TokenType::SEMICN:
 					case TokenType::COMMA:
-						_symbol_table.push(Symbol(_status_vardef_type, ident.getValue()));
+						checkPush(_symbol_table.push(Symbol(_status_vardef_type, ident.getValue())));
 						break;
 					default:
 						ERROR
@@ -604,12 +661,12 @@ namespace syntax{
 				_status_paralist.clear();
 				para_list = paraList();
 				eatToken(TokenType::RPARENT);
-				_symbol_table.push(Symbol(func_type, name.getValue(), symbolList2SymbolTypeList(para_list)));
+				checkPush(_symbol_table.push(Symbol(func_type, name.getValue(), symbolList2SymbolTypeList(para_list))));
 				// '{'＜复合语句＞'}'
 				eatToken(TokenType::LBRACE);
 				_symbol_table.pushScope();
 				for (int i = 0; i < para_list.size(); i++) {
-					_symbol_table.push(para_list[i]);
+					checkPush(_symbol_table.push(para_list[i]));
 				}
 				// debugln("push at {}", getLineNumber());
 				compStatement();
@@ -637,13 +694,13 @@ namespace syntax{
 				// '('＜参数表＞')'
 				eatToken(TokenType::LPARENT);
 				para_list = paraList();
-				_symbol_table.push(Symbol(SymbolType::FUNC_VOID, name.getValue(), symbolList2SymbolTypeList(para_list)));
+				checkPush(_symbol_table.push(Symbol(SymbolType::FUNC_VOID, name.getValue(), symbolList2SymbolTypeList(para_list))));
 				eatToken(TokenType::RPARENT);
 				// '{'＜复合语句＞'}'
 				eatToken(TokenType::LBRACE);
 				_symbol_table.pushScope();
 				for (int i = 0; i < para_list.size(); i++) {
-					_symbol_table.push(para_list[i]);
+					checkPush(_symbol_table.push(para_list[i]));
 				}
 				// debugln("push at {}", getLineNumber());
 				compStatement();
@@ -782,7 +839,8 @@ namespace syntax{
 			case TokenType::LPARENT:
 				if (lookTokenType() == TokenType::IDENFR) {
 					token = lookToken();
-					tie(std::ignore, symbol) = _symbol_table.findSymbol(token.getValue());
+					tie(_find_success, symbol) = _symbol_table.findSymbol(token.getValue());
+					checkFind();
 					if (symbol.getType() == SymbolType::CHAR || symbol.getType() == SymbolType::FUNC_CHAR) {
 						expr_type = SymbolType::CHAR;
 					}
@@ -1061,7 +1119,8 @@ namespace syntax{
 			case TokenType::IDENFR:
 				//  ＜标识符＞
 				ident = eatToken(TokenType::IDENFR);
-				tie(std::ignore, symbol) = _symbol_table.findSymbol(ident.getValue());
+				tie(_find_success, symbol) = _symbol_table.findSymbol(ident.getValue());
+				checkFind();
 				if (symbol.isConst()) {
 					error('j');
 				}
@@ -1255,7 +1314,8 @@ namespace syntax{
 			switch (lookTokenType()) {
 			case TokenType::IDENFR:
 				name = eatToken(TokenType::IDENFR);
-				tie(std::ignore, func_symbol) = _symbol_table.findSymbol(name.getValue());
+				tie(_find_success, func_symbol) = _symbol_table.findSymbol(name.getValue());
+				checkFind();
 				
 				eatToken(TokenType::LPARENT);
 				val_para_list = valParaList(func_symbol.getParaList());
@@ -1471,6 +1531,9 @@ namespace syntax{
 					if (_status_func_defining_type == SymbolType::FUNC_CHAR && expr_type != SymbolType::CHAR) {
 						error('h');
 					}
+					if (_status_func_defining_type == SymbolType::FUNC_VOID) {
+						error('g');
+					}
 					eatToken(TokenType::RPARENT);
 					break;
 				case TokenType::SEMICN:
@@ -1517,6 +1580,11 @@ namespace syntax{
 					panic("unimplemented");
 				}
 			}
+			return token;
+		}
+
+		Token jumpToken() {
+			Token token = lex_parser_.eatToken().unwrap();
 			return token;
 		}
 
@@ -1570,8 +1638,22 @@ namespace syntax{
 		
 		lex::LexParser& lex_parser_;
 
-		
 
+		bool exceptTokens(std::vector<TokenType> tokens) {
+			TokenType token = lookTokenType();
+			for (int i = 0; i < tokens.size(); i++) {
+				if (token == tokens[i]) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		void jumpUntil(std::vector<TokenType> tokens) {
+			while (!exceptTokens(tokens)) {
+				jumpToken();
+			}
+		}
 		
 	};
 
