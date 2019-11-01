@@ -7,7 +7,7 @@
 #include <map>
 #include <cstdlib>
 
-#define ERROR break;	// ignore all error
+#define ERROR ;	// ignore all error
 
 namespace buaac {
 namespace syntax{
@@ -192,6 +192,8 @@ namespace syntax{
 				break;
 			default:
 				ERROR
+				program();
+				return;
 			}
 			syntaxOutput("<程序>");
 		}
@@ -1114,9 +1116,13 @@ namespace syntax{
 		void assignStat() {
 			Token ident;
 			Symbol symbol;
+
+			SymbolType expr_type;
+
 			
 			switch (lookTokenType()) {
 			case TokenType::IDENFR:
+				
 				//  ＜标识符＞
 				ident = eatToken(TokenType::IDENFR);
 				tie(_find_success, symbol) = _symbol_table.findSymbol(ident.getValue());
@@ -1134,7 +1140,10 @@ namespace syntax{
 				case TokenType::LBRACK:
 					// '['＜表达式＞']'=＜表达式＞
 					eatToken(TokenType::LBRACK);
-					expr();
+					expr_type = expr();
+					if (expr_type != SymbolType::INT) {
+						error('i');
+					}
 					eatToken(TokenType::RBRACK);
 					eatToken(TokenType::ASSIGN);
 					expr();
@@ -1209,6 +1218,10 @@ namespace syntax{
 			case TokenType::LPARENT:
 				// ＜表达式＞
 				expr_type_lhs = expr();
+
+				if (expr_type_lhs != SymbolType::INT) {
+					error('f');
+				}
 				
 				switch (lookTokenType()) {
 				case TokenType::LSS:
@@ -1222,18 +1235,16 @@ namespace syntax{
 					expr_type_rhs = expr();
 					
 					cmp_type = cmp_token.getTokenType();
-					if (cmp_type == TokenType::EQL || cmp_type == TokenType::NEQ) {
-						if (expr_type_lhs != expr_type_rhs) {
-							error('f');
-						}
-					} else {
-						if (expr_type_lhs != SymbolType::INT) {
-							error('f');
-						}
+					// if (cmp_type == TokenType::EQL || cmp_type == TokenType::NEQ) {
+					// 	if (expr_type_lhs != expr_type_rhs) {
+					// 		error('f');
+					// 	}
+					// } else {
+						
 						if (expr_type_rhs != SymbolType::INT) {
 							error('f');
 						}
-					}
+					// }
 					
 					break;
 				case TokenType::SEMICN:
@@ -1253,12 +1264,19 @@ namespace syntax{
 		// | do＜语句＞while '('＜条件＞')'
 		// |for'('＜标识符＞＝＜表达式＞;＜条件＞;＜标识符＞＝＜标识符＞(+|-)＜步长＞')'＜语句＞
 		void cycleStat() {
+			// Token 
+			Token while_token;
+			
 			switch (lookTokenType()) {
 			case TokenType::DOTK:
 				// do＜语句＞while '('＜条件＞')'
 				eatToken(TokenType::DOTK);
 				statement();
-				eatToken(TokenType::WHILETK);
+				while_token = eatToken(TokenType::WHILETK, 'n');
+				if (while_token.getTokenType() == TokenType::ERR) {
+					jumpUntil({ TokenType::SEMICN });
+					return;
+				}
 				eatToken(TokenType::LPARENT);
 				cond();
 				eatToken(TokenType::RPARENT);
@@ -1539,7 +1557,7 @@ namespace syntax{
 				case TokenType::SEMICN:
 					// Empty;
 					if (_status_func_defining_type != SymbolType::FUNC_VOID) {
-						error('g');
+						error('h');
 					}
 					break;
 				default:
@@ -1563,7 +1581,7 @@ namespace syntax{
 			return lex_parser_.lookToken(ahead).unwrap();
 		}
 
-		Token eatToken(TokenType excepted_token_type) {
+		Token eatToken(TokenType excepted_token_type, char code = '\0') {
 			Token token = lex_parser_.eatToken().unwrap();
 			if (token.getTokenType().type_ != excepted_token_type.type_) {
 				switch (excepted_token_type.type_) {
@@ -1577,6 +1595,11 @@ namespace syntax{
 					error('m');
 					break;
 				default:
+					if (code != '\0') {
+						error(code);
+						return Token(TokenType::ERR);
+					}
+					
 					panic("unimplemented");
 				}
 			}

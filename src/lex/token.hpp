@@ -54,6 +54,8 @@ namespace buaac {
 			RBRACE,
 			IDENFR,
 
+		ERR,
+
 		ENUM_MED(TokenType)
 		ENUM_DEFAULT_OUTPUT(IDENFR)
 		ENUM_DEFAULT_OUTPUT(INTCON)
