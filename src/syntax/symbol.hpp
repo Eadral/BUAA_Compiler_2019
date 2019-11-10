@@ -28,6 +28,9 @@ namespace buaac {
 			std::vector<SymbolType> _function_parameters{};
 			
 		public:
+
+			bool _is_global;
+			
 			Symbol() {
 				
 			}

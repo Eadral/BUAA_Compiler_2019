@@ -41,4 +41,18 @@ namespace meow {
 }
 
 
+std::string i2a(int i) {
+	char buf[255];
+	itoa(i, buf, 10);
+	return std::string(buf);
+}
+
+int a2i(std::string str) {
+	return atoi(str.c_str());
+}
+
+int a2i(char str[]) {
+	return atoi(str);
+}
+
 #endif

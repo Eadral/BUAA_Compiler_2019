@@ -7,25 +7,34 @@
 #include "src/meow/core.hpp"
 #include "src/lex/lexparse.hpp"
 #include "src/syntax/syntaxparse.hpp"
+#include "src/output_helper.hpp"
+#include "src/ir/ir.hpp"
+#include "src/gen/mips.hpp"
 
 using namespace std;
 using namespace buaac;
 
 
 int main() {
-
+	// Output::getInstance()->init();
 	
 	string source = readFileToString("testfile.txt");
-	ofstream fout("error.txt");
+	ofstream fout("output.txt");
 	cout.rdbuf(fout.rdbuf());
 
-	auto output_setting = "e";
+	auto output_setting = "v";
 	// auto output_setting = "ve";
 	
 	lex::LexParser lex_parser(source, output_setting);
 	syntax::SyntaxParser syntax_parser(lex_parser, output_setting);
 	
-	syntax_parser.start();
+	IR ir = syntax_parser.start();
 
+	ir.output("ir.txt");
+	
+	MIPS mips(ir);
+
+	mips.gen();
+	
     return 0;
 }

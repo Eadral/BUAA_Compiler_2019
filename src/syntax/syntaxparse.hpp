@@ -4,6 +4,9 @@
 #include "../meow/core.hpp"
 #include "../lex/lexparse.hpp"
 #include "symbol_table.hpp"
+#include "../output_helper.hpp"
+#include "../ir/ir.hpp"
+
 #include <map>
 #include <cstdlib>
 
@@ -23,8 +26,10 @@ namespace syntax{
 		using Token = lex::Token;
 		using TokenType = lex::TokenType;
 		
-
+		Output* _output = Output::getInstance();
 		SymbolTable _symbol_table;
+
+		IR ir;
 		
 	public:
 		SyntaxParser(lex::LexParser& lex_parser, std::string output): lex_parser_(lex_parser) {
@@ -36,8 +41,9 @@ namespace syntax{
 			}
 		}
 
-		void start() {
+		IR start() {
 			program();
+			return ir;
 		}
 
 		int getLineNumber() const {
@@ -109,17 +115,20 @@ namespace syntax{
 		
 #pragma region GeneratedSyntax
 		// ＜加法运算符＞ ::= +｜-
-		void plusOp() {
+		Token plusOp() {
+			Token op_token;
+			
 			switch (lookTokenType()) {
 			case TokenType::PLUS:
-				eatToken(TokenType::PLUS);
+				op_token = eatToken(TokenType::PLUS);
 				break;
 			case TokenType::MINU:
-				eatToken(TokenType::MINU);
+				op_token = eatToken(TokenType::MINU);
 				break;
 			default:
 				ERROR
 			}
+			return op_token;
 		}
 		// ＜乘法运算符＞  ::= *｜/
 		void mulOp() {
@@ -162,15 +171,18 @@ namespace syntax{
 			return cmp_token;
 		}
 		// ＜字符串＞   ::=  "｛十进制编码为32,33,35-126的ASCII字符｝"
-		void strconst() {
+		std::string strconst() {
+			Token str_token;
+			
 			switch (lookTokenType()) {
 			case TokenType::STRCON:
-				eatToken(TokenType::STRCON);
+				str_token = eatToken(TokenType::STRCON);
 				break;
 			default:
 				ERROR
 			}
 			syntaxOutput("<字符串>");
+			return str_token.getValue();
 		}
 		// ＜程序＞    ::= ［＜常量说明＞］［＜变量说明＞］{＜有返回值函数定义＞|＜无返回值函数定义＞}＜主函数＞
 		void program() {
@@ -435,6 +447,7 @@ namespace syntax{
 		// ＜整数＞        ::= ［＋｜－］＜无符号整数＞
 		tuple<bool, Token> integer() {
 			Token ret;
+			std::string neg;
 			switch (lookTokenType()) {
 			case TokenType::INTCON:
 				ret = uninteger();
@@ -446,6 +459,8 @@ namespace syntax{
 			case TokenType::MINU:
 				eatToken(TokenType::MINU);
 				ret = uninteger();
+				neg = FORMAT("-{}", ret);
+				ret = Token(TokenType::INTCON, neg);
 				break;
 			default:
 				return make_tuple(false, Token{});
@@ -557,7 +572,9 @@ namespace syntax{
 					case TokenType::SEMICN:
 					case TokenType::COMMA:
 						checkPush(_symbol_table.push(Symbol(_status_vardef_type, ident.getValue())));
-
+						if (_symbol_table.getScope() == -1) {
+							ir.defineGlobalInt(ident.getValue());
+						} 
 						break;
 					default:
 						ERROR
@@ -572,6 +589,7 @@ namespace syntax{
 			default:
 				ERROR
 			}
+			ir.pushStackVars(_symbol_table.getStackScopeBytes());
 			syntaxOutput("<变量定义>");
 		}
 
@@ -605,6 +623,9 @@ namespace syntax{
 					case TokenType::SEMICN:
 					case TokenType::COMMA:
 						checkPush(_symbol_table.push(Symbol(_status_vardef_type, ident.getValue())));
+						if (_symbol_table.getScope() == -1) {
+							ir.defineGlobalInt(ident.getValue());
+						}
 						break;
 					default:
 						ERROR
@@ -812,6 +833,7 @@ namespace syntax{
 				eatToken(TokenType::RPARENT);
 				// ‘{’＜复合语句＞‘}’
 				eatToken(TokenType::LBRACE);
+				ir.newBlock("main");
 				_symbol_table.pushScope();
 				// debugln("push at {}", getLineNumber());
 				compStatement();
@@ -825,7 +847,7 @@ namespace syntax{
 			syntaxOutput("<主函数>");
 		}
 		// ＜表达式＞    ::= ［＋｜－］＜项＞{＜加法运算符＞＜项＞}
-		SymbolType expr() {
+		tuple<SymbolType, std::string> expr() {
 			SymbolType expr_type = SymbolType::INT;
 			Token token;
 			Symbol symbol;
@@ -865,8 +887,9 @@ namespace syntax{
 			default:
 				ERROR
 			}
+			
 			syntaxOutput("<表达式>");
-			return expr_type;
+			return make_tuple(expr_type, ir.gen());
 		}
 		// // ［＋｜－］
 		void exprPrefix() {
@@ -876,6 +899,7 @@ namespace syntax{
 				break;
 			case TokenType::MINU:
 				eatToken(TokenType::MINU);
+				ir.push(IR::NEG);
 				break;
 			case TokenType::IDENFR:
 			case TokenType::INTCON:
@@ -889,11 +913,18 @@ namespace syntax{
 		}
 		// {＜加法运算符＞＜项＞} 
 		bool exprGroup() {
+			Token op_token;
+			
 			switch (lookTokenType()) {
 			case TokenType::PLUS:
 			case TokenType::MINU:
 				// ＜加法运算符＞
-				plusOp();
+				op_token = plusOp();
+				if (op_token.getTokenType() == TokenType::PLUS) {
+					ir.push(IR::PLUS);
+				} else {
+					ir.push(IR::MINUS);
+				}
 				// ＜项＞
 				term();
 				// Group
@@ -967,6 +998,9 @@ namespace syntax{
 		//				    ｜＜有返回值函数调用语句＞         
 		void factor() {
 			SymbolType expr_type;
+			Token token;
+
+			Token int_token;
 			
 			switch (lookTokenType()) {
 			case TokenType::IDENFR:
@@ -991,12 +1025,18 @@ namespace syntax{
 				case TokenType::RBRACK:
 				case TokenType::SEMICN:
 					// ＜标识符＞
-					eatToken(TokenType::IDENFR);
+					token = eatToken(TokenType::IDENFR);
+					// ir.loadStack()
+					if (_symbol_table.isGlobal(token.getValue())) {
+						ir.exprPushGlobalVar(token.getValue());
+					} else {
+						ir.exprPushStackVar(token.getValue(), _symbol_table.getStackBytesByIdent(token.getValue()));
+					}
 					switch (lookTokenType()) {
 					case TokenType::LBRACK:
 						// '['＜表达式＞']'
 						eatToken(TokenType::LBRACK);
-						expr_type = expr();
+						tie(expr_type, std::ignore) = expr();
 						if (expr_type != SymbolType::INT) {
 							error('i');
 						}
@@ -1029,7 +1069,8 @@ namespace syntax{
 			case TokenType::MINU:
 			case TokenType::INTCON:
 				// ＜整数＞
-				integer();
+				tie(std::ignore, int_token) = integer();
+				ir.exprPushLiteralInt(int_token.getValue());
 				break;
 			case TokenType::CHARCON:
 				// ＜字符＞
@@ -1118,6 +1159,7 @@ namespace syntax{
 			Symbol symbol;
 
 			SymbolType expr_type;
+			std::string expr_reg;
 
 			
 			switch (lookTokenType()) {
@@ -1135,12 +1177,13 @@ namespace syntax{
 				case TokenType::ASSIGN:
 					// ＝＜表达式＞
 					eatToken(TokenType::ASSIGN);
-					expr();
+					tie(std::ignore, expr_reg) = expr();
+					ir.saveStack(expr_reg, _symbol_table.getStackBytesByIdent(ident.getValue()));
 					break;
 				case TokenType::LBRACK:
 					// '['＜表达式＞']'=＜表达式＞
 					eatToken(TokenType::LBRACK);
-					expr_type = expr();
+					tie(expr_type, std::ignore) = expr();
 					if (expr_type != SymbolType::INT) {
 						error('i');
 					}
@@ -1217,7 +1260,7 @@ namespace syntax{
 			case TokenType::MINU:
 			case TokenType::LPARENT:
 				// ＜表达式＞
-				expr_type_lhs = expr();
+				tie(expr_type_lhs, std::ignore) = expr();
 
 				if (expr_type_lhs != SymbolType::INT) {
 					error('f');
@@ -1232,7 +1275,7 @@ namespace syntax{
 				case TokenType::NEQ:
 					//＜关系运算符＞＜表达式＞
 					cmp_token = relationOp();
-					expr_type_rhs = expr();
+					tie(expr_type_rhs, std::ignore) = expr();
 					
 					cmp_type = cmp_token.getTokenType();
 					// if (cmp_type == TokenType::EQL || cmp_type == TokenType::NEQ) {
@@ -1381,7 +1424,7 @@ namespace syntax{
 			case TokenType::MINU:
 			case TokenType::LPARENT:
 				// ＜表达式＞
-				expr_type = expr();
+				tie(expr_type, std::ignore) = expr();
 				_val_para_list.push_back(expr_type);
 				if (expected_symbols.size() > index && expected_symbols[index] != expr_type) {
 					error('e');
@@ -1414,7 +1457,7 @@ namespace syntax{
 			case TokenType::COMMA:
 				// ,＜表达式＞
 				eatToken(TokenType::COMMA);
-				expr_type = expr();
+				tie(expr_type, std::ignore) = expr();
 				_val_para_list.push_back(expr_type);
 				if (expected_symbols.size() > index && expected_symbols[index] != expr_type) {
 					error('e');
@@ -1457,14 +1500,30 @@ namespace syntax{
 		}
 		// ＜读语句＞    ::=  scanf '('＜标识符＞{,＜标识符＞}')'
 		void scanfStat() {
+			Token ident_token;
+
+			int scope;
+			Symbol symbol;
+			int i;
+			
 			switch (lookTokenType()) {
 			case TokenType::SCANFTK:
 				// scanf '('＜标识符＞
 				eatToken(TokenType::SCANFTK);
 				eatToken(TokenType::LPARENT);
-				eatToken(TokenType::IDENFR);
+				ident_token = eatToken(TokenType::IDENFR);
 				// {,＜标识符＞}
+				_status_ident_group.clear();
 				identGroup();
+
+				tie(scope, symbol) = _symbol_table.findSymbolAndScope(ident_token.getValue());
+				ir.scanf(scope, symbol);
+				for (i = 0; i < _status_ident_group.size(); i++) {
+					tie(scope, symbol) = _symbol_table.findSymbolAndScope(_status_ident_group[i]);
+					ir.scanf(scope, symbol);
+				}
+				
+				
 				// ')'
 				eatToken(TokenType::RPARENT);
 				break;
@@ -1473,12 +1532,15 @@ namespace syntax{
 			}
 			syntaxOutput("<读语句>");
 		}
+		std::vector<std::string> _status_ident_group;
 		// {,＜标识符＞}
 		void identGroup() {
+			Token ident_token;
 			switch (lookTokenType()) {
 			case TokenType::COMMA:
 				eatToken(TokenType::COMMA);
-				eatToken(TokenType::IDENFR);
+				ident_token = eatToken(TokenType::IDENFR);
+				_status_ident_group.push_back(ident_token.getValue());
 				identGroup();
 				break;
 			case TokenType::RPARENT:
@@ -1492,13 +1554,21 @@ namespace syntax{
 		//	| printf '('＜字符串＞ ')'
 		//	| printf '('＜表达式＞')'
 		void printfStat() {
+			std::string str;
+			std::string str_label;
+
+			SymbolType expr_type;
+			std::string expr_ans;
+			
 			switch (lookTokenType()) {
 			case TokenType::PRINTFTK:
 				eatToken(TokenType::PRINTFTK);
 				eatToken(TokenType::LPARENT);
 				switch (lookTokenType()) {
 				case TokenType::STRCON:
-					strconst();
+					str = strconst();
+					str_label = ir.defineConstStr( str );
+					ir.printGlobalStr(str_label);
 					switch (lookTokenType()) {
 					case TokenType::COMMA:
 						eatToken(TokenType::COMMA);
@@ -1518,7 +1588,8 @@ namespace syntax{
 				case TokenType::PLUS:
 				case TokenType::MINU:
 				case TokenType::LPARENT:
-					expr();
+					tie(expr_type, expr_ans) = expr();
+					ir.printInt(expr_ans);
 					eatToken(TokenType::RPARENT);
 					break;
 				default:
@@ -1528,6 +1599,7 @@ namespace syntax{
 			default:
 				ERROR
 			}
+			ir.printLine();
 			syntaxOutput("<写语句>");
 		}
 		// ＜返回语句＞   ::=  return['('＜表达式＞')']    
@@ -1541,7 +1613,7 @@ namespace syntax{
 				case TokenType::LPARENT:
 					// '('＜表达式＞')'
 					eatToken(TokenType::LPARENT);
-					expr_type = expr();
+					tie(expr_type, std::ignore) = expr();
 					_status_value_ret_cnt++;
 					if (_status_func_defining_type == SymbolType::FUNC_INT && expr_type != SymbolType::INT) {
 						error('h');

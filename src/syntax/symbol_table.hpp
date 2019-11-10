@@ -29,6 +29,9 @@ namespace buaac {
 					return false;
 				}
 				_symbol_stack.push_back(symbol);
+				if (_scope_index.back() == -1) {
+					symbol._is_global = true;
+				}
 				return true;
 			}
 
@@ -48,6 +51,12 @@ namespace buaac {
 				// return SymbolTableResult::Ok();
 			}
 
+			bool isGlobal(std::string ident) {
+				Symbol symbol;
+				tie(std::ignore, symbol) = findSymbol(ident);
+				return symbol._is_global;
+			}
+			
 			tuple<bool, Symbol> findSymbol(std::string ident) {
 				for (int i = _symbol_stack.size() - 1; i >= 0; i--) {
 					if (_symbol_stack[i].getIdent() == ident) {
@@ -55,6 +64,15 @@ namespace buaac {
 					}
 				}
 				return make_tuple(false, Symbol{});
+			}
+
+			tuple<int, Symbol> findSymbolAndScope(std::string ident) {
+				for (int i = _symbol_stack.size() - 1; i >= 0; i--) {
+					if (_symbol_stack[i].getIdent() == ident) {
+						return make_tuple(i, _symbol_stack[i]);
+					}
+				}
+				return make_tuple(-1, Symbol{});
 			}
 
 			// bool identExist(std::string ident) {
@@ -93,6 +111,43 @@ namespace buaac {
 			// 	assert(is_exist);
 			// 	return symbol.isConst();
 			// }
+
+			int getScope() {
+				return _scope_index.back();
+			}
+
+			int getStackBytesByIdent(std::string ident) {
+				int s = 0;
+				for (int i = _scope_index.back(); i < _symbol_stack.size(); i++) {
+					if (_symbol_stack[i].getIdent() == ident)
+						break;
+					s += getSymbolBytes(_symbol_stack[i]);
+				}
+				return s;
+			}
+			
+			int getStackBytesById(int id) {
+				int s = 0;
+				for (int i = _scope_index.back(); i < id && i < _symbol_stack.size(); i++) {
+					s += getSymbolBytes(_symbol_stack[i]);
+				}
+				return s;
+			}
+
+			int getStackScopeBytes() {
+				int s = 0;
+				for (int i = _scope_index.back(); i < _symbol_stack.size(); i++) {
+					s += getSymbolBytes(_symbol_stack[i]);
+				}
+				return s;
+			}
+
+			int getSymbolBytes(Symbol symbol) {
+				if (symbol.isArray())
+					return 4 * symbol.getArrayLen();
+				else
+					return 4;
+			}
 			
 		};
 		
