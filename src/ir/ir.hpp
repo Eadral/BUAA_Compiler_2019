@@ -3,6 +3,8 @@
 #include "../meow/core.hpp"
 #include "global_define.hpp"
 #include "block.hpp"
+#include "func.hpp"
+#include <memory>
 
 namespace buaac {
 
@@ -12,19 +14,37 @@ namespace buaac {
 	class IR {
 	public:
 
+
 		std::vector<GlobalDefine> global_defines;
-		std::vector<Block> blocks;
+		std::vector<Func> funcs{};
+		BlocksPtr main_blocks;
 
 		int cnt_c = 0;
 		
+		BlocksPtr blocks_now;
 
-		
-
-		void newBlock(std::string label) {
-			blocks.emplace_back(Block(label));
+		IR() {
+			main_blocks = std::make_shared<Blocks>();
+			main_blocks->emplace_back(Block("main"));
+			blocks_now = nullptr;
 		}
 
+		void defineMain() {
+			blocks_now = main_blocks;
+		}
+
+		void defineFunc(std::string func_name) {
+			funcs.emplace_back(Func(func_name));
+			blocks_now = funcs.back().blocks;
+		}
 		
+		void newBlock(std::string label) {
+			blocks_now->emplace_back(Block(label));
+		}
+
+		Blocks& getMainBlocks() {
+			return *main_blocks;
+		}
 
 		void printLine() {
 			appendInstr(Instr::PRINT_LINE);
@@ -53,7 +73,23 @@ namespace buaac {
 		void printInt(std::string reg) {
 			appendInstr({Instr::PRINT_INT, reg});
 		}
-		
+
+		void pushStackReg(std::string reg) {
+			appendInstr(Instr(Instr::PUSH_REG, reg));
+		}
+
+		void popStack(size_t size) {
+			appendInstr(Instr(Instr::POP, size));
+		}
+
+		void call(const std::string& func_name) {
+			appendInstr(Instr(Instr::CALL, func_name));
+		}
+
+		void addReturn() {
+			appendInstr(Instr(Instr::RETURN));
+		}
+
 #pragma region expr
 
 		enum OP {
@@ -208,11 +244,11 @@ namespace buaac {
 		// Output
 		void output(std::string filename) {
 			// fout.open(filename);
-			for (int i = 0; i < blocks.size(); i++) {
-				output(blocks[i]);
+			for (int i = 0; i < blocks_now->size(); i++) {
+				output(blocks_now->at(i));
 			}
 		}
-
+		
 		void output(const Block& block) {
 			
 		}
@@ -231,7 +267,7 @@ namespace buaac {
 		};
 		
 		void appendInstr(Instr instr) {
-			blocks.back().addInstr(instr);
+			blocks_now->back().addInstr(instr);
 		}
 
 		void globalDefine(GlobalDefine global_define) {

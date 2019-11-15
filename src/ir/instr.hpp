@@ -26,6 +26,8 @@ namespace buaac {
 				// Stack
 				PUSH,
 				POP,
+				PUSH_REG,
+				POP_REG,
 				
 				// Memory
 				LOAD_LAB,
@@ -34,6 +36,10 @@ namespace buaac {
 				SAVE_LAB,
 				SAVE_LAB_IMM,
 				SAVE_STA,
+
+				// JUMP
+				CALL,
+				RETURN,
 				
 			} type;
 

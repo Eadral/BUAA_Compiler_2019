@@ -23,6 +23,9 @@ namespace buaac {
 
 		
 	};
+
+	using Blocks = std::vector<Block>;
+	using BlocksPtr = std::shared_ptr<Blocks>;
 	
 }
 

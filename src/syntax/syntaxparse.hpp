@@ -240,6 +240,7 @@ namespace syntax{
 		int _status_value_ret_cnt;
 		// ＜有返回值函数定义＞|＜无返回值函数定义＞
 		void funcDef() {
+			// ir.pushStackReg("$ra");
 			_status_value_ret_cnt = 0;
 			switch (lookTokenType()) {
 			case TokenType::INTTK:
@@ -261,6 +262,7 @@ namespace syntax{
 			default:
 				ERROR
 			}
+			ir.addReturn();
 		}
 		// ＜常量说明＞ ::=  const＜常量定义＞;{ const＜常量定义＞;}
 		void constDec() {
@@ -591,8 +593,8 @@ namespace syntax{
 			default:
 				ERROR
 			}
-			if (_symbol_table.getScope() > -1) 
-				ir.pushStackVars(_symbol_table.getStackScopeBytes());
+			if (_symbol_table.getScope() > 0) 
+				ir.pushStackVars(_symbol_table.getStackScopeBytes() - _para_cnt*4);
 			syntaxOutput("<变量定义>");
 		}
 
@@ -706,6 +708,7 @@ namespace syntax{
 			// // debugln("!{}", name.getValue());
 			syntaxOutput("<有返回值函数定义>");
 		}
+		int _para_cnt;
 		// ＜无返回值函数定义＞  ::= void＜标识符＞'('＜参数表＞')''{'＜复合语句＞'}'
 		void nonRetFuncDef() {
 			Token name;
@@ -717,9 +720,11 @@ namespace syntax{
 				eatToken(TokenType::VOIDTK);
 				// ＜标识符＞
 				name = eatToken(TokenType::IDENFR);
+				ir.defineFunc(name.getValue());
 				// '('＜参数表＞')'
 				eatToken(TokenType::LPARENT);
 				para_list = paraList();
+				_para_cnt = para_list.size();
 				checkPush(_symbol_table.push(Symbol(SymbolType::FUNC_VOID, name.getValue(), symbolList2SymbolTypeList(para_list))));
 				eatToken(TokenType::RPARENT);
 				// '{'＜复合语句＞'}'
@@ -731,6 +736,7 @@ namespace syntax{
 				// debugln("exprPush at {}", getLineNumber());
 				compStatement();
 				eatToken(TokenType::RBRACE);
+				ir.popStack(_symbol_table.getStackScopeBytes());
 				_symbol_table.popScope();
 				// debugln("pop at {}", getLineNumber());
 				break;
@@ -836,7 +842,7 @@ namespace syntax{
 				eatToken(TokenType::RPARENT);
 				// ‘{’＜复合语句＞‘}’
 				eatToken(TokenType::LBRACE);
-				ir.newBlock("main");
+				ir.defineMain();
 				_symbol_table.pushScope();
 				// debugln("exprPush at {}", getLineNumber());
 				compStatement();
@@ -1408,6 +1414,7 @@ namespace syntax{
 			default:
 				ERROR
 			}
+			ir.call(name.getValue());
 			// // debugln("!{}", name.getValue());
 			if (funcName2IsRet[name.getValue()]) {
 				syntaxOutput("<有返回值函数调用语句>");
@@ -1421,6 +1428,8 @@ namespace syntax{
 			int index = 0;
 			std::vector<SymbolType> backup = _val_para_list;
 			_val_para_list.clear();
+
+			std::string expr_ans_reg;
 			
 			SymbolType expr_type;
 			switch (lookTokenType()) {
@@ -1431,7 +1440,8 @@ namespace syntax{
 			case TokenType::MINU:
 			case TokenType::LPARENT:
 				// ＜表达式＞
-				tie(expr_type, std::ignore) = expr();
+				tie(expr_type, expr_ans_reg) = expr();
+				ir.pushStackReg(expr_ans_reg);
 				_val_para_list.push_back(expr_type);
 				if (expected_symbols.size() > index && expected_symbols[index] != expr_type) {
 					error('e');
@@ -1445,6 +1455,7 @@ namespace syntax{
 			default:
 				ERROR
 			}
+			// ir.popStack(_val_para_list.size()*4);
 			syntaxOutput("<值参数表>");
 			std::vector<SymbolType> ret = _val_para_list;
 			_val_para_list = backup;
@@ -1460,11 +1471,14 @@ namespace syntax{
 		// {,＜表达式＞}
 		void valParaListGroup(std::vector<SymbolType> expected_symbols, int index) {
 			SymbolType expr_type;
+			std::string expr_ans_reg;
+			
 			switch (lookTokenType()) {
 			case TokenType::COMMA:
 				// ,＜表达式＞
 				eatToken(TokenType::COMMA);
-				tie(expr_type, std::ignore) = expr();
+				tie(expr_type, expr_ans_reg) = expr();
+				ir.pushStackReg(expr_ans_reg);
 				_val_para_list.push_back(expr_type);
 				if (expected_symbols.size() > index && expected_symbols[index] != expr_type) {
 					error('e');

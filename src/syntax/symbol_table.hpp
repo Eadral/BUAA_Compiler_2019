@@ -125,7 +125,7 @@ namespace buaac {
 						break;
 					s += getSymbolBytes(_symbol_stack[i]);
 				}
-				return s;
+				return getStackScopeBytes() - s - 4;
 			}
 			
 			int getStackBytesById(int id) {

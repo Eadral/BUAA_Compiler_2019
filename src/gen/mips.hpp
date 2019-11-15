@@ -5,6 +5,8 @@
 
 namespace buaac {
 
+// #define DO_NOT_ASSIGN_REGS
+	
 	enum Reg {
 		at,
 		v0, v1,
@@ -41,7 +43,8 @@ namespace buaac {
 			genGlobal();
 			genRegPool();
 			write(".text");
-			genFunc();
+			write("j main");
+			genFuncs();
 			genText();
 		}
 
@@ -72,19 +75,30 @@ namespace buaac {
 			}
 		}
 
-		void genFunc() {
-
+		void genFuncs() {
+			auto& funcs = ir.funcs;
+			for (int i = 0; i < funcs.size(); i++)
+				genFunc(funcs[i]);
 		}
 
+		void genFunc(Func &func) {
+			auto& blocks = *(func.blocks);
+			for (int i = 0; i < blocks.size(); i++) {
+				genBlock(blocks[i]);
+			}
+		}
+		
 		void genText() {
-			auto& blocks = ir.blocks;
+			auto& blocks = ir.getMainBlocks();
 			for (int i = 0; i < blocks.size(); i++) {
 				genBlock(blocks[i]);
 			}
 		}
 
 		void genBlock(Block& block) {
+#ifndef DO_NOT_ASSIGN_REGS
 			assignRegs(block);
+#endif
 			genInstrs(block);
 		}
 
@@ -153,6 +167,13 @@ namespace buaac {
 					if (NOT_ASSIGN(source_b))
 						REGPOOL_LOAD(source_b, $t2);
 					break;
+				case Instr::PUSH_REG:
+					if (NOT_ASSIGN(target))
+						REGPOOL_LOAD(target, $t0);
+					break;
+				case Instr::POP_REG: break;
+				case Instr::CALL: break;
+				case Instr::RETURN: break;
 				default: ;
 				}
 				
@@ -225,10 +246,10 @@ namespace buaac {
 				break;
 			case Instr::SCAN_INT: break;
 			case Instr::PUSH:
-				write("subu $sp, $sp, {}", instr.target);
+				write("addi $sp, $sp, -{}", instr.target);
 				break;
 			case Instr::POP:
-				write("addu $sp, $sp, {}", instr.target);
+				write("addi $sp, $sp, {}", instr.target);
 				break;
 			case Instr::LOAD_STA:
 				write("lw {}, {}($sp)", instr.target, instr.source_a);
@@ -244,6 +265,19 @@ namespace buaac {
 				break;
 			case Instr::SAVE_LAB_IMM:
 				write("sw {}, {}+{}", instr.target, instr.source_a, instr.source_b);
+				break;
+			case Instr::PUSH_REG:
+				write("addi $sp, $sp, -4");
+				write("sw {}, ($sp)", instr.target);
+				break;
+			case Instr::POP_REG:
+				write("lw {}, ($sp)", instr.target);
+				write("addi $sp, $sp, 4");
+			case Instr::CALL:
+				write("jal {}", instr.target);
+				break;
+			case Instr::RETURN:
+				write("jr $ra");
 				break;
 			default: ;
 
