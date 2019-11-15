@@ -38,7 +38,7 @@ namespace buaac {
 			}
 
 			void pushScope() {
-				// debugln("push");
+				// debugln("exprPush");
 				_scope_index.push_back(_symbol_stack.size());
 				// return SymbolTableResult::Ok();
 			}

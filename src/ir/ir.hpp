@@ -71,7 +71,7 @@ namespace buaac {
 		std::vector<std::string> obj_stack;
 		std::vector<Instr> instrs;
 
-		void push(OP op) {
+		void exprPush(OP op) {
 			switch (op) {
 			case PARE_L:
 				op_stack.push_back(op);
@@ -113,9 +113,17 @@ namespace buaac {
 			obj_stack.push_back(t);
 		}
 
-		
+		int not_gen = 0;
+
+		void notGen() {
+			not_gen++;
+		}
 
 		std::string gen() {
+			if (not_gen > 0) {
+				not_gen--;
+				return "NOTGEN";
+			}
 			while (!op_stack.empty()) {
 				pop_op();
 			}
@@ -216,6 +224,11 @@ namespace buaac {
 		std::string newTemp() {
 			return FORMAT("__T{}", temp_cnt++);
 		}
+
+		enum {
+			DEFINE_MAIN,
+			DEFINE_FUNC,
+		};
 		
 		void appendInstr(Instr instr) {
 			blocks.back().addInstr(instr);

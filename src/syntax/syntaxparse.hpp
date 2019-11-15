@@ -135,9 +135,11 @@ namespace syntax{
 			switch (lookTokenType()) {
 			case TokenType::MULT:
 				eatToken(TokenType::MULT);
+				ir.exprPush(IR::MULT);
 				break;
 			case TokenType::DIV:
 				eatToken(TokenType::DIV);
+				ir.exprPush(IR::DIV);
 				break;
 			default:
 				ERROR
@@ -692,7 +694,7 @@ namespace syntax{
 				for (int i = 0; i < para_list.size(); i++) {
 					checkPush(_symbol_table.push(para_list[i]));
 				}
-				// debugln("push at {}", getLineNumber());
+				// debugln("exprPush at {}", getLineNumber());
 				compStatement();
 				eatToken(TokenType::RBRACE);
 				_symbol_table.popScope();
@@ -726,7 +728,7 @@ namespace syntax{
 				for (int i = 0; i < para_list.size(); i++) {
 					checkPush(_symbol_table.push(para_list[i]));
 				}
-				// debugln("push at {}", getLineNumber());
+				// debugln("exprPush at {}", getLineNumber());
 				compStatement();
 				eatToken(TokenType::RBRACE);
 				_symbol_table.popScope();
@@ -836,7 +838,7 @@ namespace syntax{
 				eatToken(TokenType::LBRACE);
 				ir.newBlock("main");
 				_symbol_table.pushScope();
-				// debugln("push at {}", getLineNumber());
+				// debugln("exprPush at {}", getLineNumber());
 				compStatement();
 				eatToken(TokenType::RBRACE);
 				_symbol_table.popScope();
@@ -900,7 +902,7 @@ namespace syntax{
 				break;
 			case TokenType::MINU:
 				eatToken(TokenType::MINU);
-				ir.push(IR::NEG);
+				ir.exprPush(IR::NEG);
 				break;
 			case TokenType::IDENFR:
 			case TokenType::INTCON:
@@ -922,9 +924,9 @@ namespace syntax{
 				// ＜加法运算符＞
 				op_token = plusOp();
 				if (op_token.getTokenType() == TokenType::PLUS) {
-					ir.push(IR::PLUS);
+					ir.exprPush(IR::PLUS);
 				} else {
-					ir.push(IR::MINUS);
+					ir.exprPush(IR::MINUS);
 				}
 				// ＜项＞
 				term();
@@ -1037,6 +1039,7 @@ namespace syntax{
 					case TokenType::LBRACK:
 						// '['＜表达式＞']'
 						eatToken(TokenType::LBRACK);
+						// ir.notGen();
 						tie(expr_type, std::ignore) = expr();
 						if (expr_type != SymbolType::INT) {
 							error('i');
@@ -1080,8 +1083,11 @@ namespace syntax{
 			case TokenType::LPARENT:
 				// '('＜表达式＞')'
 				eatToken(TokenType::LPARENT);
+				ir.exprPush(IR::PARE_L);
+				ir.notGen();
 				expr();
 				eatToken(TokenType::RPARENT);
+				ir.exprPush(IR::PARE_R);
 				break;
 			default:
 				ERROR
