@@ -28,10 +28,12 @@ namespace buaac {
 				if (identExistInScope(symbol.getIdent())) {
 					return false;
 				}
-				_symbol_stack.push_back(symbol);
 				if (_scope_index.back() == -1) {
 					symbol._is_global = true;
+				} else {
+					symbol._is_global = false;
 				}
+				_symbol_stack.push_back(symbol);
 				return true;
 			}
 

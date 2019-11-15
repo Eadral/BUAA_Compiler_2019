@@ -109,7 +109,7 @@ namespace buaac {
 
 		void exprPushLiteralInt(std::string value) {
 			auto t = newTemp();
-			appendInstr(Instr(Instr::PLUS, t, "0", value));
+			appendInstr(Instr(Instr::PLUS, t, "$0", value));
 			obj_stack.push_back(t);
 		}
 
@@ -122,6 +122,9 @@ namespace buaac {
 			std::string ans = obj_stack.back();
 			obj_stack.pop_back();
 			assert(obj_stack.empty());
+			for (int i = 0; i < instrs.size(); i++) {
+				appendInstr(instrs[i]);
+			}
 			return ans;
 		}
 
@@ -211,7 +214,7 @@ namespace buaac {
 		int temp_cnt = 0;
 
 		std::string newTemp() {
-			return FORMAT("_____T{}", temp_cnt++);
+			return FORMAT("__T{}", temp_cnt++);
 		}
 		
 		void appendInstr(Instr instr) {
@@ -223,11 +226,11 @@ namespace buaac {
 		}
 
 		std::string newConstLabel() {
-			return FORMAT("_____CONST_{}", cnt_c++);
+			return FORMAT("__CONST_{}", cnt_c++);
 		}
 
 		std::string getGlobalName(std::string ident) {
-			return FORMAT("_____GLOBAL_{}", ident);
+			return FORMAT("__GLOBAL_{}", ident);
 		}
 	};
 	

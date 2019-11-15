@@ -19,7 +19,7 @@ namespace meow {
             }
 
             template<typename ...Args>
-            static std::string format(const char *fmt, Args... args){
+            static std::string format(const char *fmt, Args... args) {
                 auto string_buffer = std::vector<std::string>();
                 auto strings = expandToString(string_buffer, args...);
                 std::stringstream out;

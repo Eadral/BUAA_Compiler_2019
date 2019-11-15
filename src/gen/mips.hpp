@@ -39,8 +39,9 @@ namespace buaac {
 			write("# Compiler BUAAC, Build: {}, QAQ", __TIMESTAMP__);
 			write(".data");
 			genGlobal();
-			genFunc();
+			genRegPool();
 			write(".text");
+			genFunc();
 			genText();
 		}
 
@@ -50,6 +51,12 @@ namespace buaac {
 				genDefine(defines[i]);
 
 			}
+		}
+
+		#define REGPOOL "REGPOOL"
+		
+		void genRegPool() {
+			write("{}: .space 400", REGPOOL);
 		}
 
 		void genDefine(GlobalDefine& define) {
@@ -81,8 +88,85 @@ namespace buaac {
 			genInstrs(block);
 		}
 
+#define REGPOOL_LOAD(ir_reg, assign_reg)	\
+		do {	\
+			auto& instr = instrs[i];	\
+			if (starts_with(instr.ir_reg, std::string("__T"))) {	\
+				int loc = 4 * a2i(instr.ir_reg.substr(3));	\
+				instr.ir_reg = #assign_reg;	\
+				insertBefore(instrs, i, Instr(Instr::LOAD_LAB_IMM, #assign_reg, REGPOOL, loc));	\
+			}	\
+		} while(0)
+
+#define REGPOOL_SAVE(ir_reg, assign_reg)	\
+		do {	\
+			auto& instr = instrs[i];	\
+			if (starts_with(instr.ir_reg, std::string("__T"))) {	\
+				int loc = 4 * a2i(instr.ir_reg.substr(3));	\
+				instr.ir_reg = #assign_reg;	\
+				insertAfter(instrs, i, Instr(Instr::SAVE_LAB_IMM, #assign_reg, REGPOOL, loc));	\
+			}	\
+		} while(0)
+
+#define NOT_ASSIGN(ir_reg) starts_with(instrs[i].ir_reg, std::string("__T"))
+		
 		void assignRegs(Block& block) {
-			
+			auto& instrs = block.instrs;
+			for (int i = 0; i < instrs.size(); i++) {
+				switch (instrs[i].type) {
+
+				case Instr::PRINT_GLOBAL_STR: break;
+				case Instr::PRINT_INT:
+					if (NOT_ASSIGN(target))
+						REGPOOL_LOAD(target, $t0);
+					break;
+				case Instr::SCAN_INT: break;
+				case Instr::SCAN_GLOBAL_INT: break;
+				case Instr::PRINT_LINE: break;
+				
+				case Instr::PUSH: break;
+				case Instr::POP: break;
+				case Instr::LOAD_LAB:
+					if (NOT_ASSIGN(target))
+						REGPOOL_SAVE(target, $t0);
+					break;
+				case Instr::LOAD_LAB_IMM: break;
+				case Instr::LOAD_STA:
+					if (NOT_ASSIGN(target))
+						REGPOOL_SAVE(target, $t0);
+					break;
+				case Instr::SAVE_LAB: break;
+				case Instr::SAVE_LAB_IMM: break;
+				case Instr::SAVE_STA:
+					if (NOT_ASSIGN(target))
+						REGPOOL_LOAD(target, $t0);
+					break;
+
+				case Instr::PLUS: 
+				case Instr::MINUS: 
+				case Instr::MULT:
+				case Instr::DIV:
+					if (NOT_ASSIGN(target)) 
+						REGPOOL_SAVE(target, $t0);
+					if (NOT_ASSIGN(source_a)) 
+						REGPOOL_LOAD(source_a, $t1);
+					if (NOT_ASSIGN(source_b))
+						REGPOOL_LOAD(source_b, $t2);
+					break;
+				default: ;
+				}
+				
+				
+			}
+		}
+
+		void insertBefore(std::vector<Instr> &instrs, int &i, Instr instr) {
+			instrs.insert(instrs.begin() + i, instr);
+			i++;
+		}
+
+		void insertAfter(std::vector<Instr> &instrs, int &i, Instr instr) {
+			instrs.insert(instrs.begin() + i + 1, instr);
 		}
 
 		void genInstrs(Block& block) {
@@ -141,19 +225,25 @@ namespace buaac {
 				break;
 			case Instr::SCAN_INT: break;
 			case Instr::PUSH:
-				write("subu $sp, {}", instr.target);
+				write("subu $sp, $sp, {}", instr.target);
 				break;
 			case Instr::POP:
-				write("addu $sp, {}", instr.target);
+				write("addu $sp, $sp, {}", instr.target);
 				break;
 			case Instr::LOAD_STA:
-				write("lw {}, $sp({})", instr.target, instr.source_a);
+				write("lw {}, {}($sp)", instr.target, instr.source_a);
 				break;
 			case Instr::SAVE_LAB:
 				write("sw {}, {}", instr.target, instr.source_a);
 				break;
 			case Instr::SAVE_STA:
-				write("sw {}, $sp({})", instr.target, instr.source_a);
+				write("sw {}, {}($sp)", instr.target, instr.source_a);
+				break;
+			case Instr::LOAD_LAB_IMM:
+				write("lw {}, {}+{}", instr.target, instr.source_a, instr.source_b);
+				break;
+			case Instr::SAVE_LAB_IMM:
+				write("sw {}, {}+{}", instr.target, instr.source_a, instr.source_b);
 				break;
 			default: ;
 

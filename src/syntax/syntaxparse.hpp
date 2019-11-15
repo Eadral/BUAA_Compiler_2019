@@ -589,7 +589,8 @@ namespace syntax{
 			default:
 				ERROR
 			}
-			ir.pushStackVars(_symbol_table.getStackScopeBytes());
+			if (_symbol_table.getScope() > -1) 
+				ir.pushStackVars(_symbol_table.getStackScopeBytes());
 			syntaxOutput("<变量定义>");
 		}
 

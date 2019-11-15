@@ -29,7 +29,7 @@ namespace buaac {
 			
 		public:
 
-			bool _is_global;
+			bool _is_global{0};
 			
 			Symbol() {
 				
@@ -68,54 +68,6 @@ namespace buaac {
 				_is_array = false;
 
 			}
-
-
-			Symbol(const Symbol& other)
-				: _ident(other._ident),
-				  _symbol_type(other._symbol_type),
-				  _is_const(other._is_const),
-				  _const_value(other._const_value),
-				  _is_array(other._is_array),
-				  _array_len(other._array_len),
-				  _function_parameters(other._function_parameters) {
-			}
-
-			Symbol(Symbol&& other) noexcept
-				: _ident(std::move(other._ident)),
-				  _symbol_type(std::move(other._symbol_type)),
-				  _is_const(other._is_const),
-				  _const_value(std::move(other._const_value)),
-				  _is_array(other._is_array),
-				  _array_len(other._array_len),
-				  _function_parameters(std::move(other._function_parameters)) {
-			}
-
-			Symbol& operator=(const Symbol& other) {
-				if (this == &other)
-					return *this;
-				_ident = other._ident;
-				_symbol_type = other._symbol_type;
-				_is_const = other._is_const;
-				_const_value = other._const_value;
-				_is_array = other._is_array;
-				_array_len = other._array_len;
-				_function_parameters = other._function_parameters;
-				return *this;
-			}
-
-			Symbol& operator=(Symbol&& other) noexcept {
-				if (this == &other)
-					return *this;
-				_ident = std::move(other._ident);
-				_symbol_type = std::move(other._symbol_type);
-				_is_const = other._is_const;
-				_const_value = std::move(other._const_value);
-				_is_array = other._is_array;
-				_array_len = other._array_len;
-				_function_parameters = std::move(other._function_parameters);
-				return *this;
-			}
-
 
 			friend bool operator==(const Symbol& lhs, const Symbol& rhs) {
 				return lhs._ident == rhs._ident
