@@ -4,6 +4,7 @@
 
 #include <string>
 #include <fstream>
+#include <cstdio>
 
 namespace meow {
 
@@ -42,9 +43,7 @@ namespace meow {
 
 
 std::string i2a(int i) {
-	char buf[255];
-	itoa(i, buf, 10);
-	return std::string(buf);
+	return std::to_string(i);;
 }
 
 int a2i(std::string str) {

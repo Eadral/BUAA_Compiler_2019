@@ -25,6 +25,7 @@ namespace buaac {
 				MINUS,
 				MULT,
 				DIV,
+				LA,
 
 				// Stack
 				PUSH,

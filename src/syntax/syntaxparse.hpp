@@ -465,7 +465,7 @@ namespace syntax{
 			case TokenType::MINU:
 				eatToken(TokenType::MINU);
 				ret = uninteger();
-				neg = FORMAT("-{}", ret);
+				neg = FORMAT("-{}", ret.getValue());
 				ret = Token(TokenType::INTCON, neg);
 				break;
 			default:
@@ -573,7 +573,9 @@ namespace syntax{
 							error('a');
 						}
 						eatToken(TokenType::RBRACK);
-						
+						if (_symbol_table.getScope() == -1) {
+							ir.defineGlobalIntArr(ident.getValue(), a2i(uninteger_token.getValue()));
+						}
 						checkPush(_symbol_table.push(Symbol(_status_vardef_type, ident.getValue(), atoi(uninteger_token.getValue().c_str()))));
 						
 						break;
@@ -602,12 +604,12 @@ namespace syntax{
 		}
 
 		void pushStackReg(std::string reg) {
-			ir.pushStackReg(reg);
+			ir.__pushStackReg(reg);
 			_symbol_table.addOffset(4);
 		}
 
 		void popStackReg(std::string reg) {
-			ir.popStackReg(reg);
+			ir.__popStackReg(reg);
 			_symbol_table.subOffset(4);
 		}
 
@@ -634,7 +636,9 @@ namespace syntax{
 							error('a');
 						}
 						eatToken(TokenType::RBRACK);
-
+						if (_symbol_table.getScope() == -1) {
+							ir.defineGlobalIntArr(ident.getValue(), a2i(uninteger_token.getValue()));
+						}
 						checkPush(_symbol_table.push(Symbol(_status_vardef_type, ident.getValue(), atoi(uninteger_token.getValue().c_str()))));
 
 						break;
@@ -715,6 +719,7 @@ namespace syntax{
 				compStatement();
 				eatToken(TokenType::RBRACE);
 				ir.popStack(_symbol_table.getStackScopeBytes());
+				_symbol_table.clearOffset();
 				_symbol_table.popScope();
 				// debugln("pop at {}", getLineNumber());
 				break;
@@ -753,6 +758,7 @@ namespace syntax{
 				compStatement();
 				eatToken(TokenType::RBRACE);
 				ir.popStack(_symbol_table.getStackScopeBytes());
+				_symbol_table.clearOffset();
 				_symbol_table.popScope();
 				// debugln("pop at {}", getLineNumber());
 				break;
@@ -1136,8 +1142,10 @@ namespace syntax{
 				// '('＜表达式＞')'
 				eatToken(TokenType::LPARENT);
 				ir.exprPush(IR::PARE_L);
-				ir.notGen();
-				expr();
+				// ir.notGen();
+				ir.exprStart();
+				tie(expr_type, expr_ans) = expr();
+				ir.exprPushLiteralInt(expr_ans);
 				eatToken(TokenType::RPARENT);
 				ir.exprPush(IR::PARE_R);
 				break;
@@ -1213,15 +1221,47 @@ namespace syntax{
 		}
 
 		std::string getArrAddr(std::string arr, std::string expr_ans) {
-			ir.exprStart();
-			ir.exprPushLiteralInt(_symbol_table.getStackBytesByIdent(arr));
-			ir.exprPush(IR::MINUS);
-			ir.exprPushLiteralInt(expr_ans);
-			ir.exprPush(IR::MULT);
-			ir.exprPushLiteralInt(4);
-			ir.exprPush(IR::PLUS);
-			ir.exprPushLiteralInt("$sp");
-			return ir.gen();
+			// ir.exprStart();
+			// ir.exprPushLiteralInt(_symbol_table.getStackBytesByIdent(arr));
+			// ir.exprPush(IR::MINUS);
+			// ir.exprPushLiteralInt(expr_ans);
+			// ir.exprPush(IR::MULT);
+			// ir.exprPushLiteralInt(4);
+			// ir.exprPush(IR::PLUS);
+			// if (_symbol_table.isGlobal(arr)) {
+			// 	ir.exprPushLabel(ir.getGlobalName(arr));
+			// }
+			// else {
+			// 	ir.exprPushLiteralInt("$sp");
+			// }
+			// return ir.gen();
+			
+			// TODO: fixme, using reg assignment
+			// ir.appendInstr({ Instr::PLUS, "$k0", "$0", _symbol_table.getStackBytesByIdent(arr) });
+			ir.appendInstr({ Instr::PLUS, "$k1", "$0", expr_ans });
+			ir.appendInstr({ Instr::PLUS, "$k0", "$0", "4" });
+			ir.appendInstr({ Instr::MULT, "$k1", "$k1", "$k0" });
+			ir.appendInstr({ Instr::PLUS, "$k0", "$0", _symbol_table.getStackBytesByIdent(arr) });
+			ir.appendInstr({ Instr::MINUS, "$k0", "$k0", "$k1" });
+			if (_symbol_table.isGlobal(arr)) {
+				ir.appendInstr({ Instr::LA, "$k1", ir.getGlobalName(arr) });
+				// ir.exprPushLabel(ir.getGlobalName(arr));
+			}
+			else {
+				ir.appendInstr({ Instr::PLUS, "$k1", "$0", "$sp" });
+				// ir.exprPushLiteralInt("$sp");
+			}
+			ir.appendInstr({ Instr::PLUS, "$k0", "$k0", "$k1" });
+			
+			return "$k0";
+		}
+	
+		void assign(std::string ident, std::string ans) {
+			if (_symbol_table.isGlobal(ident)) {
+				ir.appendInstr(Instr(Instr::SAVE_LAB, ans, ir.getGlobalName(ident)));
+			} else {
+				ir.appendInstr(Instr(Instr::SAVE_STA, ans, _symbol_table.getStackBytesByIdent(ident)));
+			}
 		}
 		
 		// ＜赋值语句＞   ::=  ＜标识符＞＝＜表达式＞|＜标识符＞'['＜表达式＞']'=＜表达式＞
@@ -1250,7 +1290,8 @@ namespace syntax{
 					eatToken(TokenType::ASSIGN);
 					ir.exprStart();
 					tie(std::ignore, expr_reg) = expr();
-					ir.saveStack(expr_reg, _symbol_table.getStackBytesByIdent(ident.getValue()));
+					
+					assign(ident.getValue(), expr_reg);
 					break;
 				case TokenType::LBRACK:
 					// '['＜表达式＞']'=＜表达式＞
@@ -1419,7 +1460,7 @@ namespace syntax{
 		}
 
 		void saveVar(std::string expr_reg, Token ident) {
-			ir.saveStack(expr_reg, _symbol_table.getStackBytesByIdent(ident.getValue()));
+			assign(ident.getValue(), expr_reg);
 		}
 		
 		// ＜循环语句＞   ::=  while '('＜条件＞')'＜语句＞
@@ -1528,14 +1569,14 @@ namespace syntax{
 
 		void pushRegPool() {
 			// TODO: repair, move to mips
-			for (int i = 0; i <= 100; i++) {
+			for (int i = 0; i <= POOLSIZE; i++) {
 				ir.appendInstr({ Instr::LOAD_LAB_IMM, "$k0", "REGPOOL", 4 * i });
 				pushStackReg("$k0"); 
 			}
 		}
 
 		void popRegPool() {
-			for (int i = 100; i >= 0; i--) {
+			for (int i = POOLSIZE; i >= 0; i--) {
 				popStackReg("$k0");
 				ir.appendInstr({ Instr::SAVE_LAB_IMM, "$k0", "REGPOOL", 4 * i });
 			}
@@ -1556,7 +1597,7 @@ namespace syntax{
 				
 				eatToken(TokenType::LPARENT);
 				val_para_list = valParaList(func_symbol.getParaList());
-
+				_symbol_table.subOffset(val_para_list.size() * 4);
 				excepted_para_list = func_symbol.getParaList();
 				if (excepted_para_list != val_para_list) {
 					// int length = std::min(excepted_para_list.size(), val_para_list.size());
@@ -1606,7 +1647,7 @@ namespace syntax{
 				// ＜表达式＞
 				ir.exprStart();
 				tie(expr_type, expr_ans_reg) = expr();
-				ir.pushStackReg(expr_ans_reg);
+				pushStackReg(expr_ans_reg);
 				_val_para_list.push_back(expr_type);
 				if (expected_symbols.size() > index && expected_symbols[index] != expr_type) {
 					error('e');
@@ -1644,7 +1685,8 @@ namespace syntax{
 				eatToken(TokenType::COMMA);
 				ir.exprStart();
 				tie(expr_type, expr_ans_reg) = expr();
-				ir.pushStackReg(expr_ans_reg);
+				
+				pushStackReg(expr_ans_reg);
 				_val_para_list.push_back(expr_type);
 				if (expected_symbols.size() > index && expected_symbols[index] != expr_type) {
 					error('e');
@@ -1855,6 +1897,7 @@ namespace syntax{
 					if (_status_func_defining_type != SymbolType::FUNC_VOID) {
 						error('h');
 					}
+					ir.jump(ir.getReturnLabel());
 					break;
 				default:
 					ERROR

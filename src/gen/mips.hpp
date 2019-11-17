@@ -59,7 +59,7 @@ namespace buaac {
 		#define REGPOOL "REGPOOL"
 		
 		void genRegPool() {
-			write("{}: \n .align 3 \n .space 400", REGPOOL);
+			write("{}: \n .align 3 \n .space {}", REGPOOL, POOLSIZE*4);
 		}
 
 		void genDefine(GlobalDefine& define) {
@@ -70,6 +70,9 @@ namespace buaac {
 				break;
 			case GlobalDefine::VAR_INT:
 				write("{}: .space 4", define.var_int.label);
+				break;
+			case GlobalDefine::VAR_INT_ARR:
+				write("{}: .space {}", define.var_int_arr.label, 4*define.var_int_arr.len);
 				break;
 			default: ;
 			}
@@ -151,7 +154,10 @@ namespace buaac {
 					if (NOT_ASSIGN(target))
 						REGPOOL_SAVE(target, $t0);
 					break;
-				case Instr::SAVE_LAB: break;
+				case Instr::SAVE_LAB:
+					if (NOT_ASSIGN(target))
+						REGPOOL_LOAD(target, $t0);
+					break;
 				case Instr::SAVE_LAB_IMM: break;
 				case Instr::SAVE_STA:
 					if (NOT_ASSIGN(target))
@@ -209,6 +215,10 @@ namespace buaac {
 					if (NOT_ASSIGN(source_a))
 						REGPOOL_LOAD(source_a, $t1);
 					break;
+				case Instr::LA:
+					if (NOT_ASSIGN(target))
+						REGPOOL_SAVE(target, $t0);
+					break;
 				default: ;
 				}
 				
@@ -262,7 +272,8 @@ namespace buaac {
 				write("mul {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 				break;
 			case Instr::DIV:
-				write("divu {}, {}, {}", instr.target, instr.source_a, instr.source_b);
+				write("div {}, {}", instr.source_a, instr.source_b);
+				write("mflo {}", instr.target);
 				break;
 			case Instr::LOAD_LAB:
 				write("lw {}, {}", instr.target, instr.source_a);
@@ -380,6 +391,9 @@ namespace buaac {
 				break;
 			case Instr::LOAD_STA_ARR:
 				write("lw {}, ({})", instr.target, instr.source_a);
+				break;
+			case Instr::LA:
+				write("la {}, {}", instr.target, instr.source_a);
 				break;
 			default: ;
 

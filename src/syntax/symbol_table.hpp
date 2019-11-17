@@ -165,6 +165,10 @@ namespace buaac {
 			void subOffset(int bytes) {
 				scope_bytes_offset -= bytes;
 			}
+
+			void clearOffset() {
+				scope_bytes_offset = 0;
+			}
 			
 			int getStackScopeBytes() {
 				int s = 0;

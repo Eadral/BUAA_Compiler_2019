@@ -6,6 +6,8 @@
 #include "func.hpp"
 #include <memory>
 
+#define POOLSIZE 30
+
 namespace buaac {
 
 	using global::GlobalDefine;
@@ -31,11 +33,13 @@ namespace buaac {
 		}
 
 		void defineMain() {
+			temp_cnt = 0;
 			blocks_now = main_blocks;
 			func_name = "main";
 		}
 
 		void defineFunc(std::string func_name) {
+			temp_cnt = 0;
 			funcs.emplace_back(Func(func_name));
 			blocks_now = funcs.back().blocks;
 			this->func_name = func_name;
@@ -81,11 +85,19 @@ namespace buaac {
 		// 	appendInstr({Instr::PRINT_INT, reg});
 		// }
 
-		void pushStackReg(std::string reg) {
+		// void pushStackReg(std::string reg) {
+		// 	appendInstr(Instr(Instr::PUSH_REG, reg));
+		// }
+		//
+		// void popStackReg(std::string reg) {
+		// 	appendInstr(Instr(Instr::POP_REG, reg));
+		// }
+
+		void __pushStackReg(std::string reg) {
 			appendInstr(Instr(Instr::PUSH_REG, reg));
 		}
 
-		void popStackReg(std::string reg) {
+		void __popStackReg(std::string reg) {
 			appendInstr(Instr(Instr::POP_REG, reg));
 		}
 
@@ -101,7 +113,10 @@ namespace buaac {
 			appendInstr({ Instr::PLUS, target, "$0", source });
 		}
 
-		
+		void defineGlobalIntArr(const std::string& ident, int len) {
+			globalDefine(global::VarIntArr{ getGlobalName(ident), len });
+		}
+
 
 		enum JumpDefine {
 			DEFINE_IF,
@@ -282,15 +297,21 @@ namespace buaac {
 			obj_stack.push_back(t);
 		}
 
+		void exprPushLabel(std::string label) {
+			auto t = newTemp();
+			appendInstr(Instr(Instr::LA, t, label));
+			obj_stack.push_back(t);
+		}
+
 		void exprPushLiteralInt(int value) {
 			exprPushLiteralInt(i2a(value));
 		}
 
 		int not_gen = 0;
 
-		void notGen() {
-			not_gen++;
-		}
+		// void notGen() {
+		// 	not_gen++;
+		// }
 
 
 		
@@ -305,10 +326,10 @@ namespace buaac {
 		}
 		
 		std::string gen() {
-			if (not_gen > 0) {
-				not_gen--;
-				return "NOTGEN";
-			}
+			// if (not_gen > 0) {
+			// 	not_gen--;
+			// 	return "NOTGEN";
+			// }
 			while (!op_stack.empty()) {
 				pop_op();
 			}
@@ -373,7 +394,7 @@ namespace buaac {
 				obj_stack.pop_back();
 				// source_a = obj_stack.back();
 				// obj_stack.pop_back();
-				instrs.emplace_back(Instr(Instr::MINUS, newTemp(), "0", source_b));
+				instrs.emplace_back(Instr(Instr::MINUS, temp, "$0", source_b));
 				obj_stack.push_back(temp);
 				break;
 			default:;
@@ -388,13 +409,17 @@ namespace buaac {
 			appendInstr(Instr(Instr::PUSH, bytes));
 		}
 
-		void saveStack(std::string reg, int bytes) {
-			appendInstr(Instr(Instr::SAVE_STA, reg, bytes));
-		}
+		// void saveStack(std::string reg, int bytes) {
+		// 	appendInstr(Instr(Instr::SAVE_STA, reg, bytes));
+		// }
+		//
+		// void saveLabel(std::string label) {
+		// 	appendInstr({ Instr::SAVE_LAB, label });
+		// }
 
-		void loadStack(std::string reg, int bytes) {
-			appendInstr(Instr(Instr::LOAD_STA, reg, bytes));
-		}
+		// void loadStack(std::string reg, int bytes) {
+		// 	appendInstr(Instr(Instr::LOAD_STA, reg, bytes));
+		// }
 
 		// std::ofstream fout;
 		
