@@ -262,7 +262,7 @@ namespace syntax{
 			default:
 				ERROR
 			}
-			ir.addReturn();
+			ir.appendInstr(Instr(Instr::RETURN_END)); 
 		}
 		// ＜常量说明＞ ::=  const＜常量定义＞;{ const＜常量定义＞;}
 		void constDec() {
@@ -593,9 +593,22 @@ namespace syntax{
 			default:
 				ERROR
 			}
-			if (_symbol_table.getScope() > 0) 
-				ir.pushStackVars(_symbol_table.getStackScopeBytes() - _para_cnt*4);
+			if (_symbol_table.getScope() == 0) {
+				ir.pushStackVars(_symbol_table.getStackScopeBytes());
+			} else if (_symbol_table.getScope() > 0) {
+				ir.pushStackVars(_symbol_table.getStackScopeBytes() - _para_cnt * 4);
+			}
 			syntaxOutput("<变量定义>");
+		}
+
+		void pushStackReg(std::string reg) {
+			ir.pushStackReg(reg);
+			_symbol_table.addOffset(4);
+		}
+
+		void popStackReg(std::string reg) {
+			ir.popStackReg(reg);
+			_symbol_table.addOffset(4);
 		}
 
 		// {,(＜标识符＞|＜标识符＞'['＜无符号整数＞']' )} 
@@ -676,6 +689,7 @@ namespace syntax{
 			case TokenType::CHARTK:
 				//  ＜声明头部＞
 				tie(type, name) = decHead();
+				ir.defineFunc(name.getValue());
 				if (type.getTokenType() == TokenType::INTTK) {
 					func_type = SymbolType::FUNC_INT;
 				} else if (type.getTokenType() == TokenType::CHARTK) {
@@ -699,6 +713,7 @@ namespace syntax{
 				// debugln("exprPush at {}", getLineNumber());
 				compStatement();
 				eatToken(TokenType::RBRACE);
+				ir.popStack(_symbol_table.getStackScopeBytes());
 				_symbol_table.popScope();
 				// debugln("pop at {}", getLineNumber());
 				break;
@@ -770,10 +785,13 @@ namespace syntax{
 				resetOuput();
 				// ［＜变量说明＞］
 				verDec();
+				pushStackReg("$ra");
 				resetOuput();
 				// ＜语句列＞
 				statementCol();
 				resetOuput();
+				ir.newBlock(ir.getReturnLabel());
+				popStackReg("$ra");
 				break;
 			default:
 				ERROR
@@ -857,6 +875,7 @@ namespace syntax{
 		}
 		// ＜表达式＞    ::= ［＋｜－］＜项＞{＜加法运算符＞＜项＞}
 		tuple<SymbolType, std::string> expr() {
+			// ir.exprStart();
 			SymbolType expr_type = SymbolType::INT;
 			Token token;
 			Symbol symbol;
@@ -1017,6 +1036,7 @@ namespace syntax{
 				case TokenType::LPARENT:
 					// ＜有返回值函数调用语句＞       
 					funcCall();
+					ir.exprPushLiteralInt("$v0");
 					break;
 				case TokenType::LBRACK:
 				case TokenType::LEQ:
@@ -1154,11 +1174,11 @@ namespace syntax{
 			case TokenType::LBRACE:
 				// '{'＜语句列＞'}'
 				eatToken(TokenType::LBRACE);
-				_symbol_table.pushScope();
+				// _symbol_table.pushScope();
 				statementCol();
 				resetOuput();
 				eatToken(TokenType::RBRACE);
-				_symbol_table.popScope();
+				// _symbol_table.popScope();
 				break;
 			default:
 				ERROR
@@ -1190,18 +1210,21 @@ namespace syntax{
 				case TokenType::ASSIGN:
 					// ＝＜表达式＞
 					eatToken(TokenType::ASSIGN);
+					ir.exprStart();
 					tie(std::ignore, expr_reg) = expr();
 					ir.saveStack(expr_reg, _symbol_table.getStackBytesByIdent(ident.getValue()));
 					break;
 				case TokenType::LBRACK:
 					// '['＜表达式＞']'=＜表达式＞
 					eatToken(TokenType::LBRACK);
+					ir.exprStart();
 					tie(expr_type, std::ignore) = expr();
 					if (expr_type != SymbolType::INT) {
 						error('i');
 					}
 					eatToken(TokenType::RBRACK);
 					eatToken(TokenType::ASSIGN);
+					ir.exprStart();
 					expr();
 					break;
 				default:
@@ -1219,12 +1242,17 @@ namespace syntax{
 			case TokenType::IFTK:
 				// if '('＜条件＞')'＜语句＞
 				eatToken(TokenType::IFTK);
+				ir.newIf();
+				ir.newBlock(ir.getIfName());
 				eatToken(TokenType::LPARENT);
 				cond();
 				eatToken(TokenType::RPARENT);
+				ir.newBlock(ir.getIfThanName());
 				statement();
 				// ［else＜语句＞］
+				ir.newBlock(ir.getIfElseName());
 				condStatElse();
+				ir.newBlock(ir.getIfEndName());
 				break;
 			default:
 				ERROR
@@ -1237,6 +1265,7 @@ namespace syntax{
 			case TokenType::ELSETK:
 				// else＜语句＞
 				eatToken(TokenType::ELSETK);
+				ir.jump(ir.getIfEndName());
 				statement();
 				break;
 			// Empty
@@ -1264,6 +1293,7 @@ namespace syntax{
 			SymbolType expr_type_rhs;
 			Token cmp_token;
 			TokenType cmp_type;
+			std::string expr_ans_lhs, expr_ans_rhs;
 			
 			switch (lookTokenType()) {
 			case TokenType::IDENFR:
@@ -1273,7 +1303,8 @@ namespace syntax{
 			case TokenType::MINU:
 			case TokenType::LPARENT:
 				// ＜表达式＞
-				tie(expr_type_lhs, std::ignore) = expr();
+				ir.exprStart();
+				tie(expr_type_lhs, expr_ans_lhs) = expr();
 
 				if (expr_type_lhs != SymbolType::INT) {
 					error('f');
@@ -1288,24 +1319,41 @@ namespace syntax{
 				case TokenType::NEQ:
 					//＜关系运算符＞＜表达式＞
 					cmp_token = relationOp();
-					tie(expr_type_rhs, std::ignore) = expr();
+					ir.exprStart();
+					tie(expr_type_rhs, expr_ans_rhs) = expr();
 					
 					cmp_type = cmp_token.getTokenType();
-					// if (cmp_type == TokenType::EQL || cmp_type == TokenType::NEQ) {
-					// 	if (expr_type_lhs != expr_type_rhs) {
-					// 		error('f');
-					// 	}
-					// } else {
 						
-						if (expr_type_rhs != SymbolType::INT) {
-							error('f');
-						}
-					// }
+					if (expr_type_rhs != SymbolType::INT) {
+						error('f');
+					}
+
+					switch (cmp_token.getTokenType().type_) {
+					case TokenType::LSS:
+						ir.appendInstr({ Instr::BGE, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						break;
+					case TokenType::LEQ:
+						ir.appendInstr({ Instr::BGT, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						break;
+					case TokenType::GEQ:
+						ir.appendInstr({ Instr::BLT, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						break;
+					case TokenType::GRE:
+						ir.appendInstr({ Instr::BLE, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						break;
+					case TokenType::EQL:
+						ir.appendInstr({ Instr::BNE, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						break;
+					case TokenType::NEQ:
+						ir.appendInstr({ Instr::BEQ, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						break;
+					}
 					
 					break;
 				case TokenType::SEMICN:
 				case TokenType::RPARENT:
 					// Emtpy
+					ir.appendInstr({ Instr::BLEZ, expr_ans_lhs, ir.getCondJumpName() });
 					break;
 				default:
 					ERROR
@@ -1316,12 +1364,34 @@ namespace syntax{
 			}
 			syntaxOutput("<条件>");
 		}
+
+		void exprPushVar(Token token) {
+			if (_symbol_table.isGlobal(token.getValue())) {
+				ir.exprPushGlobalVar(token.getValue());
+			}
+			else {
+				ir.exprPushStackVar(token.getValue(), _symbol_table.getStackBytesByIdent(token.getValue()));
+			}
+		}
+
+		void saveVar(std::string expr_reg, Token ident) {
+			ir.saveStack(expr_reg, _symbol_table.getStackBytesByIdent(ident.getValue()));
+		}
+		
 		// ＜循环语句＞   ::=  while '('＜条件＞')'＜语句＞
 		// | do＜语句＞while '('＜条件＞')'
 		// |for'('＜标识符＞＝＜表达式＞;＜条件＞;＜标识符＞＝＜标识符＞(+|-)＜步长＞')'＜语句＞
+		
 		void cycleStat() {
 			// Token 
 			Token while_token;
+
+			Token for_step_op;
+			Token for_step;
+			Token for_step_ident;
+			std::string step_str;
+			Token for_start_token;
+			std::string for_start_ans;
 			
 			switch (lookTokenType()) {
 			case TokenType::DOTK:
@@ -1349,19 +1419,38 @@ namespace syntax{
 				// for'('＜标识符＞＝＜表达式＞;＜条件＞;＜标识符＞＝＜标识符＞(+|-)＜步长＞')'＜语句＞
 				eatToken(TokenType::FORTK);
 				eatToken(TokenType::LPARENT);
-				eatToken(TokenType::IDENFR);
+				for_start_token = eatToken(TokenType::IDENFR);
 				eatToken(TokenType::ASSIGN);
-				expr();
+				ir.exprStart();
+				tie(std::ignore, for_start_ans) = expr();
+				saveVar(for_start_ans, for_start_token);
 				eatToken(TokenType::SEMICN);
+				ir.newFor();
+				ir.newBlock(ir.getForStartName());
 				cond();
 				eatToken(TokenType::SEMICN);
 				eatToken(TokenType::IDENFR);
 				eatToken(TokenType::ASSIGN);
-				eatToken(TokenType::IDENFR);
-				plusOp();
-				step();
+				for_step_ident = eatToken(TokenType::IDENFR);
+				for_step_op = plusOp();
+				for_step = step();
 				eatToken(TokenType::RPARENT);
+				ir.newBlock(ir.getForBodyName());
 				statement();
+
+				ir.exprStart();
+				step_str = for_step.getValue();
+				exprPushVar(for_step_ident);
+				if (for_step_op.getTokenType().type_ == TokenType::PLUS) {
+					ir.exprPush(IR::PLUS);
+				} else {
+					ir.exprPush(IR::MINUS);
+				}
+				ir.exprPushLiteralInt(step_str);
+				saveVar(ir.gen(), for_step_ident);
+				
+				ir.jump(ir.getForStartName());
+				ir.newBlock(ir.getForEndName());
 				break;
 			default:
 				ERROR
@@ -1369,15 +1458,17 @@ namespace syntax{
 			syntaxOutput("<循环语句>");
 		}
 		// ＜步长＞::= ＜无符号整数＞  
-		void step() {
+		Token step() {
+			Token token;
 			switch (lookTokenType()) {
 			case TokenType::INTCON:
-				uninteger();
+				token = uninteger();
 				break;
 			default:
 				ERROR
 			}
 			syntaxOutput("<步长>");
+			return token;
 		}
 		// ＜有/无返回值函数调用语句＞ ::= ＜标识符＞'('＜值参数表＞')'
 		void funcCall() {
@@ -1440,6 +1531,7 @@ namespace syntax{
 			case TokenType::MINU:
 			case TokenType::LPARENT:
 				// ＜表达式＞
+				ir.exprStart();
 				tie(expr_type, expr_ans_reg) = expr();
 				ir.pushStackReg(expr_ans_reg);
 				_val_para_list.push_back(expr_type);
@@ -1477,6 +1569,7 @@ namespace syntax{
 			case TokenType::COMMA:
 				// ,＜表达式＞
 				eatToken(TokenType::COMMA);
+				ir.exprStart();
 				tie(expr_type, expr_ans_reg) = expr();
 				ir.pushStackReg(expr_ans_reg);
 				_val_para_list.push_back(expr_type);
@@ -1593,6 +1686,7 @@ namespace syntax{
 					switch (lookTokenType()) {
 					case TokenType::COMMA:
 						eatToken(TokenType::COMMA);
+						ir.exprStart();
 						expr();
 						eatToken(TokenType::RPARENT);
 						break;
@@ -1609,6 +1703,7 @@ namespace syntax{
 				case TokenType::PLUS:
 				case TokenType::MINU:
 				case TokenType::LPARENT:
+					ir.exprStart();
 					tie(expr_type, expr_ans) = expr();
 					ir.printInt(expr_ans);
 					eatToken(TokenType::RPARENT);
@@ -1626,6 +1721,7 @@ namespace syntax{
 		// ＜返回语句＞   ::=  return['('＜表达式＞')']    
 		void retStat() {
 			SymbolType expr_type;
+			std::string expr_ans;
 			
 			switch (lookTokenType()) {
 			case TokenType::RETURNTK:
@@ -1634,7 +1730,10 @@ namespace syntax{
 				case TokenType::LPARENT:
 					// '('＜表达式＞')'
 					eatToken(TokenType::LPARENT);
-					tie(expr_type, std::ignore) = expr();
+					ir.exprStart();
+					tie(expr_type, expr_ans) = expr();
+					ir.moveReg("$v0", expr_ans);
+					ir.jump(ir.getReturnLabel());
 					_status_value_ret_cnt++;
 					if (_status_func_defining_type == SymbolType::FUNC_INT && expr_type != SymbolType::INT) {
 						error('h');

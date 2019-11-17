@@ -59,7 +59,7 @@ namespace buaac {
 		#define REGPOOL "REGPOOL"
 		
 		void genRegPool() {
-			write("{}: .space 400", REGPOOL);
+			write("{}: \n .align 3 \n .space 400", REGPOOL);
 		}
 
 		void genDefine(GlobalDefine& define) {
@@ -173,7 +173,26 @@ namespace buaac {
 					break;
 				case Instr::POP_REG: break;
 				case Instr::CALL: break;
-				case Instr::RETURN: break;
+				case Instr::RETURN_END: break;
+				case Instr::JUMP: break;
+					
+				case Instr::BGEZ: 
+				case Instr::BLEZ:
+					if (NOT_ASSIGN(target))
+						REGPOOL_LOAD(target, $t0);
+					break;
+					
+				case Instr::BLT: 
+				case Instr::BGT: 
+				case Instr::BLE: 
+				case Instr::BGE: 
+				case Instr::BEQ: 
+				case Instr::BNE:
+					if (NOT_ASSIGN(target))
+						REGPOOL_LOAD(target, $t0);
+					if (NOT_ASSIGN(source_a))
+						REGPOOL_LOAD(source_a, $t1);
+					break;
 				default: ;
 				}
 				
@@ -273,11 +292,39 @@ namespace buaac {
 			case Instr::POP_REG:
 				write("lw {}, ($sp)", instr.target);
 				write("addi $sp, $sp, 4");
+				break;
 			case Instr::CALL:
 				write("jal {}", instr.target);
 				break;
-			case Instr::RETURN:
+			case Instr::RETURN_END:
 				write("jr $ra");
+				break;
+			case Instr::JUMP:
+				write("j {}", instr.target);
+				break;
+			case Instr::BGEZ:
+				write("bgez {}, {}", instr.target, instr.source_a);
+				break;
+			case Instr::BLEZ:
+				write("blez {}, {}", instr.target, instr.source_a);
+				break;
+			case Instr::BLT:
+				write("blt {}, {}, {}", instr.target, instr.source_a, instr.source_b);
+				break;
+			case Instr::BGT:
+				write("bgt {}, {}, {}", instr.target, instr.source_a, instr.source_b);
+				break;
+			case Instr::BLE:
+				write("ble {}, {}, {}", instr.target, instr.source_a, instr.source_b);
+				break;
+			case Instr::BGE:
+				write("bge {}, {}, {}", instr.target, instr.source_a, instr.source_b);
+				break;
+			case Instr::BEQ:
+				write("beq {}, {}, {}", instr.target, instr.source_a, instr.source_b);
+				break;
+			case Instr::BNE:
+				write("bne {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 				break;
 			default: ;
 

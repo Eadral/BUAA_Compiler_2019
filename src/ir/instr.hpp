@@ -39,7 +39,17 @@ namespace buaac {
 
 				// JUMP
 				CALL,
-				RETURN,
+				RETURN_END,
+				JUMP,
+				BGEZ,
+				BLEZ,
+				BLT,
+				BGT,
+				BLE,
+				BGE,
+				BEQ,
+				BNE,
+				
 				
 			} type;
 
@@ -65,7 +75,6 @@ namespace buaac {
 				: type(type), target(target), source_a(i2a(source_a)), source_b(source_b) {}
 			Instr(Type type, std::string target, std::string source_a, int source_b)
 				: type(type), target(target), source_a(source_a), source_b(i2a(source_b)) {}
-
 
 			Instr(const Instr& other)
 				: type(other.type),

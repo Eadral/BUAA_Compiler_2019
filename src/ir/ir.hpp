@@ -20,6 +20,7 @@ namespace buaac {
 		BlocksPtr main_blocks;
 
 		int cnt_c = 0;
+		std::string func_name;
 		
 		BlocksPtr blocks_now;
 
@@ -31,11 +32,17 @@ namespace buaac {
 
 		void defineMain() {
 			blocks_now = main_blocks;
+			func_name = "main";
 		}
 
 		void defineFunc(std::string func_name) {
 			funcs.emplace_back(Func(func_name));
 			blocks_now = funcs.back().blocks;
+			this->func_name = func_name;
+		}
+
+		std::string getReturnLabel() {
+			return FORMAT("return_{}", func_name);
 		}
 		
 		void newBlock(std::string label) {
@@ -78,6 +85,10 @@ namespace buaac {
 			appendInstr(Instr(Instr::PUSH_REG, reg));
 		}
 
+		void popStackReg(std::string reg) {
+			appendInstr(Instr(Instr::POP_REG, reg));
+		}
+
 		void popStack(size_t size) {
 			appendInstr(Instr(Instr::POP, size));
 		}
@@ -86,8 +97,69 @@ namespace buaac {
 			appendInstr(Instr(Instr::CALL, func_name));
 		}
 
-		void addReturn() {
-			appendInstr(Instr(Instr::RETURN));
+		void moveReg(const std::string target, const std::string& source) {
+			appendInstr({ Instr::PLUS, target, "$0", source });
+		}
+
+
+		enum {
+			DEFINE_IF,
+			DEFINE_FOR,
+		} jump_define;
+		
+		void newIf() {
+			if_cnt++;
+			jump_define = DEFINE_IF;
+		}
+
+		std::string getCondJumpName() {
+			switch (jump_define) {
+
+			case DEFINE_IF:
+				return getIfElseName();
+				break;
+			case DEFINE_FOR:
+				return getForEndName();
+				break;
+			default: ;
+			}
+		}
+
+		std::string getIfName() {
+			return FORMAT("if_{}", if_cnt);
+		}
+
+		std::string getIfThanName() {
+			return FORMAT("if_{}_than", if_cnt);
+		}
+		
+		std::string getIfElseName() {
+			return FORMAT("if_{}_else", if_cnt);
+		}
+
+		std::string getIfEndName() {
+			return FORMAT("if_{}_end", if_cnt);
+		}
+
+		void jump(const std::string& label) {
+			appendInstr(Instr(Instr::JUMP, label));
+		}
+
+		void newFor() {
+			for_cnt++;
+			jump_define = DEFINE_FOR;
+		}
+
+		std::string getForStartName() {
+			return FORMAT("for_{}_start", for_cnt);
+		}
+
+		std::string getForBodyName() {
+			return FORMAT("for_{}_body", for_cnt);
+		}
+
+		std::string getForEndName() {
+			return FORMAT("for_{}_end", for_cnt);
 		}
 
 #pragma region expr
@@ -103,6 +175,10 @@ namespace buaac {
 		};
 		const int priority[10] = { 0, 0, 1, 1, 2, 2, 3 };
 
+		std::vector< std::vector<OP>> op_stack_stack{};
+		std::vector< std::vector<std::string> > obj_stack_stack{};
+		std::vector< std::vector<Instr> > instrs_stack{};
+		
 		std::vector<OP> op_stack;
 		std::vector<std::string> obj_stack;
 		std::vector<Instr> instrs;
@@ -149,12 +225,28 @@ namespace buaac {
 			obj_stack.push_back(t);
 		}
 
+		void exprPushLiteralInt(int value) {
+			exprPushLiteralInt(i2a(value));
+		}
+
 		int not_gen = 0;
 
 		void notGen() {
 			not_gen++;
 		}
 
+
+		
+		void exprStart() {
+			instrs_stack.push_back(instrs);
+			op_stack_stack.push_back(op_stack);
+			obj_stack_stack.push_back(obj_stack);
+			
+			instrs.clear();
+			op_stack.clear();
+			obj_stack.clear();
+		}
+		
 		std::string gen() {
 			if (not_gen > 0) {
 				not_gen--;
@@ -169,6 +261,14 @@ namespace buaac {
 			for (int i = 0; i < instrs.size(); i++) {
 				appendInstr(instrs[i]);
 			}
+
+			instrs = instrs_stack.back();
+			instrs_stack.pop_back();
+			op_stack = op_stack_stack.back();
+			op_stack_stack.pop_back();
+			obj_stack = obj_stack_stack.back();
+			obj_stack_stack.pop_back();
+			
 			return ans;
 		}
 
@@ -228,15 +328,15 @@ namespace buaac {
 #pragma endregion 
 
 		void pushStackVars(int bytes) {
-			appendInstr(Instr(Instr::PUSH, i2a(bytes)));
+			appendInstr(Instr(Instr::PUSH, bytes));
 		}
 
 		void saveStack(std::string reg, int bytes) {
-			appendInstr(Instr(Instr::SAVE_STA, reg, i2a(bytes)));
+			appendInstr(Instr(Instr::SAVE_STA, reg, bytes));
 		}
 
 		void loadStack(std::string reg, int bytes) {
-			appendInstr(Instr(Instr::LOAD_STA, reg, i2a(bytes)));
+			appendInstr(Instr(Instr::LOAD_STA, reg, bytes));
 		}
 
 		// std::ofstream fout;
@@ -252,10 +352,16 @@ namespace buaac {
 		void output(const Block& block) {
 			
 		}
+
+		void appendInstr(Instr instr) {
+			blocks_now->back().addInstr(instr);
+		}
 		
 	private:
 
 		int temp_cnt = 0;
+		int if_cnt = 0;
+		int for_cnt = 0;
 
 		std::string newTemp() {
 			return FORMAT("__T{}", temp_cnt++);
@@ -266,9 +372,7 @@ namespace buaac {
 			DEFINE_FUNC,
 		};
 		
-		void appendInstr(Instr instr) {
-			blocks_now->back().addInstr(instr);
-		}
+		
 
 		void globalDefine(GlobalDefine global_define) {
 			global_defines.emplace_back(global_define);

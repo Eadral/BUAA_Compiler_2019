@@ -136,12 +136,22 @@ namespace buaac {
 				return s;
 			}
 
+			int scope_bytes_offset = 0;
+
+			void addOffset(int bytes) {
+				scope_bytes_offset += bytes;
+			}
+
+			void subOffset(int bytes) {
+				scope_bytes_offset -= bytes;
+			}
+			
 			int getStackScopeBytes() {
 				int s = 0;
 				for (int i = _scope_index.back(); i < _symbol_stack.size(); i++) {
 					s += getSymbolBytes(_symbol_stack[i]);
 				}
-				return s;
+				return s + scope_bytes_offset;
 			}
 
 			int getSymbolBytes(Symbol symbol) {
