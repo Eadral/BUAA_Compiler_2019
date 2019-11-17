@@ -58,6 +58,18 @@ namespace buaac {
 				tie(std::ignore, symbol) = findSymbol(ident);
 				return symbol._is_global;
 			}
+
+			bool isConst(std::string ident) {
+				Symbol symbol;
+				tie(std::ignore, symbol) = findSymbol(ident);
+				return symbol.isConst();
+			}
+
+			std::string getConstValue(std::string ident) {
+				Symbol symbol;
+				tie(std::ignore, symbol) = findSymbol(ident);
+				return symbol.getConstValue();
+			}
 			
 			tuple<bool, Symbol> findSymbol(std::string ident) {
 				for (int i = _symbol_stack.size() - 1; i >= 0; i--) {

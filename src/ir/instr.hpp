@@ -11,9 +11,12 @@ namespace buaac {
 				// Label
 				PRINT_GLOBAL_STR,
 				PRINT_INT,
+				PRINT_CHAR,
 				SCAN_INT,
+				SCAN_CHAR,
 				SCAN_GLOBAL_INT,
-
+				SCAN_GLOBAL_CHAR,
+				
 				// Empty
 				PRINT_LINE,
 
@@ -36,6 +39,8 @@ namespace buaac {
 				SAVE_LAB,
 				SAVE_LAB_IMM,
 				SAVE_STA,
+				SAVE_STA_ARR,
+				LOAD_STA_ARR,
 
 				// JUMP
 				CALL,

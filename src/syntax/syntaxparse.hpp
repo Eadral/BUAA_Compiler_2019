@@ -723,7 +723,7 @@ namespace syntax{
 			// // debugln("!{}", name.getValue());
 			syntaxOutput("<有返回值函数定义>");
 		}
-		int _para_cnt;
+		int _para_cnt = 0;
 		// ＜无返回值函数定义＞  ::= void＜标识符＞'('＜参数表＞')''{'＜复合语句＞'}'
 		void nonRetFuncDef() {
 			Token name;
@@ -1029,6 +1029,7 @@ namespace syntax{
 			Token token;
 
 			Token int_token;
+			std::string expr_ans, addr;
 			
 			switch (lookTokenType()) {
 			case TokenType::IDENFR:
@@ -1055,22 +1056,23 @@ namespace syntax{
 				case TokenType::SEMICN:
 					// ＜标识符＞
 					token = eatToken(TokenType::IDENFR);
-					// ir.loadStack()
-					if (_symbol_table.isGlobal(token.getValue())) {
-						ir.exprPushGlobalVar(token.getValue());
-					} else {
-						ir.exprPushStackVar(token.getValue(), _symbol_table.getStackBytesByIdent(token.getValue()));
-					}
+					
 					switch (lookTokenType()) {
 					case TokenType::LBRACK:
 						// '['＜表达式＞']'
 						eatToken(TokenType::LBRACK);
 						// ir.notGen();
-						tie(expr_type, std::ignore) = expr();
+						ir.exprStart();
+						tie(expr_type, expr_ans) = expr();
 						if (expr_type != SymbolType::INT) {
 							error('i');
 						}
 						eatToken(TokenType::RBRACK);
+
+						addr = getArrAddr(token.getValue(), expr_ans);
+						
+						ir.exprPushStackArr(addr);
+						
 						break;
 					case TokenType::RBRACK:
 					case TokenType::PLUS:
@@ -1086,6 +1088,17 @@ namespace syntax{
 					case TokenType::SEMICN:
 					case TokenType::COMMA:
 					case TokenType::RPARENT:
+						// Not Array
+						// ir.loadStack()
+						if (_symbol_table.isConst(token.getValue())) {
+							ir.exprPushLiteralInt(_symbol_table.getConstValue(token.getValue()));
+						}
+						else if (_symbol_table.isGlobal(token.getValue())) {
+							ir.exprPushGlobalVar(token.getValue());
+						}
+						else {
+							ir.exprPushStackVar(token.getValue(), _symbol_table.getStackBytesByIdent(token.getValue()));
+						}
 						break;
 					default:
 						ERROR
@@ -1185,6 +1198,18 @@ namespace syntax{
 			}
 			syntaxOutput("<语句>");
 		}
+
+		std::string getArrAddr(std::string arr, std::string expr_ans) {
+			ir.exprStart();
+			ir.exprPushLiteralInt(expr_ans);
+			ir.exprPush(IR::MULT);
+			ir.exprPushLiteralInt(4);
+			ir.exprPush(IR::PLUS);
+			ir.exprPushLiteralInt(_symbol_table.getStackBytesByIdent(arr));
+			ir.exprPush(IR::PLUS);
+			ir.exprPushLiteralInt("$sp");
+			return ir.gen();
+		}
 		
 		// ＜赋值语句＞   ::=  ＜标识符＞＝＜表达式＞|＜标识符＞'['＜表达式＞']'=＜表达式＞
 		void assignStat() {
@@ -1192,7 +1217,7 @@ namespace syntax{
 			Symbol symbol;
 
 			SymbolType expr_type;
-			std::string expr_reg;
+			std::string expr_reg, expr_ans_lhs, expr_ans_rhs, addr;
 
 			
 			switch (lookTokenType()) {
@@ -1218,14 +1243,19 @@ namespace syntax{
 					// '['＜表达式＞']'=＜表达式＞
 					eatToken(TokenType::LBRACK);
 					ir.exprStart();
-					tie(expr_type, std::ignore) = expr();
+					tie(expr_type, expr_ans_lhs) = expr();
 					if (expr_type != SymbolType::INT) {
 						error('i');
 					}
 					eatToken(TokenType::RBRACK);
 					eatToken(TokenType::ASSIGN);
 					ir.exprStart();
-					expr();
+					tie(expr_type, expr_ans_rhs) = expr();
+
+					addr = getArrAddr(ident.getValue(), expr_ans_lhs);
+					ir.appendInstr({ Instr::SAVE_STA_ARR, expr_ans_rhs, addr });
+					
+					
 					break;
 				default:
 					ERROR
@@ -1253,6 +1283,7 @@ namespace syntax{
 				ir.newBlock(ir.getIfElseName());
 				condStatElse();
 				ir.newBlock(ir.getIfEndName());
+				ir.endJumpDefine();
 				break;
 			default:
 				ERROR
@@ -1396,6 +1427,8 @@ namespace syntax{
 			switch (lookTokenType()) {
 			case TokenType::DOTK:
 				// do＜语句＞while '('＜条件＞')'
+				ir.newDoWhile();
+				ir.newBlock(ir.getDoWhileName());
 				eatToken(TokenType::DOTK);
 				statement();
 				while_token = eatToken(TokenType::WHILETK, 'n');
@@ -1406,14 +1439,22 @@ namespace syntax{
 				eatToken(TokenType::LPARENT);
 				cond();
 				eatToken(TokenType::RPARENT);
+				ir.jump(ir.getDoWhileName());
+				ir.newBlock(ir.getDoWhileEndName());
+				ir.endJumpDefine();
 				break;
 			case TokenType::WHILETK:
 				//  while '('＜条件＞')'＜语句＞
+				ir.newWhile();
+				ir.newBlock(ir.getWhileName());
 				eatToken(TokenType::WHILETK);
 				eatToken(TokenType::LPARENT);
 				cond();
 				eatToken(TokenType::RPARENT);
 				statement();
+				ir.jump(ir.getWhileName());
+				ir.newBlock(ir.getWhileEndName());
+				ir.endJumpDefine();
 				break;
 			case TokenType::FORTK:
 				// for'('＜标识符＞＝＜表达式＞;＜条件＞;＜标识符＞＝＜标识符＞(+|-)＜步长＞')'＜语句＞
@@ -1451,6 +1492,7 @@ namespace syntax{
 				
 				ir.jump(ir.getForStartName());
 				ir.newBlock(ir.getForEndName());
+				ir.endJumpDefine();
 				break;
 			default:
 				ERROR
@@ -1643,16 +1685,37 @@ namespace syntax{
 				// scanf '('＜标识符＞
 				eatToken(TokenType::SCANFTK);
 				eatToken(TokenType::LPARENT);
-				ident_token = eatToken(TokenType::IDENFR);
-				// {,＜标识符＞}
 				_status_ident_group.clear();
+
+				ident_token = eatToken(TokenType::IDENFR);
+				_status_ident_group.push_back(ident_token.getValue());
+
+				// {,＜标识符＞}
 				identGroup();
 
-				tie(scope, symbol) = _symbol_table.findSymbolAndScope(ident_token.getValue());
-				ir.scanf(scope, symbol);
+				// tie(scope, symbol) = _symbol_table.findSymbolAndScope(ident_token.getValue());
+				// if (symbol.isGlobal()) {
+				// 	ir.appendInstr({ Instr::SCAN_GLOBAL_INT, ir.getGlobalName(symbol.getIdent()) });
+				// } else {
+				// 	ir.appendInstr({ Instr::SCAN_INT, _symbol_table.getStackBytesByIdent(symbol.getIdent()) });
+				// }
 				for (i = 0; i < _status_ident_group.size(); i++) {
 					tie(scope, symbol) = _symbol_table.findSymbolAndScope(_status_ident_group[i]);
-					ir.scanf(scope, symbol);
+					if (symbol.isGlobal()) {
+						if (symbol.getType().type_ == SymbolType::INT) {
+							ir.appendInstr({ Instr::SCAN_GLOBAL_INT, ir.getGlobalName(symbol.getIdent()) });
+						} else if (symbol.getType().type_ == SymbolType::CHAR) {
+							ir.appendInstr({ Instr::SCAN_GLOBAL_CHAR, ir.getGlobalName(symbol.getIdent()) });
+						}
+					}
+					else {
+						if (symbol.getType().type_ == SymbolType::INT) {
+							ir.appendInstr({ Instr::SCAN_INT, _symbol_table.getStackBytesByIdent(symbol.getIdent()) });
+						}
+						else if (symbol.getType().type_ == SymbolType::CHAR) {
+							ir.appendInstr({ Instr::SCAN_CHAR, _symbol_table.getStackBytesByIdent(symbol.getIdent()) });
+						}
+					}
 				}
 				
 				
@@ -1705,7 +1768,13 @@ namespace syntax{
 					case TokenType::COMMA:
 						eatToken(TokenType::COMMA);
 						ir.exprStart();
-						expr();
+						tie(expr_type, expr_ans) = expr();
+						if (expr_type.type_ == SymbolType::INT) {
+							ir.appendInstr({ Instr::PRINT_INT, expr_ans });
+						}
+						else if (expr_type.type_ == SymbolType::CHAR) {
+							ir.appendInstr({ Instr::PRINT_CHAR, expr_ans });
+						}
 						eatToken(TokenType::RPARENT);
 						break;
 					case TokenType::RPARENT:
@@ -1723,7 +1792,11 @@ namespace syntax{
 				case TokenType::LPARENT:
 					ir.exprStart();
 					tie(expr_type, expr_ans) = expr();
-					ir.printInt(expr_ans);
+					if (expr_type.type_ == SymbolType::INT) {
+						ir.appendInstr({ Instr::PRINT_INT, expr_ans });
+					} else if (expr_type.type_ == SymbolType::CHAR) {
+						ir.appendInstr({ Instr::PRINT_CHAR, expr_ans });
+					}
 					eatToken(TokenType::RPARENT);
 					break;
 				default:

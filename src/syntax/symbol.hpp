@@ -103,6 +103,10 @@ namespace buaac {
 				return _is_array;
 			}
 
+			bool isGlobal() {
+				return _is_global;
+			}
+
 			int getArrayLen() const {
 				return _array_len;
 			}

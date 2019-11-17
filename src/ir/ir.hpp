@@ -71,15 +71,15 @@ namespace buaac {
 			appendInstr({ Instr::PRINT_GLOBAL_STR, label });
 		}
 		
-		void scanf(int scope, syntax::Symbol symbol) {
-			if (scope == 0) {
-				appendInstr({Instr::SCAN_GLOBAL_INT, getGlobalName(symbol.getIdent()) });
-			}
-		}
+		// void scanf(int scope, syntax::Symbol symbol) {
+		// 	if (scope == 0) {
+		// 		appendInstr({Instr::SCAN_GLOBAL_INT, getGlobalName(symbol.getIdent()) });
+		// 	}
+		// }
 
-		void printInt(std::string reg) {
-			appendInstr({Instr::PRINT_INT, reg});
-		}
+		// void printInt(std::string reg) {
+		// 	appendInstr({Instr::PRINT_INT, reg});
+		// }
 
 		void pushStackReg(std::string reg) {
 			appendInstr(Instr(Instr::PUSH_REG, reg));
@@ -103,18 +103,36 @@ namespace buaac {
 
 		
 
-		enum {
+		enum JumpDefine {
 			DEFINE_IF,
 			DEFINE_FOR,
-		} jump_define;
+			DEFINE_WHILE,
+			DEFINE_DOWHILE,
+		} ;
+
+		std::vector<JumpDefine> jump_define_stack{};
+		std::vector<int> jump_cnt_stack{};
+		int jump_cnt = 0;
+		// std::vector<std::string> label_stack{};
+
+		void endJumpDefine() {
+			jump_define_stack.pop_back();
+			jump_cnt_stack.pop_back();
+			// label_stack.pop_back();
+		}
+
+		void newJumpCnt() {
+			jump_cnt++;
+			jump_cnt_stack.push_back(jump_cnt);
+		}
 		
 		void newIf() {
-			if_cnt++;
-			jump_define = DEFINE_IF;
+			newJumpCnt();
+			jump_define_stack.push_back(DEFINE_IF);
 		}
 
 		std::string getCondJumpName() {
-			switch (jump_define) {
+			switch (jump_define_stack.back()) {
 
 			case DEFINE_IF:
 				return getIfElseName();
@@ -122,24 +140,30 @@ namespace buaac {
 			case DEFINE_FOR:
 				return getForEndName();
 				break;
+			case DEFINE_WHILE:
+				return getWhileEndName();
+				break;
+			case DEFINE_DOWHILE:
+				return getDoWhileEndName();
+				break;
 			default: ;
 			}
 		}
 
 		std::string getIfName() {
-			return FORMAT("if_{}", if_cnt);
+			return FORMAT("if_{}", jump_cnt_stack.back());
 		}
 
 		std::string getIfThanName() {
-			return FORMAT("if_{}_than", if_cnt);
+			return FORMAT("if_{}_than", jump_cnt_stack.back());
 		}
 		
 		std::string getIfElseName() {
-			return FORMAT("if_{}_else", if_cnt);
+			return FORMAT("if_{}_else", jump_cnt_stack.back());
 		}
 
 		std::string getIfEndName() {
-			return FORMAT("if_{}_end", if_cnt);
+			return FORMAT("if_{}_end", jump_cnt_stack.back());
 		}
 
 		void jump(const std::string& label) {
@@ -147,20 +171,46 @@ namespace buaac {
 		}
 
 		void newFor() {
-			for_cnt++;
-			jump_define = DEFINE_FOR;
+			newJumpCnt();
+			jump_define_stack.push_back(DEFINE_FOR);
 		}
 
 		std::string getForStartName() {
-			return FORMAT("for_{}_start", for_cnt);
+			return FORMAT("for_{}_start", jump_cnt_stack.back());
 		}
 
 		std::string getForBodyName() {
-			return FORMAT("for_{}_body", for_cnt);
+			return FORMAT("for_{}_body", jump_cnt_stack.back());
 		}
 
 		std::string getForEndName() {
-			return FORMAT("for_{}_end", for_cnt);
+			return FORMAT("for_{}_end", jump_cnt_stack.back());
+		}
+
+		void newWhile() {
+			newJumpCnt();
+			jump_define_stack.push_back(DEFINE_WHILE);
+		}
+
+		std::string getWhileName() {
+			return FORMAT("while_{}", jump_cnt_stack.back());
+		}
+
+		std::string getWhileEndName() {
+			return FORMAT("while_{}_end", jump_cnt_stack.back());
+		}
+
+		void newDoWhile() {
+			newJumpCnt();
+			jump_define_stack.push_back(DEFINE_DOWHILE);
+		}
+
+		std::string getDoWhileName() {
+			return FORMAT("dowhile_{}", jump_cnt_stack.back());
+		}
+
+		std::string getDoWhileEndName() {
+			return FORMAT("dowhile_{}_end", jump_cnt_stack.back());
 		}
 
 #pragma region expr
@@ -217,6 +267,12 @@ namespace buaac {
 		void exprPushStackVar(std::string ident, int bytes) {
 			auto t = newTemp();
 			appendInstr(Instr(Instr::LOAD_STA, t, i2a(bytes)));
+			obj_stack.push_back(t);
+		}
+
+		void exprPushStackArr(std::string addr_reg) {
+			auto t = newTemp();
+			appendInstr(Instr(Instr::LOAD_STA_ARR, t, addr_reg));
 			obj_stack.push_back(t);
 		}
 
@@ -357,12 +413,15 @@ namespace buaac {
 		void appendInstr(Instr instr) {
 			blocks_now->back().addInstr(instr);
 		}
+
+		std::string getGlobalName(std::string ident) {
+			return FORMAT("__GLOBAL_{}", ident);
+		}
 		
 	private:
 
 		int temp_cnt = 0;
-		int if_cnt = 0;
-		int for_cnt = 0;
+
 
 		std::string newTemp() {
 			return FORMAT("__T{}", temp_cnt++);
@@ -383,9 +442,7 @@ namespace buaac {
 			return FORMAT("__CONST_{}", cnt_c++);
 		}
 
-		std::string getGlobalName(std::string ident) {
-			return FORMAT("__GLOBAL_{}", ident);
-		}
+		
 	};
 	
 }

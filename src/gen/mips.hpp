@@ -96,6 +96,7 @@ namespace buaac {
 		}
 
 		void genBlock(Block& block) {
+			
 #ifndef DO_NOT_ASSIGN_REGS
 			assignRegs(block);
 #endif
@@ -130,6 +131,7 @@ namespace buaac {
 				switch (instrs[i].type) {
 
 				case Instr::PRINT_GLOBAL_STR: break;
+				case Instr::PRINT_CHAR: 
 				case Instr::PRINT_INT:
 					if (NOT_ASSIGN(target))
 						REGPOOL_LOAD(target, $t0);
@@ -193,6 +195,20 @@ namespace buaac {
 					if (NOT_ASSIGN(source_a))
 						REGPOOL_LOAD(source_a, $t1);
 					break;
+				case Instr::SCAN_CHAR: break;
+				case Instr::SCAN_GLOBAL_CHAR: break;
+				case Instr::SAVE_STA_ARR:
+					if (NOT_ASSIGN(target))
+						REGPOOL_LOAD(target, $t0);
+					if (NOT_ASSIGN(source_a))
+						REGPOOL_LOAD(source_a, $t1);
+					break;
+				case Instr::LOAD_STA_ARR: 
+					if (NOT_ASSIGN(target))
+						REGPOOL_SAVE(target, $t0);
+					if (NOT_ASSIGN(source_a))
+						REGPOOL_LOAD(source_a, $t1);
+					break;
 				default: ;
 				}
 				
@@ -227,13 +243,7 @@ namespace buaac {
 				write("syscall");
 				releaseRegisters({ a0, v0 });
 				break;
-			case Instr::PRINT_INT:
-				getRegisters({ a0, v0 });
-				write("move $a0, {}", instr.target);
-				write("li $v0, 1");
-				write("syscall");
-				releaseRegisters({ a0, v0 });
-				break;
+			
 			case Instr::PRINT_LINE:
 				getRegisters({ a0, v0 });
 				write("la $a0, '\\n'");
@@ -241,13 +251,7 @@ namespace buaac {
 				write("syscall");
 				releaseRegisters({ a0, v0 });
 				break;
-			case Instr::SCAN_GLOBAL_INT:
-				getRegisters({ v0 });
-				write("li $v0, 5");
-				write("syscall");
-				write("sw $v0, {}", instr.target);
-				releaseRegisters({ v0 });
-				break;
+			
 			case Instr::PLUS:
 				write("addu {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 				break;
@@ -263,7 +267,7 @@ namespace buaac {
 			case Instr::LOAD_LAB:
 				write("lw {}, {}", instr.target, instr.source_a);
 				break;
-			case Instr::SCAN_INT: break;
+			
 			case Instr::PUSH:
 				write("addi $sp, $sp, -{}", instr.target);
 				break;
@@ -325,6 +329,57 @@ namespace buaac {
 				break;
 			case Instr::BNE:
 				write("bne {}, {}, {}", instr.target, instr.source_a, instr.source_b);
+				break;
+				
+			case Instr::PRINT_INT:
+				getRegisters({ a0, v0 });
+				write("move $a0, {}", instr.target);
+				write("li $v0, 1");
+				write("syscall");
+				releaseRegisters({ a0, v0 });
+				break;
+			case Instr::SCAN_GLOBAL_INT:
+				getRegisters({ v0 });
+				write("li $v0, 5");
+				write("syscall");
+				write("sw $v0, {}", instr.target);
+				releaseRegisters({ v0 });
+				break;
+			case Instr::SCAN_INT:
+				getRegisters({ v0 });
+				write("li $v0, 5");
+				write("syscall");
+				write("sw $v0, {}($sp)", instr.target);
+				releaseRegisters({ v0 });
+				break;
+				
+			case Instr::PRINT_CHAR:
+				getRegisters({ a0, v0 });
+				write("move $a0, {}", instr.target);
+				write("li $v0, 11");
+				write("syscall");
+				releaseRegisters({ a0, v0 });
+				break;
+			case Instr::SCAN_GLOBAL_CHAR:
+				getRegisters({ v0 });
+				write("li $v0, 12");
+				write("syscall");
+				write("sw $v0, {}", instr.target);
+				releaseRegisters({ v0 });
+				break;
+			case Instr::SCAN_CHAR:
+				getRegisters({ v0 });
+				write("li $v0, 12");
+				write("syscall");
+				write("sw $v0, {}($sp)", instr.target);
+				releaseRegisters({ v0 });
+				break;
+
+			case Instr::SAVE_STA_ARR:
+				write("sw {}, ({})", instr.target, instr.source_a);
+				break;
+			case Instr::LOAD_STA_ARR:
+				write("lw {}, ({})", instr.target, instr.source_a);
 				break;
 			default: ;
 
