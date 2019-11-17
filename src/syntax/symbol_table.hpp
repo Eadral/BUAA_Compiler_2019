@@ -65,6 +65,13 @@ namespace buaac {
 				return symbol.isConst();
 			}
 
+			bool isChar(std::string ident) {
+				Symbol symbol;
+				tie(std::ignore, symbol) = findSymbol(ident);
+				return symbol.getType().type_ == SymbolType::CHAR;
+			}
+
+
 			std::string getConstValue(std::string ident) {
 				Symbol symbol;
 				tie(std::ignore, symbol) = findSymbol(ident);
@@ -147,6 +154,7 @@ namespace buaac {
 				}
 				return s;
 			}
+
 
 			int scope_bytes_offset = 0;
 

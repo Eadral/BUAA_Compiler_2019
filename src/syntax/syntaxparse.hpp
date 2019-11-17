@@ -188,6 +188,7 @@ namespace syntax{
 		}
 		// ＜程序＞    ::= ［＜常量说明＞］［＜变量说明＞］{＜有返回值函数定义＞|＜无返回值函数定义＞}＜主函数＞
 		void program() {
+			_para_cnt = 0;
 			switch (lookTokenType()) {
 			case TokenType::CONSTTK:
 			case TokenType::INTTK:
@@ -198,6 +199,7 @@ namespace syntax{
 				resetOuput();
 				// ［＜变量说明＞］
 				verDec();
+				
 				resetOuput();
 				// {＜有返回值函数定义＞|＜无返回值函数定义＞}
 				funcDefGroup();
@@ -507,6 +509,8 @@ namespace syntax{
 					verDef();
 					eatToken(TokenType::SEMICN);
 					verDec();
+					
+					
 					break;
 				case TokenType::LPARENT:
 					return;
@@ -593,11 +597,7 @@ namespace syntax{
 			default:
 				ERROR
 			}
-			if (_symbol_table.getScope() == 0) {
-				ir.pushStackVars(_symbol_table.getStackScopeBytes());
-			} else if (_symbol_table.getScope() > 0) {
-				ir.pushStackVars(_symbol_table.getStackScopeBytes() - _para_cnt * 4);
-			}
+			
 			syntaxOutput("<变量定义>");
 		}
 
@@ -702,6 +702,7 @@ namespace syntax{
 				eatToken(TokenType::LPARENT);
 				_status_paralist.clear();
 				para_list = paraList();
+				_para_cnt = para_list.size();
 				eatToken(TokenType::RPARENT);
 				checkPush(_symbol_table.push(Symbol(func_type, name.getValue(), symbolList2SymbolTypeList(para_list))));
 				// '{'＜复合语句＞'}'
@@ -785,6 +786,12 @@ namespace syntax{
 				resetOuput();
 				// ［＜变量说明＞］
 				verDec();
+				if (_symbol_table.getScope() == 0) {
+					ir.pushStackVars(_symbol_table.getStackScopeBytes());
+				}
+				else if (_symbol_table.getScope() > 0) {
+					ir.pushStackVars(_symbol_table.getStackScopeBytes() - _para_cnt * 4);
+				}
 				pushStackReg("$ra");
 				resetOuput();
 				// ＜语句列＞
@@ -863,6 +870,7 @@ namespace syntax{
 				ir.defineMain();
 				_symbol_table.pushScope();
 				// debugln("exprPush at {}", getLineNumber());
+				_para_cnt = 0;
 				compStatement();
 				eatToken(TokenType::RBRACE);
 				_symbol_table.popScope();
@@ -1028,7 +1036,7 @@ namespace syntax{
 			SymbolType expr_type;
 			Token token;
 
-			Token int_token;
+			Token int_token, char_token;
 			std::string expr_ans, addr;
 			
 			switch (lookTokenType()) {
@@ -1091,7 +1099,11 @@ namespace syntax{
 						// Not Array
 						// ir.loadStack()
 						if (_symbol_table.isConst(token.getValue())) {
-							ir.exprPushLiteralInt(_symbol_table.getConstValue(token.getValue()));
+							if (_symbol_table.isChar(token.getValue())) {
+								ir.exprPushLiteralInt(int(_symbol_table.getConstValue(token.getValue())[0]));
+							} else {
+								ir.exprPushLiteralInt(_symbol_table.getConstValue(token.getValue()));
+							}
 						}
 						else if (_symbol_table.isGlobal(token.getValue())) {
 							ir.exprPushGlobalVar(token.getValue());
@@ -1117,7 +1129,8 @@ namespace syntax{
 				break;
 			case TokenType::CHARCON:
 				// ＜字符＞
-				eatToken(TokenType::CHARCON);
+				char_token = eatToken(TokenType::CHARCON);
+				ir.exprPushLiteralInt(int(char_token.getValue()[0]));
 				break;
 			case TokenType::LPARENT:
 				// '('＜表达式＞')'
@@ -1201,11 +1214,11 @@ namespace syntax{
 
 		std::string getArrAddr(std::string arr, std::string expr_ans) {
 			ir.exprStart();
+			ir.exprPushLiteralInt(_symbol_table.getStackBytesByIdent(arr));
+			ir.exprPush(IR::MINUS);
 			ir.exprPushLiteralInt(expr_ans);
 			ir.exprPush(IR::MULT);
 			ir.exprPushLiteralInt(4);
-			ir.exprPush(IR::PLUS);
-			ir.exprPushLiteralInt(_symbol_table.getStackBytesByIdent(arr));
 			ir.exprPush(IR::PLUS);
 			ir.exprPushLiteralInt("$sp");
 			return ir.gen();
@@ -1280,7 +1293,8 @@ namespace syntax{
 				ir.newBlock(ir.getIfThanName());
 				statement();
 				// ［else＜语句＞］
-				ir.newBlock(ir.getIfElseName());
+				ir.jump(ir.getIfEndName());
+				ir.newBlock(ir.getIfElseName());;
 				condStatElse();
 				ir.newBlock(ir.getIfEndName());
 				ir.endJumpDefine();
@@ -1296,7 +1310,6 @@ namespace syntax{
 			case TokenType::ELSETK:
 				// else＜语句＞
 				eatToken(TokenType::ELSETK);
-				ir.jump(ir.getIfEndName());
 				statement();
 				break;
 			// Empty
@@ -1419,7 +1432,7 @@ namespace syntax{
 
 			Token for_step_op;
 			Token for_step;
-			Token for_step_ident;
+			Token for_step_ident_lhs, for_step_ident_rhs;
 			std::string step_str;
 			Token for_start_token;
 			std::string for_start_ans;
@@ -1470,9 +1483,9 @@ namespace syntax{
 				ir.newBlock(ir.getForStartName());
 				cond();
 				eatToken(TokenType::SEMICN);
-				eatToken(TokenType::IDENFR);
+				for_step_ident_lhs = eatToken(TokenType::IDENFR);
 				eatToken(TokenType::ASSIGN);
-				for_step_ident = eatToken(TokenType::IDENFR);
+				for_step_ident_rhs = eatToken(TokenType::IDENFR);
 				for_step_op = plusOp();
 				for_step = step();
 				eatToken(TokenType::RPARENT);
@@ -1481,14 +1494,14 @@ namespace syntax{
 
 				ir.exprStart();
 				step_str = for_step.getValue();
-				exprPushVar(for_step_ident);
+				exprPushVar(for_step_ident_rhs);
 				if (for_step_op.getTokenType().type_ == TokenType::PLUS) {
 					ir.exprPush(IR::PLUS);
 				} else {
 					ir.exprPush(IR::MINUS);
 				}
 				ir.exprPushLiteralInt(step_str);
-				saveVar(ir.gen(), for_step_ident);
+				saveVar(ir.gen(), for_step_ident_lhs);
 				
 				ir.jump(ir.getForStartName());
 				ir.newBlock(ir.getForEndName());
