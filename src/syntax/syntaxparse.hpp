@@ -608,7 +608,7 @@ namespace syntax{
 
 		void popStackReg(std::string reg) {
 			ir.popStackReg(reg);
-			_symbol_table.addOffset(4);
+			_symbol_table.subOffset(4);
 		}
 
 		// {,(＜标识符＞|＜标识符＞'['＜无符号整数＞']' )} 
@@ -1470,12 +1470,29 @@ namespace syntax{
 			syntaxOutput("<步长>");
 			return token;
 		}
+
+		void pushRegPool() {
+			// TODO: repair, move to mips
+			for (int i = 0; i <= 100; i++) {
+				ir.appendInstr({ Instr::LOAD_LAB_IMM, "$k0", "REGPOOL", 4 * i });
+				pushStackReg("$k0"); 
+			}
+		}
+
+		void popRegPool() {
+			for (int i = 100; i >= 0; i--) {
+				popStackReg("$k0");
+				ir.appendInstr({ Instr::SAVE_LAB_IMM, "$k0", "REGPOOL", 4 * i });
+			}
+		}
+		
 		// ＜有/无返回值函数调用语句＞ ::= ＜标识符＞'('＜值参数表＞')'
 		void funcCall() {
 			Token name;
 			std::vector<SymbolType> val_para_list, excepted_para_list;
 			Symbol func_symbol;
 
+			pushRegPool();
 			switch (lookTokenType()) {
 			case TokenType::IDENFR:
 				name = eatToken(TokenType::IDENFR);
@@ -1506,6 +1523,7 @@ namespace syntax{
 				ERROR
 			}
 			ir.call(name.getValue());
+			popRegPool();
 			// // debugln("!{}", name.getValue());
 			if (funcName2IsRet[name.getValue()]) {
 				syntaxOutput("<有返回值函数调用语句>");

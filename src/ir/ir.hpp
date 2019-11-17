@@ -101,6 +101,7 @@ namespace buaac {
 			appendInstr({ Instr::PLUS, target, "$0", source });
 		}
 
+		
 
 		enum {
 			DEFINE_IF,
