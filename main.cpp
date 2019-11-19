@@ -9,6 +9,7 @@
 #include "src/syntax/syntaxparse.hpp"
 #include "src/output_helper.hpp"
 #include "src/ir/ir.hpp"
+#include "src/ir/ir_output.hpp"
 #include "src/gen/mips.hpp"
 
 using namespace std;
@@ -30,7 +31,9 @@ int main() {
 	
 	IR ir = syntax_parser.start();
 
-	ir.output("ir.txt");
+	// ir.output("ir.txt");
+	IrGen irgen(ir);
+	irgen.output("ir.txt");
 	
 	MIPS mips(ir);
 

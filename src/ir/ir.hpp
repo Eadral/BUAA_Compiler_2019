@@ -421,19 +421,7 @@ namespace buaac {
 		// 	appendInstr(Instr(Instr::LOAD_STA, reg, bytes));
 		// }
 
-		// std::ofstream fout;
 		
-		// Output
-		void output(std::string filename) {
-			// fout.open(filename);
-			for (int i = 0; i < blocks_now->size(); i++) {
-				output(blocks_now->at(i));
-			}
-		}
-		
-		void output(const Block& block) {
-			
-		}
 
 		void appendInstr(Instr instr) {
 			blocks_now->back().addInstr(instr);
