@@ -1237,17 +1237,17 @@ namespace syntax{
 			// return ir.gen();
 			
 			// TODO: fixme, using reg assignment
-			ir.appendInstr({ Instr::PLUS, "$k0", "$0", _symbol_table.getStackBytesByIdent(arr) });
 			ir.appendInstr({ Instr::PLUS, "$k1", "$0", expr_ans });
 			ir.appendInstr({ Instr::PLUS, "$k0", "$0", "4" });
 			ir.appendInstr({ Instr::MULT, "$k1", "$k1", "$k0" });
-			ir.appendInstr({ Instr::PLUS, "$k0", "$0", _symbol_table.getStackBytesByIdent(arr) });
-			ir.appendInstr({ Instr::MINUS, "$k0", "$k0", "$k1" });
+			
 			if (_symbol_table.isGlobal(arr)) {
-				ir.appendInstr({ Instr::LA, "$k1", ir.getGlobalName(arr) });
+				ir.appendInstr({ Instr::LA, "$k0", ir.getGlobalName(arr) });
 				// ir.exprPushLabel(ir.getGlobalName(arr));
 			}
 			else {
+				ir.appendInstr({ Instr::PLUS, "$k0", "$0", _symbol_table.getStackBytesByIdent(arr) });
+				ir.appendInstr({ Instr::MINUS, "$k0", "$k0", "$k1" });
 				ir.appendInstr({ Instr::PLUS, "$k1", "$0", "$sp" });
 				// ir.exprPushLiteralInt("$sp");
 			}

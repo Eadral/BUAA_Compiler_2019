@@ -95,7 +95,9 @@ namespace buaac {
 			case Instr::LA:
 				write("{} = {};", instr.target, instr.source_a);
 				break;
-			case Instr::PUSH: break;
+			case Instr::PUSH:
+
+				break;
 			case Instr::POP: break;
 			case Instr::PUSH_REG: break;
 			case Instr::POP_REG: break;
