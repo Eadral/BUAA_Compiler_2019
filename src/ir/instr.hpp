@@ -38,11 +38,9 @@ namespace buaac {
 				POP_REGPOOL,
 				
 				// Memory
-				LOAD_LAB,
-				LOAD_LAB_IMM,
+				LOAD_GLO,
 				LOAD_STA,
-				SAVE_LAB,
-				SAVE_LAB_IMM,
+				SAVE_GLO,
 				SAVE_STA,
 				SAVE_STA_ARR,
 				LOAD_STA_ARR,

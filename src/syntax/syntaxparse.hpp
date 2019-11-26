@@ -591,7 +591,6 @@ namespace syntax{
 							ir.defineGlobalInt(ident.getValue());
 						} else {
 							ir.irShow(FORMAT("{} {};", _status_vardef_type_str, ident.getValue()));
-
 						}
 						break;
 					default:
@@ -646,7 +645,8 @@ namespace syntax{
 						eatToken(TokenType::RBRACK);
 						if (_symbol_table.getScope() == -1) {
 							ir.defineGlobalIntArr(ident.getValue(), a2i(uninteger_token.getValue()));
-						}
+						} else
+						ir.irShow(FORMAT("{} {}[{}];", _status_vardef_type_str, ident.getValue(), uninteger_token.getValue()));
 						checkPush(_symbol_table.push(Symbol(_status_vardef_type, ident.getValue(), atoi(uninteger_token.getValue().c_str()))));
 
 						break;
@@ -655,7 +655,8 @@ namespace syntax{
 						checkPush(_symbol_table.push(Symbol(_status_vardef_type, ident.getValue())));
 						if (_symbol_table.getScope() == -1) {
 							ir.defineGlobalInt(ident.getValue());
-						}
+						} else
+						ir.irShow(FORMAT("{} {};", _status_vardef_type_str, ident.getValue()));
 						break;
 					default:
 						ERROR
@@ -1129,13 +1130,16 @@ namespace syntax{
 								ir.exprPushLiteralInt(a2i(_symbol_table.getConstValue(token.getValue())));
 							}
 						}
-						else if (_symbol_table.isGlobal(token.getValue())) {
-							ir.exprPushGlobalVar(token.getValue());
-						}
 						else {
-							ir.exprPushStackVar(token.getValue(), _symbol_table.getStackBytesByIdent(token.getValue()));
-							ir.instrShowAs(token.getValue());
+							exprPushVar(token);
 						}
+						// 	if (_symbol_table.isGlobal(token.getValue())) {
+						// 	ir.exprPushGlobalVar(token.getValue());
+						// }
+						// else {
+						// 	ir.exprPushStackVar(token.getValue(), _symbol_table.getStackBytesByIdent(token.getValue()));
+						// 	ir.instrShowAs(token.getValue());
+						// }
 						break;
 					default:
 						ERROR
@@ -1264,7 +1268,11 @@ namespace syntax{
 			ir.instrNotShow();
 			
 			if (_symbol_table.isGlobal(arr)) {
-				ir.appendInstr({ Instr::LA, "$k0", ir.getGlobalName(arr) });
+				ir.appendInstr({ Instr::LI, "$k0",  _symbol_table.getGlobalBytesByIdent(arr) });
+				ir.instrNotShow();
+				ir.appendInstr({ Instr::PLUS, "$k0", "$k0", "$k1" });
+				ir.instrNotShow();
+				ir.appendInstr({ Instr::MOVE, "$k1",  "$gp" });
 				ir.instrNotShow();
 				// ir.exprPushLabel(ir.getGlobalName(arr));
 			}
@@ -1285,7 +1293,8 @@ namespace syntax{
 	
 		void assign(std::string ident, std::string ans) {
 			if (_symbol_table.isGlobal(ident)) {
-				ir.appendInstr(Instr(Instr::SAVE_LAB, ans, ir.getGlobalName(ident)));
+				ir.appendInstr(Instr(Instr::SAVE_GLO, ans, _symbol_table.getGlobalBytesByIdent(ident)));
+				ir.instrShowAs(ident);
 			} else {
 				ir.appendInstr(Instr(Instr::SAVE_STA, ans, _symbol_table.getStackBytesByIdent(ident)));
 				ir.instrShowAs(ident);
@@ -1481,7 +1490,7 @@ namespace syntax{
 
 		void exprPushVar(Token token) {
 			if (_symbol_table.isGlobal(token.getValue())) {
-				ir.exprPushGlobalVar(token.getValue());
+				ir.exprPushGlobalVar(token.getValue(), _symbol_table.getGlobalBytesByIdent(token.getValue()));
 			}
 			else {
 				ir.exprPushStackVar(token.getValue(), _symbol_table.getStackBytesByIdent(token.getValue()));
@@ -1811,9 +1820,9 @@ namespace syntax{
 					tie(scope, symbol) = _symbol_table.findSymbolAndScope(_status_ident_group[i]);
 					if (symbol.isGlobal()) {
 						if (symbol.getType().type_ == SymbolType::INT) {
-							ir.appendInstr({ Instr::SCAN_GLOBAL_INT, ir.getGlobalName(symbol.getIdent()) });
+							ir.appendInstr({ Instr::SCAN_GLOBAL_INT, _symbol_table.getGlobalBytesByIdent(symbol.getIdent()) });
 						} else if (symbol.getType().type_ == SymbolType::CHAR) {
-							ir.appendInstr({ Instr::SCAN_GLOBAL_CHAR, ir.getGlobalName(symbol.getIdent()) });
+							ir.appendInstr({ Instr::SCAN_GLOBAL_CHAR, _symbol_table.getGlobalBytesByIdent(symbol.getIdent()) });
 						}
 					}
 					else {

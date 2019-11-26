@@ -62,7 +62,7 @@ namespace buaac {
 		}
 
 		void defineGlobalInt(std::string ident) {
-			globalDefine(global::VarInt{ getGlobalName(ident) });
+			globalDefine(global::VarInt{ (ident) });
 		}
 		
 		std::string defineConstStr(std::string str) {
@@ -124,7 +124,7 @@ namespace buaac {
 		}
 
 		void defineGlobalIntArr(const std::string& ident, int len) {
-			globalDefine(global::VarIntArr{ getGlobalName(ident), len });
+			globalDefine(global::VarIntArr{ (ident), len });
 		}
 
 
@@ -283,9 +283,10 @@ namespace buaac {
 			}
 		}
 
-		void exprPushGlobalVar(std::string ident) {
+		void exprPushGlobalVar(std::string ident, int bytes) {
 			auto t = newTemp();
-			appendInstr(Instr(Instr::LOAD_LAB, t, getGlobalName(ident)));
+			appendInstr(Instr(Instr::LOAD_GLO, t, bytes));
+			instrShowAs(ident);	
 			obj_stack.push_back(t);
 		}
 
@@ -454,9 +455,9 @@ namespace buaac {
 			blocks_now->back().instrs.back().showas = showas;
 		}
 		
-		std::string getGlobalName(std::string ident) {
-			return FORMAT("__GLOBAL_{}", ident);
-		}
+		// std::string getGlobalName(std::string ident) {
+		// 	return FORMAT("__GLOBAL_{}", ident);
+		// }
 
 		int newLabelCnt() {
 			return label_cnt++;

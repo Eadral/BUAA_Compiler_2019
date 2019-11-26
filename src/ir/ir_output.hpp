@@ -127,31 +127,39 @@ namespace buaac {
 			case Instr::POP_REG:
 				write("pop {};", instr.target);
 				break;
-			case Instr::LOAD_LAB:
-				write("{} = {};", instr.target, instr.source_a);
+			case Instr::LOAD_GLO:
+				if (show_as) {
+					write("{} = {};", instr.target, instr.showas);
+					break;
+				}
+				write("{} = $gp[{}];", instr.target, instr.source_a);
 				break;
-			case Instr::LOAD_LAB_IMM:
-				write("{} = {}[{}];", instr.target, instr.source_a, instr.source_b);
-				break;
+			// case Instr::LOAD_LAB_IMM:
+			// 	write("{} = {}[{}];", instr.target, instr.source_a, instr.source_b);
+			// 	break;
 			case Instr::LOAD_STA:
 				if (show_as) {
-					write("{} = {}", instr.target, instr.showas);
+					write("{} = {};", instr.target, instr.showas);
 					break;
 				}
 				write("{} = $sp[{}];", instr.target, instr.source_a);
 				break;
-			case Instr::SAVE_LAB:
-				write("{} = {};", instr.source_a, instr.target);
+			case Instr::SAVE_GLO:
+				if (show_as) {
+					write("{} = {};", instr.showas, instr.target);
+					break;
+				}
+				write("$gp[{}] = {};", instr.source_a, instr.target);
 				break;
-			case Instr::SAVE_LAB_IMM:
-				// if (show_as) {
-				// 	write("{} = {}", instr.target, instr.showas);
-				// }
-				write("{}[{}] = {};",  instr.source_a, instr.source_b, instr.target);
-				break;
+			// case Instr::SAVE_LAB_IMM:
+			// 	// if (show_as) {
+			// 	// 	write("{} = {}", instr.target, instr.showas);
+			// 	// }
+			// 	write("{}[{}] = {};",  instr.source_a, instr.source_b, instr.target);
+			// 	break;
 			case Instr::SAVE_STA:
 				if (show_as) {
-					write("{} = {}", instr.showas, instr.target);
+					write("{} = {};", instr.showas, instr.target);
 					break;
 				}
 				write("$sp[{}] = {};", instr.source_a, instr.target);
@@ -198,6 +206,8 @@ namespace buaac {
 			case Instr::IR_SHOW:
 				write("{}", instr.target);
 				break;
+			case Instr::PUSH_REGPOOL: break;
+			case Instr::POP_REGPOOL: break;
 			default: ;
 			}
 		}

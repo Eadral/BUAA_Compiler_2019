@@ -41,7 +41,7 @@ namespace buaac {
 			write("# Compiler BUAAC, Build: {}, QAQ", __TIMESTAMP__);
 			write(".data");
 			genGlobal();
-			genRegPool();
+			// genRegPool();
 			write(".text");
 			write("j main");
 			genFuncs();
@@ -56,12 +56,13 @@ namespace buaac {
 			}
 		}
 
-		#define REGPOOL "REGPOOL"
-#define POOLSIZE 100
+#define REGPOOL_START 100 * 4
+		// #define REGPOOL "REGPOOL"
+// #define POOLSIZE 100
 		
-		void genRegPool() {
-			write("{}: \n .align 3 \n .space {}", REGPOOL, POOLSIZE*4);
-		}
+		// void genRegPool() {
+		// 	write("{}: \n .align 3 \n .space {}", REGPOOL, POOLSIZE*4);
+		// }
 
 		void genDefine(GlobalDefine& define) {
 			switch (define.type) {
@@ -69,12 +70,12 @@ namespace buaac {
 			case GlobalDefine::CONST_STR:
 				write("{}: .asciiz \"{}\" ", define.const_str.label, define.const_str.value);
 				break;
-			case GlobalDefine::VAR_INT:
-				write("{}: .space 4", define.var_int.label);
-				break;
-			case GlobalDefine::VAR_INT_ARR:
-				write("{}: .space {}", define.var_int_arr.label, 4*define.var_int_arr.len);
-				break;
+			// case GlobalDefine::VAR_INT:
+			// 	write("{}: .space 4", define.var_int.label);
+			// 	break;
+			// case GlobalDefine::VAR_INT_ARR:
+			// 	write("{}: .space {}", define.var_int_arr.label, 4*define.var_int_arr.len);
+			// 	break;
 			default: ;
 			}
 		}
@@ -184,7 +185,7 @@ namespace buaac {
 			if (starts_with(instr.ir_reg, std::string("__T"))) {	\
 				int loc = 4 * getMemPool(instr.ir_reg.substr(3));	\
 				instr.ir_reg = #assign_reg;	\
-				insertBefore(instrs, i, Instr(Instr::LOAD_LAB_IMM, #assign_reg, REGPOOL, loc));	\
+				insertBefore(instrs, i, Instr(Instr::LOAD_GLO, #assign_reg, REGPOOL_START+loc));	\
 			}	\
 		} while(0)
 
@@ -194,7 +195,7 @@ namespace buaac {
 			if (starts_with(instr.ir_reg, std::string("__T"))) {	\
 				int loc = 4 * getMemPool(instr.ir_reg.substr(3));	\
 				instr.ir_reg = #assign_reg;	\
-				insertAfter(instrs, i, Instr(Instr::SAVE_LAB_IMM, #assign_reg, REGPOOL, loc));	\
+				insertAfter(instrs, i, Instr(Instr::SAVE_GLO, #assign_reg, REGPOOL_START+loc));	\
 			}	\
 		} while(0)
 
@@ -234,20 +235,22 @@ namespace buaac {
 				
 				case Instr::PUSH: break;
 				case Instr::POP: break;
-				case Instr::LOAD_LAB:
-					if (NOT_ASSIGN(target))
-						REGPOOL_SAVE(target, $t0);
-					break;
-				case Instr::LOAD_LAB_IMM: break;
+				// case Instr::LOAD_LAB:
+				// 	if (NOT_ASSIGN(target))
+				// 		REGPOOL_SAVE(target, $t0);
+				// 	break;
+				// case Instr::LOAD_LAB_IMM: break;
+				case Instr::LOAD_GLO:
 				case Instr::LOAD_STA:
 					if (NOT_ASSIGN(target))
 						REGPOOL_SAVE(target, $t0);
 					break;
-				case Instr::SAVE_LAB:
-					if (NOT_ASSIGN(target))
-						REGPOOL_LOAD(target, $t0);
-					break;
-				case Instr::SAVE_LAB_IMM: break;
+				// case Instr::SAVE_LAB:
+				// 	if (NOT_ASSIGN(target))
+				// 		REGPOOL_LOAD(target, $t0);
+				// 	break;
+				// case Instr::SAVE_LAB_IMM: break;
+				case Instr::SAVE_GLO:
 				case Instr::SAVE_STA:
 					if (NOT_ASSIGN(target))
 						REGPOOL_LOAD(target, $t0);
@@ -343,7 +346,7 @@ namespace buaac {
 		void pushRegPool() {
 			pushPoolSize.push_back(mempool_size);
 			for (int i = 0; i < mempool_size; i++) {
-				write("lw {}, {}+{}", "$k0", "REGPOOL", 4 * i);
+				write("lw {}, {}($gp)", "$k0", REGPOOL_START + 4 * i);
 				write("sw {}, ($sp)", "$k0");
 				write("addi $sp, $sp, -4");
 			}
@@ -354,7 +357,7 @@ namespace buaac {
 			for (int i = pushPoolSize.back()-1; i >= 0; i--) {
 				write("addi $sp, $sp, 4");
 				write("lw {}, ($sp)", "$k0");
-				write("sw {}, {}+{}", "$k0", "REGPOOL", 4 * i);
+				write("sw {}, {}($gp)", "$k0", REGPOOL_START+4 * i);
 			}
 			pushPoolSize.pop_back();
 		}
@@ -408,9 +411,9 @@ namespace buaac {
 				write("div {}, {}", instr.source_a, instr.source_b);
 				write("mflo {}", instr.target);
 				break;
-			case Instr::LOAD_LAB:
-				write("lw {}, {}", instr.target, instr.source_a);
-				break;
+			// case Instr::LOAD_LAB:
+			// 	write("lw {}, {}", instr.target, instr.source_a);
+			// 	break;
 			
 			case Instr::PUSH:
 				write("addi $sp, $sp, -{}", instr.target);
@@ -421,18 +424,21 @@ namespace buaac {
 			case Instr::LOAD_STA:
 				write("lw {}, {}($fp)", instr.target, instr.source_a);
 				break;
-			case Instr::SAVE_LAB:
-				write("sw {}, {}", instr.target, instr.source_a);
-				break;
 			case Instr::SAVE_STA:
 				write("sw {}, {}($fp)", instr.target, instr.source_a);
 				break;
-			case Instr::LOAD_LAB_IMM:
-				write("lw {}, {}+{}", instr.target, instr.source_a, instr.source_b);
+			case Instr::LOAD_GLO:
+				write("lw {}, {}($gp)", instr.target, instr.source_a);
 				break;
-			case Instr::SAVE_LAB_IMM:
-				write("sw {}, {}+{}", instr.target, instr.source_a, instr.source_b);
+			case Instr::SAVE_GLO:
+				write("sw {}, {}($gp)", instr.target, instr.source_a);
 				break;
+			// case Instr::LOAD_LAB_IMM:
+			// 	write("lw {}, {}+{}", instr.target, instr.source_a, instr.source_b);
+			// 	break;
+			// case Instr::SAVE_LAB_IMM:
+			// 	write("sw {}, {}+{}", instr.target, instr.source_a, instr.source_b);
+			// 	break;
 			case Instr::PUSH_REG:
 				write("sw {}, ($sp)", instr.target);
 				write("addi $sp, $sp, -4");
@@ -486,7 +492,7 @@ namespace buaac {
 				getRegisters({ v0 });
 				write("li $v0, 5");
 				write("syscall");
-				write("sw $v0, {}", instr.target);
+				write("sw $v0, {}($gp)", instr.target);
 				releaseRegisters({ v0 });
 				break;
 			case Instr::SCAN_INT:
@@ -508,7 +514,7 @@ namespace buaac {
 				getRegisters({ v0 });
 				write("li $v0, 12");
 				write("syscall");
-				write("sw $v0, {}", instr.target);
+				write("sw $v0, {}($gp)", instr.target);
 				releaseRegisters({ v0 });
 				break;
 			case Instr::SCAN_CHAR:

@@ -154,21 +154,6 @@ namespace buaac {
 				}
 				return s;
 			}
-
-			//
-			// int scope_bytes_offset = 0;
-			//
-			// void addOffset(int bytes) {
-			// 	scope_bytes_offset += bytes;
-			// }
-			//
-			// void subOffset(int bytes) {
-			// 	scope_bytes_offset -= bytes;
-			// }
-			//
-			// void clearOffset() {
-			// 	scope_bytes_offset = 0;
-			// }
 			
 			int getStackScopeBytes() {
 				int s = 0;
@@ -176,6 +161,23 @@ namespace buaac {
 					s += getSymbolBytes(_symbol_stack[i]);
 				}
 				return s;
+			}
+
+			int getGlobalBytesByIdent(std::string ident) {
+				int s = 0;
+				for (int i = 0; i < _scope_index[1]; i++) {
+					if (_symbol_stack[i].getIdent() == ident)
+						break;
+					s += getSymbolBytes(_symbol_stack[i]);
+				}
+				return s;
+			}
+			
+			int getGlobalScopeBytes() {
+				int s = 0;
+				for (int i = 0; i < _scope_index[1]; i++) {
+					s += getSymbolBytes(_symbol_stack[i]);
+				}
 			}
 
 			int getSymbolBytes(Symbol symbol) {

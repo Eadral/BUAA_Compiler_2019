@@ -12,7 +12,7 @@ namespace buaac {
 		struct VarInt {
 			std::string label;
 		};
-
+		
 		struct VarIntArr {
 			std::string label;
 			int len;
@@ -34,7 +34,7 @@ namespace buaac {
 			GlobalDefine(ConstStr const_str) : type(CONST_STR), const_str(const_str) {}
 
 			GlobalDefine(VarInt var_int) : type(VAR_INT), var_int(var_int) {}
-
+			
 			GlobalDefine(VarIntArr var_int_arr) : type(VAR_INT_ARR), var_int_arr(var_int_arr) {}
 
 		};
