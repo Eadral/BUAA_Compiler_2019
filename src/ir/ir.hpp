@@ -19,7 +19,7 @@ namespace buaac {
 
 		std::vector<GlobalDefine> global_defines;
 		std::vector<Func> funcs{};
-		BlocksPtr main_blocks;
+		// BlocksPtr main_blocks;
 
 		int cnt_c = 0;
 		std::string func_name;
@@ -27,16 +27,16 @@ namespace buaac {
 		BlocksPtr blocks_now;
 
 		IR() {
-			main_blocks = std::make_shared<Blocks>();
-			main_blocks->emplace_back(Block("main"));
+			// main_blocks = std::make_shared<Blocks>();
+			// main_blocks->emplace_back(Block("main"));
 			blocks_now = nullptr;
 		}
 
-		void defineMain() {
-			temp_cnt = 0;
-			blocks_now = main_blocks;
-			func_name = "main";
-		}
+		// void defineMain() {
+		// 	temp_cnt = 0;
+		// 	// blocks_now = main_blocks;
+		// 	// func_name = "main";
+		// }
 
 		void defineFunc(std::string func_name) {
 			temp_cnt = 0;
@@ -53,9 +53,9 @@ namespace buaac {
 			blocks_now->emplace_back(Block(label));
 		}
 
-		Blocks& getMainBlocks() {
-			return *main_blocks;
-		}
+		// Blocks& getMainBlocks() {
+		// 	return *main_blocks;
+		// }
 
 		void printLine() {
 			appendInstr(Instr::PRINT_LINE);
@@ -101,7 +101,16 @@ namespace buaac {
 			appendInstr(Instr(Instr::POP_REG, reg));
 		}
 
+		void pushStackVars(int bytes) {
+			if (bytes == 0)
+				return;
+			appendInstr(Instr(Instr::PUSH, bytes));
+			instrNotShow();
+		}
+		
 		void popStack(size_t size) {
+			if (size == 0)
+				return;
 			appendInstr(Instr(Instr::POP, size));
 			instrNotShow();
 		}
@@ -413,10 +422,6 @@ namespace buaac {
 
 #pragma endregion 
 
-		void pushStackVars(int bytes) {
-			appendInstr(Instr(Instr::PUSH, bytes));
-			instrNotShow();
-		}
 
 		// void saveStack(std::string reg, int bytes) {
 		// 	appendInstr(Instr(Instr::SAVE_STA, reg, bytes));
@@ -442,7 +447,7 @@ namespace buaac {
 		}
 
 		void instrNotShow() {
-			blocks_now->back().instrs.back().show = false;
+			// blocks_now->back().instrs.back().show = false;
 		}
 
 		void instrShowAs(std::string showas) {

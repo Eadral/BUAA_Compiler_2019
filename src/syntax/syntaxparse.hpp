@@ -885,7 +885,7 @@ namespace syntax{
 				eatToken(TokenType::RPARENT);
 				// ‘{’＜复合语句＞‘}’
 				eatToken(TokenType::LBRACE);
-				ir.defineMain();
+				ir.defineFunc("main");
 				ir.appendInstr({ Instr::MOVE, "$fp", "$sp" });
 				_symbol_table.pushScope();
 				// debugln("exprPush at {}", getLineNumber());

@@ -86,11 +86,11 @@ namespace buaac {
 				genFunc(funcs[i]);
 			}
 			// main Func
-			resetRegPool();
-			auto& blocks = ir.getMainBlocks();
-			for (int i = 0; i < blocks.size(); i++) {
-				genBlock(blocks[i]);
-			}
+			// resetRegPool();
+			// auto& blocks = ir.getMainBlocks();
+			// for (int i = 0; i < blocks.size(); i++) {
+			// 	genBlock(blocks[i]);
+			// }
 		}
 
 		void genFunc(Func &func) {
@@ -342,7 +342,7 @@ namespace buaac {
 		
 		void pushRegPool() {
 			pushPoolSize.push_back(mempool_size);
-			for (int i = 0; i <= mempool_size; i++) {
+			for (int i = 0; i < mempool_size; i++) {
 				write("lw {}, {}+{}", "$k0", "REGPOOL", 4 * i);
 				write("sw {}, ($sp)", "$k0");
 				write("addi $sp, $sp, -4");
@@ -351,7 +351,7 @@ namespace buaac {
 		
 
 		void popRegPool() {
-			for (int i = pushPoolSize.back(); i >= 0; i--) {
+			for (int i = pushPoolSize.back()-1; i >= 0; i--) {
 				write("addi $sp, $sp, 4");
 				write("lw {}, ($sp)", "$k0");
 				write("sw {}, {}+{}", "$k0", "REGPOOL", 4 * i);

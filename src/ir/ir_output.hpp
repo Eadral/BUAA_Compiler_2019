@@ -38,7 +38,7 @@ namespace buaac {
 			switch (global_define.type) {
 
 			case GlobalDefine::CONST_STR:
-				write("const string {} = {};", removePrefix(global_define.const_str.label), global_define.const_str.value);
+				write("const string {} = \"{}\";", removePrefix(global_define.const_str.label), global_define.const_str.value);
 				break;
 			case GlobalDefine::VAR_INT:
 				write("int {};", removePrefix(global_define.var_int.label));
@@ -116,10 +116,10 @@ namespace buaac {
 				write("{} = {};", instr.target, instr.source_a);
 				break;
 			case Instr::PUSH:
-				write("new {};", instr.target);
+				write("push {}B;", instr.target);
 				break;
 			case Instr::POP:
-				write("del {};", instr.target);
+				write("pop {}B;", instr.target);
 				break;
 			case Instr::PUSH_REG:
 				write("push {};", instr.target);
@@ -235,14 +235,14 @@ namespace buaac {
 				write("");
 			}
 
-			write("fn main {}", '{');
-			pushIndent();
-			for (int i = 0; i < ir.main_blocks->size(); i++) {
-				outputBlock(ir.main_blocks->at(i));
-			}
-			popIndent();
-			write("{}", '}');
-			write("");
+			// write("fn main {}", '{');
+			// pushIndent();
+			// for (int i = 0; i < ir.main_blocks->size(); i++) {
+			// 	outputBlock(ir.main_blocks->at(i));
+			// }
+			// popIndent();
+			// write("{}", '}');
+			// write("");
 		}
 
 		
