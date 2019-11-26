@@ -613,12 +613,12 @@ namespace syntax{
 
 		void pushStackReg(std::string reg) {
 			ir.__pushStackReg(reg);
-			_symbol_table.addOffset(4);
+			// _symbol_table.addOffset(4);
 		}
 
 		void popStackReg(std::string reg) {
 			ir.__popStackReg(reg);
-			_symbol_table.subOffset(4);
+			// _symbol_table.subOffset(4);
 		}
 
 		// {,(＜标识符＞|＜标识符＞'['＜无符号整数＞']' )} 
@@ -727,7 +727,7 @@ namespace syntax{
 				compStatement();
 				eatToken(TokenType::RBRACE);
 				ir.popStack(_symbol_table.getStackScopeBytes());
-				_symbol_table.clearOffset();
+				// _symbol_table.clearOffset();
 				_symbol_table.popScope();
 				// debugln("pop at {}", getLineNumber());
 				break;
@@ -766,7 +766,7 @@ namespace syntax{
 				compStatement();
 				eatToken(TokenType::RBRACE);
 				ir.popStack(_symbol_table.getStackScopeBytes());
-				_symbol_table.clearOffset();
+				// _symbol_table.clearOffset();
 				_symbol_table.popScope();
 				// debugln("pop at {}", getLineNumber());
 				break;
@@ -1596,24 +1596,24 @@ namespace syntax{
 			return token;
 		}
 
-		void pushRegPool() {
-			// TODO: repair, move to mips
-			for (int i = 0; i <= POOLSIZE; i++) {
-				ir.appendInstr({ Instr::LOAD_LAB_IMM, "$k0", "REGPOOL", 4 * i });
-				ir.instrNotShow();
-				pushStackReg("$k0");
-				ir.instrNotShow();
-			}
-		}
-
-		void popRegPool() {
-			for (int i = POOLSIZE; i >= 0; i--) {
-				popStackReg("$k0");
-				ir.instrNotShow();
-				ir.appendInstr({ Instr::SAVE_LAB_IMM, "$k0", "REGPOOL", 4 * i });
-				ir.instrNotShow();
-			}
-		}
+		// void pushRegPool() {
+		// 	// TODO: repair, move to mips
+		// 	for (int i = 0; i <= POOLSIZE; i++) {
+		// 		ir.appendInstr({ Instr::LOAD_LAB_IMM, "$k0", "REGPOOL", 4 * i });
+		// 		ir.instrNotShow();
+		// 		pushStackReg("$k0");
+		// 		ir.instrNotShow();
+		// 	}
+		// }
+		//
+		// void popRegPool() {
+		// 	for (int i = POOLSIZE; i >= 0; i--) {
+		// 		popStackReg("$k0");
+		// 		ir.instrNotShow();
+		// 		ir.appendInstr({ Instr::SAVE_LAB_IMM, "$k0", "REGPOOL", 4 * i });
+		// 		ir.instrNotShow();
+		// 	}
+		// }
 		
 		// ＜有/无返回值函数调用语句＞ ::= ＜标识符＞'('＜值参数表＞')'
 		void funcCall() {
@@ -1623,7 +1623,8 @@ namespace syntax{
 			
 			pushStackReg("$fp");
 
-			pushRegPool();
+			ir.appendInstr({ Instr::PUSH_REGPOOL });
+			// pushRegPool();
 
 			// ir.appendInstr({ Instr::MINUS, "$k1", "$sp", "4"});
 			// pushStackReg("$k1");
@@ -1637,7 +1638,7 @@ namespace syntax{
 				
 				eatToken(TokenType::LPARENT);
 				val_para_list = valParaList(func_symbol.getParaList());
-				_symbol_table.subOffset(val_para_list.size() * 4);
+				// _symbol_table.subOffset(val_para_list.size() * 4);
 				excepted_para_list = func_symbol.getParaList();
 				if (excepted_para_list != val_para_list) {
 					// int length = std::min(excepted_para_list.size(), val_para_list.size());
@@ -1667,7 +1668,8 @@ namespace syntax{
 			ir.call(name.getValue());
 			ir.newBlock(FORMAT("after_call_{}_{}", name.getValue(), ir.newLabelCnt()));
 
-			popRegPool();
+			// popRegPool();
+			ir.appendInstr({ Instr::POP_REGPOOL });
 
 			popStackReg("$fp");
 

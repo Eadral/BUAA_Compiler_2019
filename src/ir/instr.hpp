@@ -34,6 +34,8 @@ namespace buaac {
 				POP,
 				PUSH_REG,
 				POP_REG,
+				PUSH_REGPOOL,
+				POP_REGPOOL,
 				
 				// Memory
 				LOAD_LAB,

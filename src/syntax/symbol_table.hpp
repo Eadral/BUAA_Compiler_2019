@@ -155,20 +155,20 @@ namespace buaac {
 				return s;
 			}
 
-
-			int scope_bytes_offset = 0;
-
-			void addOffset(int bytes) {
-				scope_bytes_offset += bytes;
-			}
-
-			void subOffset(int bytes) {
-				scope_bytes_offset -= bytes;
-			}
-
-			void clearOffset() {
-				scope_bytes_offset = 0;
-			}
+			//
+			// int scope_bytes_offset = 0;
+			//
+			// void addOffset(int bytes) {
+			// 	scope_bytes_offset += bytes;
+			// }
+			//
+			// void subOffset(int bytes) {
+			// 	scope_bytes_offset -= bytes;
+			// }
+			//
+			// void clearOffset() {
+			// 	scope_bytes_offset = 0;
+			// }
 			
 			int getStackScopeBytes() {
 				int s = 0;
