@@ -56,7 +56,7 @@ namespace buaac {
 			}
 		}
 
-#define REGPOOL_START 100 * 4
+#define REGPOOL_START 10000 * 4
 		// #define REGPOOL "REGPOOL"
 // #define POOLSIZE 100
 		

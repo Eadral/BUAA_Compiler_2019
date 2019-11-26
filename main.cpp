@@ -10,6 +10,7 @@
 #include "src/output_helper.hpp"
 #include "src/ir/ir.hpp"
 #include "src/ir/ir_output.hpp"
+#include "src/ir/optimizer.hpp"
 #include "src/gen/mips.hpp"
 
 using namespace std;
@@ -32,10 +33,16 @@ int main() {
 	IR ir = syntax_parser.start();
 
 	// ir.output("ir.txt");
-	IrGen irgen(ir);
+	
+
+	Optimizer optimizer(ir);
+	optimizer.optimize();
+	IR optimized_ir = optimizer.getIR();
+
+	IrGen irgen(optimized_ir);
 	irgen.output("ir.txt");
 	
-	MIPS mips(ir);
+	MIPS mips(optimized_ir);
 
 	mips.gen();
 	

@@ -206,8 +206,12 @@ namespace buaac {
 			case Instr::IR_SHOW:
 				write("{}", instr.target);
 				break;
-			case Instr::PUSH_REGPOOL: break;
-			case Instr::POP_REGPOOL: break;
+			case Instr::PUSH_REGPOOL:
+				write("push regpool;");
+				break;
+			case Instr::POP_REGPOOL:
+				write("pop regpool");
+				break;
 			default: ;
 			}
 		}
