@@ -886,6 +886,7 @@ namespace syntax{
 				// ‘{’＜复合语句＞‘}’
 				eatToken(TokenType::LBRACE);
 				ir.defineMain();
+				ir.appendInstr({ Instr::MOVE, "$fp", "$sp" });
 				_symbol_table.pushScope();
 				// debugln("exprPush at {}", getLineNumber());
 				_para_cnt = 0;
@@ -1272,7 +1273,7 @@ namespace syntax{
 				ir.instrNotShow();
 				ir.appendInstr({ Instr::MINUS, "$k0", "$k0", "$k1" });
 				ir.instrNotShow();
-				ir.appendInstr({ Instr::MOVE, "$k1",  "$sp" });
+				ir.appendInstr({ Instr::MOVE, "$k1",  "$fp" });
 				ir.instrNotShow();
 				// ir.exprPushLiteralInt("$sp");
 			}
@@ -1619,8 +1620,15 @@ namespace syntax{
 			Token name;
 			std::vector<SymbolType> val_para_list, excepted_para_list;
 			Symbol func_symbol;
+			
+			pushStackReg("$fp");
 
 			pushRegPool();
+
+			// ir.appendInstr({ Instr::MINUS, "$k1", "$sp", "4"});
+			// pushStackReg("$k1");
+			
+			
 			switch (lookTokenType()) {
 			case TokenType::IDENFR:
 				name = eatToken(TokenType::IDENFR);
@@ -1650,9 +1658,19 @@ namespace syntax{
 			default:
 				ERROR
 			}
+
+			
+			// popStackReg("$k1");
+			ir.appendInstr({ Instr::PLUS, "$fp", "$sp", int(val_para_list.size() * 4) });
+
+			
 			ir.call(name.getValue());
 			ir.newBlock(FORMAT("after_call_{}_{}", name.getValue(), ir.newLabelCnt()));
+
 			popRegPool();
+
+			popStackReg("$fp");
+
 			// // debugln("!{}", name.getValue());
 			if (funcName2IsRet[name.getValue()]) {
 				syntaxOutput("<有返回值函数调用语句>");

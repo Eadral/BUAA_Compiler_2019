@@ -144,7 +144,7 @@ namespace buaac {
 						break;
 					s += getSymbolBytes(_symbol_stack[i]);
 				}
-				return getStackScopeBytes() - s - 4;
+				return -s;
 			}
 			
 			int getStackBytesById(int id) {
@@ -175,7 +175,7 @@ namespace buaac {
 				for (int i = _scope_index.back(); i < _symbol_stack.size(); i++) {
 					s += getSymbolBytes(_symbol_stack[i]);
 				}
-				return s + scope_bytes_offset;
+				return s;
 			}
 
 			int getSymbolBytes(Symbol symbol) {

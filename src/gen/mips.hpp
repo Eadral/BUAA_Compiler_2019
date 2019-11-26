@@ -288,13 +288,13 @@ namespace buaac {
 				write("addi $sp, $sp, {}", instr.target);
 				break;
 			case Instr::LOAD_STA:
-				write("lw {}, {}($sp)", instr.target, instr.source_a);
+				write("lw {}, {}($fp)", instr.target, instr.source_a);
 				break;
 			case Instr::SAVE_LAB:
 				write("sw {}, {}", instr.target, instr.source_a);
 				break;
 			case Instr::SAVE_STA:
-				write("sw {}, {}($sp)", instr.target, instr.source_a);
+				write("sw {}, {}($fp)", instr.target, instr.source_a);
 				break;
 			case Instr::LOAD_LAB_IMM:
 				write("lw {}, {}+{}", instr.target, instr.source_a, instr.source_b);
@@ -303,12 +303,12 @@ namespace buaac {
 				write("sw {}, {}+{}", instr.target, instr.source_a, instr.source_b);
 				break;
 			case Instr::PUSH_REG:
-				write("addi $sp, $sp, -4");
 				write("sw {}, ($sp)", instr.target);
+				write("addi $sp, $sp, -4");
 				break;
 			case Instr::POP_REG:
-				write("lw {}, ($sp)", instr.target);
 				write("addi $sp, $sp, 4");
+				write("lw {}, ($sp)", instr.target);
 				break;
 			case Instr::CALL:
 				write("jal {}", instr.target);
@@ -362,7 +362,7 @@ namespace buaac {
 				getRegisters({ v0 });
 				write("li $v0, 5");
 				write("syscall");
-				write("sw $v0, {}($sp)", instr.target);
+				write("sw $v0, {}($fp)", instr.target);
 				releaseRegisters({ v0 });
 				break;
 				
@@ -384,7 +384,7 @@ namespace buaac {
 				getRegisters({ v0 });
 				write("li $v0, 12");
 				write("syscall");
-				write("sw $v0, {}($sp)", instr.target);
+				write("sw $v0, {}($fp)", instr.target);
 				releaseRegisters({ v0 });
 				break;
 
