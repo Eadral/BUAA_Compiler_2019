@@ -168,6 +168,8 @@ namespace buaac {
 				case Instr::MINUS: 
 				case Instr::MULT:
 				case Instr::DIV:
+				case Instr::MOVE:
+				case Instr::LI:
 					if (NOT_ASSIGN(target)) 
 						REGPOOL_SAVE(target, $t0);
 					if (NOT_ASSIGN(source_a)) 
@@ -394,6 +396,12 @@ namespace buaac {
 				break;
 			case Instr::LA:
 				write("la {}, {}", instr.target, instr.source_a);
+				break;
+			case Instr::MOVE:
+				write("move {}, {}", instr.target, instr.source_a);
+				break;
+			case Instr::LI:
+				write("li {}, {}", instr.target, instr.source_a);
 				break;
 			default: ;
 

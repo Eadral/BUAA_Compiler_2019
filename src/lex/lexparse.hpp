@@ -223,8 +223,14 @@ namespace buaac {
 
 					c = sin.get();
 
+					int offset = 0;
+					
 					while (c = sin.get(), isString(c) && c != '\"') {
 						buf << c;
+						if (c == '\\') {
+							buf << c;
+							offset--;
+						}
 					}
 
 					if (c != '\"')
@@ -237,7 +243,7 @@ namespace buaac {
 
 
 					std::string value = buf.str();
-					in = in.substr(value.length() + 2);
+					in = in.substr(value.length() + 2 + offset);
 					return LexResult::Ok(Token(TokenType::STRCON, value));
 				}
 

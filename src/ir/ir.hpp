@@ -103,6 +103,7 @@ namespace buaac {
 
 		void popStack(size_t size) {
 			appendInstr(Instr(Instr::POP, size));
+			instrNotShow();
 		}
 
 		void call(const std::string& func_name) {
@@ -110,7 +111,7 @@ namespace buaac {
 		}
 
 		void moveReg(const std::string target, const std::string& source) {
-			appendInstr({ Instr::PLUS, target, "$0", source });
+			appendInstr({ Instr::MOVE, target,  source });
 		}
 
 		void defineGlobalIntArr(const std::string& ident, int len) {
@@ -282,6 +283,7 @@ namespace buaac {
 		void exprPushStackVar(std::string ident, int bytes) {
 			auto t = newTemp();
 			appendInstr(Instr(Instr::LOAD_STA, t, i2a(bytes)));
+			instrShowAs(ident);
 			obj_stack.push_back(t);
 		}
 
@@ -291,9 +293,15 @@ namespace buaac {
 			obj_stack.push_back(t);
 		}
 
-		void exprPushLiteralInt(std::string value) {
+		void exprPushLiteralInt(int value) {
 			auto t = newTemp();
-			appendInstr(Instr(Instr::PLUS, t, "$0", value));
+			appendInstr(Instr(Instr::LI, t, value));
+			obj_stack.push_back(t);
+		}
+
+		void exprPushReg(std::string reg) {
+			auto t = newTemp();
+			appendInstr(Instr(Instr::MOVE, t, reg));
 			obj_stack.push_back(t);
 		}
 
@@ -303,9 +311,9 @@ namespace buaac {
 			obj_stack.push_back(t);
 		}
 
-		void exprPushLiteralInt(int value) {
-			exprPushLiteralInt(i2a(value));
-		}
+		// void exprPushLiteralInt(int value) {
+		// 	exprPushLiteralInt(value);
+		// }
 
 		int not_gen = 0;
 
@@ -407,6 +415,7 @@ namespace buaac {
 
 		void pushStackVars(int bytes) {
 			appendInstr(Instr(Instr::PUSH, bytes));
+			instrNotShow();
 		}
 
 		// void saveStack(std::string reg, int bytes) {
@@ -421,20 +430,39 @@ namespace buaac {
 		// 	appendInstr(Instr(Instr::LOAD_STA, reg, bytes));
 		// }
 
+		void irShow(std::string str) {
+			appendInstr({ Instr::IR_SHOW,  str });
+		}
+
 		
 
-		void appendInstr(Instr instr) {
+		void appendInstr(Instr instr, bool show=true) {
+			instr.show = show;
 			blocks_now->back().addInstr(instr);
 		}
 
+		void instrNotShow() {
+			blocks_now->back().instrs.back().show = false;
+		}
+
+		void instrShowAs(std::string showas) {
+			blocks_now->back().instrs.back().showas = showas;
+		}
+		
 		std::string getGlobalName(std::string ident) {
 			return FORMAT("__GLOBAL_{}", ident);
+		}
+
+		int newLabelCnt() {
+			return label_cnt++;
 		}
 		
 	private:
 
 		int temp_cnt = 0;
+		int label_cnt = 0;
 
+		
 
 		std::string newTemp() {
 			return FORMAT("__T{}", temp_cnt++);

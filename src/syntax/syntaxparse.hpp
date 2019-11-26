@@ -539,6 +539,7 @@ namespace syntax{
 		}
 
 		SymbolType _status_vardef_type;
+		std::string _status_vardef_type_str;
 		//＜变量定义＞ ::= ＜类型标识符＞
 		//				(＜标识符＞|＜标识符＞'['＜无符号整数＞']')
 		//				{,(＜标识符＞|＜标识符＞'['＜无符号整数＞']' )} 
@@ -555,9 +556,11 @@ namespace syntax{
 				type = typeIdent();
 				if (type.getTokenType() == TokenType::INTTK) {
 					_status_vardef_type = SymbolType::INT;
+					_status_vardef_type_str = "int";
 				}
 				else if (type.getTokenType() == TokenType::CHARTK) {
 					_status_vardef_type = SymbolType::CHAR;
+					_status_vardef_type_str = "char";
 				}
 				// (＜标识符＞|＜标识符＞'['＜无符号整数＞']')
 				switch (lookTokenType()) {
@@ -575,6 +578,8 @@ namespace syntax{
 						eatToken(TokenType::RBRACK);
 						if (_symbol_table.getScope() == -1) {
 							ir.defineGlobalIntArr(ident.getValue(), a2i(uninteger_token.getValue()));
+						} else {
+							ir.irShow(FORMAT("{} {}[{}];", _status_vardef_type_str, ident.getValue(), uninteger_token.getValue()));
 						}
 						checkPush(_symbol_table.push(Symbol(_status_vardef_type, ident.getValue(), atoi(uninteger_token.getValue().c_str()))));
 						
@@ -584,7 +589,10 @@ namespace syntax{
 						checkPush(_symbol_table.push(Symbol(_status_vardef_type, ident.getValue())));
 						if (_symbol_table.getScope() == -1) {
 							ir.defineGlobalInt(ident.getValue());
-						} 
+						} else {
+							ir.irShow(FORMAT("{} {};", _status_vardef_type_str, ident.getValue()));
+
+						}
 						break;
 					default:
 						ERROR
@@ -799,12 +807,14 @@ namespace syntax{
 					ir.pushStackVars(_symbol_table.getStackScopeBytes() - _para_cnt * 4);
 				}
 				pushStackReg("$ra");
+				ir.instrNotShow();
 				resetOuput();
 				// ＜语句列＞
 				statementCol();
 				resetOuput();
 				ir.newBlock(ir.getReturnLabel());
 				popStackReg("$ra");
+				ir.instrNotShow();
 				break;
 			default:
 				ERROR
@@ -826,6 +836,7 @@ namespace syntax{
 				// ＜标识符＞
 				ident = eatToken(TokenType::IDENFR);
 				_status_paralist.push_back(Symbol(token2SymbolType(type), ident.getValue()));
+				ir.irShow(FORMAT("para {} {};", type.getValue(), ident.getValue()));
 				// {, ＜类型标识符＞＜标识符＞}
 				paraListGroup();
 				break;
@@ -851,6 +862,7 @@ namespace syntax{
 				// ＜标识符＞
 				ident = eatToken(TokenType::IDENFR);
 				_status_paralist.push_back(Symbol(token2SymbolType(type), ident.getValue()));
+				ir.irShow(FORMAT("para {} {};", type.getValue(), ident.getValue()));
 				// Group
 				paraListGroup();
 				break;
@@ -894,7 +906,7 @@ namespace syntax{
 			Token token;
 			Symbol symbol;
 
-			bool has_group;
+			bool has_group = false;
 			
 			switch (lookTokenType()) {
 			case TokenType::IDENFR:
@@ -920,9 +932,9 @@ namespace syntax{
 				// ［＋｜－］
 				exprPrefix();
 				// ＜项＞
-				term();
+				has_group = term() || has_group;
 				// {＜加法运算符＞＜项＞} 
-				has_group = exprGroup();
+				has_group = exprGroup() || has_group;
 				if (has_group)
 					expr_type = SymbolType::INT;
 				break;
@@ -989,7 +1001,8 @@ namespace syntax{
 			return true;
 		}
 		// ＜项＞::= ＜因子＞{＜乘法运算符＞＜因子＞}
-		void term() {
+		bool term() {
+			bool has_group = false;
 			switch (lookTokenType()) {
 			case TokenType::IDENFR:
 			case TokenType::INTCON:
@@ -1000,15 +1013,16 @@ namespace syntax{
 				//  ＜因子＞
 				factor();
 				// {＜乘法运算符＞＜因子＞}
-				termGroup();
+				has_group = termGroup();
 				break;
 			default:
 				ERROR
 			}
 			syntaxOutput("<项>");
+			return has_group;
 		}
 		// {＜乘法运算符＞＜因子＞}
-		void termGroup() {
+		bool termGroup() {
 			switch (lookTokenType()) {
 			case TokenType::MULT:
 			case TokenType::DIV:
@@ -1031,9 +1045,11 @@ namespace syntax{
 			case TokenType::COMMA:
 			case TokenType::RPARENT:
 			case TokenType::RBRACK:
+				return false;
 			default:
 				ERROR
 			}
+			return true;
 		}
 		// ＜因子＞    ::= ＜标识符＞｜＜标识符＞'['＜表达式＞']'
 		//					|'('＜表达式＞')'｜＜整数＞|＜字符＞
@@ -1051,7 +1067,7 @@ namespace syntax{
 				case TokenType::LPARENT:
 					// ＜有返回值函数调用语句＞       
 					funcCall();
-					ir.exprPushLiteralInt("$v0");
+					ir.exprPushReg("$v0");
 					break;
 				case TokenType::LBRACK:
 				case TokenType::LEQ:
@@ -1086,6 +1102,7 @@ namespace syntax{
 						addr = getArrAddr(token.getValue(), expr_ans);
 						
 						ir.exprPushStackArr(addr);
+						ir.instrNotShow();
 						
 						break;
 					case TokenType::RBRACK:
@@ -1108,7 +1125,7 @@ namespace syntax{
 							if (_symbol_table.isChar(token.getValue())) {
 								ir.exprPushLiteralInt(int(_symbol_table.getConstValue(token.getValue())[0]));
 							} else {
-								ir.exprPushLiteralInt(_symbol_table.getConstValue(token.getValue()));
+								ir.exprPushLiteralInt(a2i(_symbol_table.getConstValue(token.getValue())));
 							}
 						}
 						else if (_symbol_table.isGlobal(token.getValue())) {
@@ -1116,6 +1133,7 @@ namespace syntax{
 						}
 						else {
 							ir.exprPushStackVar(token.getValue(), _symbol_table.getStackBytesByIdent(token.getValue()));
+							ir.instrShowAs(token.getValue());
 						}
 						break;
 					default:
@@ -1131,7 +1149,7 @@ namespace syntax{
 			case TokenType::INTCON:
 				// ＜整数＞
 				tie(std::ignore, int_token) = integer();
-				ir.exprPushLiteralInt(int_token.getValue());
+				ir.exprPushLiteralInt(a2i(int_token.getValue()));
 				break;
 			case TokenType::CHARCON:
 				// ＜字符＞
@@ -1145,7 +1163,7 @@ namespace syntax{
 				// ir.notGen();
 				ir.exprStart();
 				tie(expr_type, expr_ans) = expr();
-				ir.exprPushLiteralInt(expr_ans);
+				ir.exprPushReg(expr_ans);
 				eatToken(TokenType::RPARENT);
 				ir.exprPush(IR::PARE_R);
 				break;
@@ -1237,21 +1255,29 @@ namespace syntax{
 			// return ir.gen();
 			
 			// TODO: fixme, using reg assignment
-			ir.appendInstr({ Instr::PLUS, "$k1", "$0", expr_ans });
-			ir.appendInstr({ Instr::PLUS, "$k0", "$0", "4" });
+			ir.appendInstr({ Instr::MOVE, "$k1",  expr_ans });
+			ir.instrNotShow();
+			ir.appendInstr({ Instr::LI, "$k0",  "4" });
+			ir.instrNotShow();
 			ir.appendInstr({ Instr::MULT, "$k1", "$k1", "$k0" });
+			ir.instrNotShow();
 			
 			if (_symbol_table.isGlobal(arr)) {
 				ir.appendInstr({ Instr::LA, "$k0", ir.getGlobalName(arr) });
+				ir.instrNotShow();
 				// ir.exprPushLabel(ir.getGlobalName(arr));
 			}
 			else {
-				ir.appendInstr({ Instr::PLUS, "$k0", "$0", _symbol_table.getStackBytesByIdent(arr) });
+				ir.appendInstr({ Instr::LI, "$k0",  _symbol_table.getStackBytesByIdent(arr) });
+				ir.instrNotShow();
 				ir.appendInstr({ Instr::MINUS, "$k0", "$k0", "$k1" });
-				ir.appendInstr({ Instr::PLUS, "$k1", "$0", "$sp" });
+				ir.instrNotShow();
+				ir.appendInstr({ Instr::MOVE, "$k1",  "$sp" });
+				ir.instrNotShow();
 				// ir.exprPushLiteralInt("$sp");
 			}
 			ir.appendInstr({ Instr::PLUS, "$k0", "$k0", "$k1" });
+			ir.instrNotShow();
 			
 			return "$k0";
 		}
@@ -1261,6 +1287,7 @@ namespace syntax{
 				ir.appendInstr(Instr(Instr::SAVE_LAB, ans, ir.getGlobalName(ident)));
 			} else {
 				ir.appendInstr(Instr(Instr::SAVE_STA, ans, _symbol_table.getStackBytesByIdent(ident)));
+				ir.instrShowAs(ident);
 			}
 		}
 		
@@ -1542,7 +1569,7 @@ namespace syntax{
 				} else {
 					ir.exprPush(IR::MINUS);
 				}
-				ir.exprPushLiteralInt(step_str);
+				ir.exprPushLiteralInt(a2i(step_str));
 				saveVar(ir.gen(), for_step_ident_lhs);
 				
 				ir.jump(ir.getForStartName());
@@ -1572,14 +1599,18 @@ namespace syntax{
 			// TODO: repair, move to mips
 			for (int i = 0; i <= POOLSIZE; i++) {
 				ir.appendInstr({ Instr::LOAD_LAB_IMM, "$k0", "REGPOOL", 4 * i });
-				pushStackReg("$k0"); 
+				ir.instrNotShow();
+				pushStackReg("$k0");
+				ir.instrNotShow();
 			}
 		}
 
 		void popRegPool() {
 			for (int i = POOLSIZE; i >= 0; i--) {
 				popStackReg("$k0");
+				ir.instrNotShow();
 				ir.appendInstr({ Instr::SAVE_LAB_IMM, "$k0", "REGPOOL", 4 * i });
+				ir.instrNotShow();
 			}
 		}
 		
@@ -1620,6 +1651,7 @@ namespace syntax{
 				ERROR
 			}
 			ir.call(name.getValue());
+			ir.newBlock(FORMAT("after_call_{}_{}", name.getValue(), ir.newLabelCnt()));
 			popRegPool();
 			// // debugln("!{}", name.getValue());
 			if (funcName2IsRet[name.getValue()]) {
@@ -1881,6 +1913,7 @@ namespace syntax{
 					tie(expr_type, expr_ans) = expr();
 					ir.moveReg("$v0", expr_ans);
 					ir.jump(ir.getReturnLabel());
+					ir.newBlock(FORMAT("after_jump_{}_{}", ir.getReturnLabel(), ir.newLabelCnt()));
 					_status_value_ret_cnt++;
 					if (_status_func_defining_type == SymbolType::FUNC_INT && expr_type != SymbolType::INT) {
 						error('h');

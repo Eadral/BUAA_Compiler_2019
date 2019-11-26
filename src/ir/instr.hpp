@@ -26,6 +26,8 @@ namespace buaac {
 				MULT,
 				DIV,
 				LA,
+				MOVE,
+				LI,
 
 				// Stack
 				PUSH,
@@ -55,11 +57,15 @@ namespace buaac {
 				BGE,
 				BEQ,
 				BNE,
-				
+
+				// IR
+				IR_SHOW,
 				
 			} type;
 
 			std::string target{}, source_a{}, source_b{};
+			bool show = true;
+			std::string showas;
 			
 			Instr(Type type) : type(type) {}
 			Instr(Type type, std::string target)
@@ -82,39 +88,39 @@ namespace buaac {
 			Instr(Type type, std::string target, std::string source_a, int source_b)
 				: type(type), target(target), source_a(source_a), source_b(i2a(source_b)) {}
 
-			Instr(const Instr& other)
-				: type(other.type),
-				  target(other.target),
-				  source_a(other.source_a),
-				  source_b(other.source_b) {
-			}
-
-			Instr(Instr&& other) noexcept
-				: type(other.type),
-				  target(std::move(other.target)),
-				  source_a(std::move(other.source_a)),
-				  source_b(std::move(other.source_b)) {
-			}
-
-			Instr& operator=(const Instr& other) {
-				if (this == &other)
-					return *this;
-				type = other.type;
-				target = other.target;
-				source_a = other.source_a;
-				source_b = other.source_b;
-				return *this;
-			}
-
-			Instr& operator=(Instr&& other) noexcept {
-				if (this == &other)
-					return *this;
-				type = other.type;
-				target = std::move(other.target);
-				source_a = std::move(other.source_a);
-				source_b = std::move(other.source_b);
-				return *this;
-			}
+			// Instr(const Instr& other)
+			// 	: type(other.type),
+			// 	  target(other.target),
+			// 	  source_a(other.source_a),
+			// 	  source_b(other.source_b) {
+			// }
+			//
+			// Instr(Instr&& other) noexcept
+			// 	: type(other.type),
+			// 	  target(std::move(other.target)),
+			// 	  source_a(std::move(other.source_a)),
+			// 	  source_b(std::move(other.source_b)) {
+			// }
+			//
+			// Instr& operator=(const Instr& other) {
+			// 	if (this == &other)
+			// 		return *this;
+			// 	type = other.type;
+			// 	target = other.target;
+			// 	source_a = other.source_a;
+			// 	source_b = other.source_b;
+			// 	return *this;
+			// }
+			//
+			// Instr& operator=(Instr&& other) noexcept {
+			// 	if (this == &other)
+			// 		return *this;
+			// 	type = other.type;
+			// 	target = std::move(other.target);
+			// 	source_a = std::move(other.source_a);
+			// 	source_b = std::move(other.source_b);
+			// 	return *this;
+			// }
 		};
 
 	}

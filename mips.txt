@@ -1,1 +1,1 @@
-C:/Study/S6/Compiler/BUAAC/out/build/x64-Debug/mips.txt
+out/build/x64-Debug/mips.txt
