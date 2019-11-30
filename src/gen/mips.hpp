@@ -46,7 +46,7 @@ namespace buaac {
 			}
 		}
 
-#define REGPOOL_START 10000 * 4
+#define REGPOOL_START 2000 * 4
 		// #define REGPOOL "REGPOOL"
 // #define POOLSIZE 100
 		
@@ -385,6 +385,10 @@ namespace buaac {
 			}
 		}
 
+		bool isNumber(std::string source) {
+			return isdigit(source[0]) || source[0] == '-';
+		}
+
 		void genInstr(Instr instr) {
 			switch (instr.type) {
 
@@ -405,9 +409,25 @@ namespace buaac {
 				break;
 			
 			case Instr::PLUS:
+				if (isNumber(instr.source_b)) {
+					write("addi {}, {}, {}", instr.target, instr.source_a, instr.source_b);
+					break;
+				}
+				if (isNumber(instr.source_a)) {
+					write("addi {}, {}, {}", instr.target, instr.source_b, instr.source_a);
+					break;
+				}
 				write("addu {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 				break;
 			case Instr::MINUS:
+				if (isNumber(instr.source_b)) {
+					write("subi {}, {}, {}", instr.target, instr.source_a, instr.source_b);
+					break;
+				}
+				if (isNumber(instr.source_a)) {
+					write("subi {}, {}, {}", instr.target, instr.source_b, instr.source_a);
+					break;
+				}
 				write("subu {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 				break;
 			case Instr::MULT:
