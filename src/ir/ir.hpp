@@ -297,9 +297,15 @@ namespace buaac {
 			obj_stack.push_back(t);
 		}
 
-		void exprPushStackArr(std::string addr_reg) {
+		void exprPushStackArrGlo(int arr, std::string offset) {
 			auto t = newTemp();
-			appendInstr(Instr(Instr::LOAD_STA_ARR, t, addr_reg));
+			appendInstr(Instr(Instr::LOAD_STA_ARR_GLO, t, arr, offset));
+			obj_stack.push_back(t);
+		}
+
+		void exprPushStackArrSta(int arr, std::string offset) {
+			auto t = newTemp();
+			appendInstr(Instr(Instr::LOAD_STA_ARR_STA, t, arr, offset));
 			obj_stack.push_back(t);
 		}
 

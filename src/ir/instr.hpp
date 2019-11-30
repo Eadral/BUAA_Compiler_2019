@@ -42,8 +42,10 @@ namespace buaac {
 				LOAD_STA,
 				SAVE_GLO,
 				SAVE_STA,
-				SAVE_STA_ARR,
-				LOAD_STA_ARR,
+				SAVE_STA_ARR_GLO,
+				LOAD_STA_ARR_GLO,
+				SAVE_STA_ARR_STA,
+				LOAD_STA_ARR_STA,
 
 				// JUMP
 				CALL,

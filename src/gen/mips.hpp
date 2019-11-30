@@ -106,6 +106,7 @@ namespace buaac {
 			"$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$t8", "$t9",
 			"$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7",
 			"$v1",
+			"$k1",
 #ifndef STANDARD_REG_A
 			"$a1", "$a2", "$a3",
 #endif
@@ -290,17 +291,23 @@ namespace buaac {
 					break;
 				case Instr::SCAN_CHAR: break;
 				case Instr::SCAN_GLOBAL_CHAR: break;
-				case Instr::SAVE_STA_ARR:
+				case Instr::SAVE_STA_ARR_GLO:
+				case Instr::SAVE_STA_ARR_STA:
 					if (NOT_ASSIGN(target))
 						REGPOOL_LOAD(target, $t0);
 					if (NOT_ASSIGN(source_a))
 						REGPOOL_LOAD(source_a, $t1);
+					if (NOT_ASSIGN(source_b))
+						REGPOOL_LOAD(source_b, $t1);
 					break;
-				case Instr::LOAD_STA_ARR: 
+				case Instr::LOAD_STA_ARR_GLO:
+				case Instr::LOAD_STA_ARR_STA:
 					if (NOT_ASSIGN(target))
 						REGPOOL_SAVE(target, $t0);
 					if (NOT_ASSIGN(source_a))
 						REGPOOL_LOAD(source_a, $t1);
+					if (NOT_ASSIGN(source_b))
+						REGPOOL_LOAD(source_b, $t1);
 					break;
 				case Instr::LA:
 					if (NOT_ASSIGN(target))
@@ -524,12 +531,27 @@ namespace buaac {
 				releaseRegisters({ "$v0" });
 				break;
 
-			case Instr::SAVE_STA_ARR:
-				write("sw {}, ({})", instr.target, instr.source_a);
+			case Instr::SAVE_STA_ARR_STA:
+				write("sll $k0, {}, 2", instr.source_b);
+				write("sub $k0, $fp, $k0");
+				write("sw {}, {}($k0)", instr.target, instr.source_a);
 				break;
-			case Instr::LOAD_STA_ARR:
-				write("lw {}, ({})", instr.target, instr.source_a);
+			case Instr::LOAD_STA_ARR_STA:
+				write("sll $k0, {}, 2", instr.source_b);
+				write("sub $k0, $fp, $k0");
+				write("lw {}, {}($k0)", instr.target, instr.source_a);
 				break;
+			case Instr::SAVE_STA_ARR_GLO:
+				write("sll $k0, {}, 2", instr.source_b);
+				write("add $k0, $k0, $gp");
+				write("sw {}, {}($k0)", instr.target, instr.source_a);
+				break;
+			case Instr::LOAD_STA_ARR_GLO:
+				write("sll $k0, {}, 2", instr.source_b);
+				write("add $k0, $k0, $gp");
+				write("lw {}, {}($k0)", instr.target, instr.source_a);
+				break;
+				
 			case Instr::LA:
 				write("la {}, {}", instr.target, instr.source_a);
 				break;

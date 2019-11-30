@@ -164,10 +164,20 @@ namespace buaac {
 				}
 				write("$sp[{}] = {};", instr.source_a, instr.target);
 				break;
-			case Instr::SAVE_STA_ARR:
+			case Instr::SAVE_STA_ARR_GLO:
+			case Instr::SAVE_STA_ARR_STA:
+				if (show_as) {
+					write("{}[{}] = {};", instr.showas, instr.source_b, instr.target);
+					break;
+				}
 				write("[{}] = {};", instr.source_a, instr.target);
 				break;
-			case Instr::LOAD_STA_ARR:
+			case Instr::LOAD_STA_ARR_GLO:
+			case Instr::LOAD_STA_ARR_STA:
+				if (show_as) {
+					write("{} = {}[{}];", instr.target, instr.showas, instr.source_b);
+					break;
+				}
 				write("{} = [{}];", instr.target, instr.source_a);
 				break;
 			case Instr::CALL:

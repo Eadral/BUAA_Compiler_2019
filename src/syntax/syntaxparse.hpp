@@ -1061,6 +1061,7 @@ namespace syntax{
 		std::string offset2rega(int offset) {
 			return FORMAT("$a{}", -offset / 4);
 		}
+
 		
 		// ＜因子＞    ::= ＜标识符＞｜＜标识符＞'['＜表达式＞']'
 		//					|'('＜表达式＞')'｜＜整数＞|＜字符＞
@@ -1110,9 +1111,13 @@ namespace syntax{
 						}
 						eatToken(TokenType::RBRACK);
 
-						addr = getArrAddr(token.getValue(), expr_ans);
+						if (_symbol_table.isGlobal(token.getValue())) {
+							ir.exprPushStackArrGlo(_symbol_table.getGlobalBytesByIdent(token.getValue()), expr_ans);
+						} else {
+							ir.exprPushStackArrSta(_symbol_table.getStackBytesByIdent(token.getValue()), expr_ans);
+						}
+						ir.instrShowAs(token.getValue());
 						
-						ir.exprPushStackArr(addr);
 						ir.instrNotShow();
 						
 						break;
@@ -1251,54 +1256,6 @@ namespace syntax{
 			}
 			syntaxOutput("<语句>");
 		}
-
-		std::string getArrAddr(std::string arr, std::string expr_ans) {
-			// ir.exprStart();
-			// ir.exprPushLiteralInt(_symbol_table.getStackBytesByIdent(arr));
-			// ir.exprPush(IR::MINUS);
-			// ir.exprPushLiteralInt(expr_ans);
-			// ir.exprPush(IR::MULT);
-			// ir.exprPushLiteralInt(4);
-			// ir.exprPush(IR::PLUS);
-			// if (_symbol_table.isGlobal(arr)) {
-			// 	ir.exprPushLabel(ir.getGlobalName(arr));
-			// }
-			// else {
-			// 	ir.exprPushLiteralInt("$sp");
-			// }
-			// return ir.gen();
-			
-			// TODO: fixme, using reg assignment
-			ir.appendInstr({ Instr::MOVE, "$k1",  expr_ans });
-			ir.instrNotShow();
-			ir.appendInstr({ Instr::LI, "$k0",  "4" });
-			ir.instrNotShow();
-			ir.appendInstr({ Instr::MULT, "$k1", "$k1", "$k0" });
-			ir.instrNotShow();
-			
-			if (_symbol_table.isGlobal(arr)) {
-				ir.appendInstr({ Instr::LI, "$k0",  _symbol_table.getGlobalBytesByIdent(arr) });
-				ir.instrNotShow();
-				ir.appendInstr({ Instr::PLUS, "$k0", "$k0", "$k1" });
-				ir.instrNotShow();
-				ir.appendInstr({ Instr::MOVE, "$k1",  "$gp" });
-				ir.instrNotShow();
-				// ir.exprPushLabel(ir.getGlobalName(arr));
-			}
-			else {
-				ir.appendInstr({ Instr::LI, "$k0",  _symbol_table.getStackBytesByIdent(arr) });
-				ir.instrNotShow();
-				ir.appendInstr({ Instr::MINUS, "$k0", "$k0", "$k1" });
-				ir.instrNotShow();
-				ir.appendInstr({ Instr::MOVE, "$k1",  "$fp" });
-				ir.instrNotShow();
-				// ir.exprPushLiteralInt("$sp");
-			}
-			ir.appendInstr({ Instr::PLUS, "$k0", "$k0", "$k1" });
-			ir.instrNotShow();
-			
-			return "$k0";
-		}
 	
 		void assign(std::string ident, std::string ans) {
 			if (_symbol_table.isGlobal(ident)) {
@@ -1316,7 +1273,7 @@ namespace syntax{
 			Symbol symbol;
 
 			SymbolType expr_type;
-			std::string expr_reg, expr_ans_lhs, expr_ans_rhs, addr;
+			std::string expr_reg, expr_ans_lhs, expr_ans_rhs;
 
 			
 			switch (lookTokenType()) {
@@ -1353,9 +1310,12 @@ namespace syntax{
 					ir.exprStart();
 					tie(expr_type, expr_ans_rhs) = expr();
 
-					addr = getArrAddr(ident.getValue(), expr_ans_lhs);
-
-					ir.appendInstr({ Instr::SAVE_STA_ARR, expr_ans_rhs, addr });
+					if (_symbol_table.isGlobal(ident.getValue())) {
+						ir.appendInstr({ Instr::SAVE_STA_ARR_GLO, expr_ans_rhs, _symbol_table.getGlobalBytesByIdent(ident.getValue()), expr_ans_lhs });
+					} else {
+						ir.appendInstr({ Instr::SAVE_STA_ARR_STA, expr_ans_rhs, _symbol_table.getStackBytesByIdent(ident.getValue()), expr_ans_lhs });
+					}
+					ir.instrShowAs(ident.getValue());
 					
 					break;
 				default:
