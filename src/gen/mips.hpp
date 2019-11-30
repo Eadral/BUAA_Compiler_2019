@@ -6,17 +6,7 @@
 namespace buaac {
 
 // #define DO_NOT_ASSIGN_REGS
-	
-	enum Reg {
-		at,
-		v0, v1,
-		a0, a1, a2, a3,
-		t0, t1, t2, t3, t4, t5, t6, t7, t8, t9,
-		s0, s1, s2, s3, s4, s5, s6, s7,
-		k0, k1,
-		gp, sp, fp,
-		ra
-	};
+
 	
 	class RegPool {
 	public:
@@ -115,7 +105,10 @@ namespace buaac {
 		std::vector<std::string> globalRegs = {
 			"$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$t8", "$t9",
 			"$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7",
-			"$v1"
+			"$v1",
+#ifndef STANDARD_REG_A
+			"$a1", "$a2", "$a3",
+#endif
 		};
 
 		std::map<std::string, std::string> regPool;
@@ -320,6 +313,12 @@ namespace buaac {
 							ts.push_back(globalRegs[i]);
 						}
 					}
+#ifdef STANDARD_REG_A
+					ts.push_back("$a0");
+					ts.push_back("$a1");
+					ts.push_back("$a2");
+					ts.push_back("$a3");
+#endif
 					t_stack.push_back(ts);
 					for (int j = 0; j < ts.size(); j++) {
 						insertAfter(instrs, i, { Instr::PUSH_REG, ts[j] });
@@ -383,19 +382,19 @@ namespace buaac {
 			switch (instr.type) {
 
 			case Instr::PRINT_GLOBAL_STR:
-				getRegisters({ a0, v0 });
+				getRegisters({ "$a0", "$v0" });
 				write("la $a0, {}", instr.target);
 				write("li $v0, 4");
 				write("syscall");
-				releaseRegisters({ a0, v0 });
+				releaseRegisters({ "$a0", "$v0"});
 				break;
 			
 			case Instr::PRINT_LINE:
-				getRegisters({ a0, v0 });
+				getRegisters({ "$a0", "$v0" });
 				write("la $a0, '\\n'");
 				write("li $v0, 11");
 				write("syscall");
-				releaseRegisters({ a0, v0 });
+				releaseRegisters({ "$a0", "$v0" });
 				break;
 			
 			case Instr::PLUS:
@@ -482,47 +481,47 @@ namespace buaac {
 				break;
 				
 			case Instr::PRINT_INT:
-				getRegisters({ a0, v0 });
+				getRegisters({ "$a0", "$v0" });
 				write("move $a0, {}", instr.target);
 				write("li $v0, 1");
 				write("syscall");
-				releaseRegisters({ a0, v0 });
+				releaseRegisters({ "$a0", "$v0" });
 				break;
 			case Instr::SCAN_GLOBAL_INT:
-				getRegisters({ v0 });
+				getRegisters({ "$v0" });
 				write("li $v0, 5");
 				write("syscall");
 				write("sw $v0, {}($gp)", instr.target);
-				releaseRegisters({ v0 });
+				releaseRegisters({ "$v0" });
 				break;
 			case Instr::SCAN_INT:
-				getRegisters({ v0 });
+				getRegisters({ "$v0" });
 				write("li $v0, 5");
 				write("syscall");
 				write("sw $v0, {}($fp)", instr.target);
-				releaseRegisters({ v0 });
+				releaseRegisters({ "$v0" });
 				break;
 				
 			case Instr::PRINT_CHAR:
-				getRegisters({ a0, v0 });
+				getRegisters({ "$a0", "$v0" });
 				write("move $a0, {}", instr.target);
 				write("li $v0, 11");
 				write("syscall");
-				releaseRegisters({ a0, v0 });
+				releaseRegisters({ "$a0", "$v0" });
 				break;
 			case Instr::SCAN_GLOBAL_CHAR:
-				getRegisters({ v0 });
+				getRegisters({ "$v0" });
 				write("li $v0, 12");
 				write("syscall");
 				write("sw $v0, {}($gp)", instr.target);
-				releaseRegisters({ v0 });
+				releaseRegisters({ "$v0" });
 				break;
 			case Instr::SCAN_CHAR:
-				getRegisters({ v0 });
+				getRegisters({ "$v0" });
 				write("li $v0, 12");
 				write("syscall");
 				write("sw $v0, {}($fp)", instr.target);
-				releaseRegisters({ v0 });
+				releaseRegisters({ "$v0" });
 				break;
 
 			case Instr::SAVE_STA_ARR:
@@ -555,12 +554,27 @@ namespace buaac {
 
 		
 
-		void getRegisters(std::vector<Reg> regs) {
-			// TODO: important
+		void getRegisters(std::vector<std::string> regs) {
+#ifdef STANDARD_REG_A
+			if (regs.size() == 1) {
+				write("move {}, {}", "$k0", regs[0]);
+			} else if (regs.size() == 2) {
+				write("move {}, {}", "$k0", regs[0]);
+				write("move {}, {}", "$k1", regs[1]);
+			}
+#endif
 		}
 
-		void releaseRegisters(std::vector<Reg> regs) {
-			// TODO: important
+		void releaseRegisters(std::vector<std::string> regs) {
+#ifdef STANDARD_REG_A
+			if (regs.size() == 1) {
+				write("move {}, {}", regs[0], "$k0");
+			}
+			else if (regs.size() == 2) {
+				write("move {}, {}", regs[0], "$k1");
+				write("move {}, {}", regs[0], "$k1");
+			}
+#endif
 		}
 
 		

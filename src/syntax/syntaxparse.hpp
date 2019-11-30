@@ -1053,6 +1053,15 @@ namespace syntax{
 			}
 			return true;
 		}
+
+		bool isInA(int offset) {
+			return -offset / 4 < 4;
+		}
+
+		std::string offset2rega(int offset) {
+			return FORMAT("$a{}", -offset / 4);
+		}
+		
 		// ＜因子＞    ::= ＜标识符＞｜＜标识符＞'['＜表达式＞']'
 		//					|'('＜表达式＞')'｜＜整数＞|＜字符＞
 		//				    ｜＜有返回值函数调用语句＞         
@@ -1710,6 +1719,9 @@ namespace syntax{
 				ir.exprStart();
 				tie(expr_type, expr_ans_reg) = expr();
 				pushStackReg(expr_ans_reg);
+#ifdef STANDARD_REG_A
+				ir.appendInstr({ Instr::MOVE, "$a0", expr_ans_reg });
+#endif
 				_val_para_list.push_back(expr_type);
 				if (expected_symbols.size() > index && expected_symbols[index] != expr_type) {
 					error('e');
@@ -1749,6 +1761,11 @@ namespace syntax{
 				tie(expr_type, expr_ans_reg) = expr();
 				
 				pushStackReg(expr_ans_reg);
+#ifdef STANDARD_REG_A
+				if (index < 4) {
+					ir.appendInstr({ Instr::MOVE, FORMAT("$a{}", index), expr_ans_reg });
+				}
+#endif
 				_val_para_list.push_back(expr_type);
 				if (expected_symbols.size() > index && expected_symbols[index] != expr_type) {
 					error('e');

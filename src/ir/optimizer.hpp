@@ -16,8 +16,10 @@ namespace buaac {
 			return ir;
 		}
 
+		// OPTIMIZE
 		void optimize() {
 			removeRa(getFuncByName("main"));
+			removeUselessRa();
 		}
 
 		void insertBefore(std::vector<Instr>& instrs, int& i, Instr instr) {
@@ -34,6 +36,16 @@ namespace buaac {
 			
 		}
 
+		// methods
+		void removeUselessRa() {
+			for (int i = 0; i < ir.funcs.size(); i++) {
+				if (!hasFuncCall(ir.funcs[i])) {
+					removeRa(ir.funcs[i]);
+				}
+			}
+		}
+
+		
 		// helper
 		Func& getFuncByName(std::string name) {
 			for (int i = 0; i < ir.funcs.size(); i++) {
@@ -46,9 +58,18 @@ namespace buaac {
 		
 
 		// checker
-
 		bool hasFuncCall(Func& func) {
-			
+			for (int i = 0; i < func.blocks->size(); i++) {
+				auto& block = func.blocks->at(i);
+				auto& instrs = block.instrs;
+				for (int j = 0; j < instrs.size(); j++) {
+					auto& instr = instrs[j];
+					if (instr.type == Instr::CALL)
+						return true;
+						
+				}
+			}
+			return false;
 		}
 
 
@@ -66,6 +87,8 @@ namespace buaac {
 				}
 			}
 		}
+
+
 		
 	};
 	

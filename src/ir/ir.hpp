@@ -292,7 +292,7 @@ namespace buaac {
 
 		void exprPushStackVar(std::string ident, int bytes) {
 			auto t = newTemp();
-			appendInstr(Instr(Instr::LOAD_STA, t, i2a(bytes)));
+			appendInstr(Instr(Instr::LOAD_STA, t, bytes));
 			instrShowAs(ident);
 			obj_stack.push_back(t);
 		}
