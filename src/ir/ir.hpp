@@ -39,7 +39,7 @@ namespace buaac {
 		// }
 
 		void defineFunc(std::string func_name) {
-			temp_cnt = 0;
+			// temp_cnt = 0;
 			funcs.emplace_back(Func(func_name));
 			blocks_now = funcs.back().blocks;
 			this->func_name = func_name;
@@ -299,13 +299,13 @@ namespace buaac {
 
 		void exprPushStackArrGlo(int arr, std::string offset) {
 			auto t = newTemp();
-			appendInstr(Instr(Instr::LOAD_STA_ARR_GLO, t, arr, offset));
+			appendInstr(Instr(Instr::LOAD_ARR_GLO, t, arr, offset));
 			obj_stack.push_back(t);
 		}
 
 		void exprPushStackArrSta(int arr, std::string offset) {
 			auto t = newTemp();
-			appendInstr(Instr(Instr::LOAD_STA_ARR_STA, t, arr, offset));
+			appendInstr(Instr(Instr::LOAD_ARR_STA, t, arr, offset));
 			obj_stack.push_back(t);
 		}
 

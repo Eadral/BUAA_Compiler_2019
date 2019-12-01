@@ -208,111 +208,33 @@ namespace buaac {
 			auto& instrs = block.instrs;
 			for (int i = 0; i < instrs.size(); i++) {
 				
-				auto& instr = instrs[i];
+				// auto& instr = instrs[i];
 				
-				assignReg(instr.target);
-				assignReg(instr.source_a);
-				assignReg(instr.source_b);
+				assignReg(instrs[i].target);
+				assignReg(instrs[i].source_a);
+				assignReg(instrs[i].source_b);
 				
+				if (NOT_ASSIGN(target)) {
+					if (instrs[i].targetIsLoad())
+						REGPOOL_LOAD(target, $t0);
+					if (instrs[i].targetIsSave())
+						REGPOOL_SAVE(target, $t0);
+				}
+				if (NOT_ASSIGN(source_a)) {
+					if (instrs[i].sourceAIsLoad())
+						REGPOOL_LOAD(source_a, $t1);
+					if (instrs[i].sourceAIsSave())
+						REGPOOL_SAVE(source_a, $t1);
+				}
+				if (NOT_ASSIGN(source_b)) {
+					if (instrs[i].sourceBIsLoad())
+						REGPOOL_LOAD(source_b, $t2);
+					if (instrs[i].sourceBIsSave())
+						REGPOOL_SAVE(source_b, $t2);
+				}
 				
 				switch (instrs[i].type) {
 
-				case Instr::PRINT_GLOBAL_STR: break;
-				case Instr::PRINT_CHAR: 
-				case Instr::PRINT_INT:
-					if (NOT_ASSIGN(target))
-						REGPOOL_LOAD(target, $t0);
-					break;
-				case Instr::SCAN_INT: break;
-				case Instr::SCAN_GLOBAL_INT: break;
-				case Instr::PRINT_LINE: break;
-				
-				case Instr::PUSH: break;
-				case Instr::POP: break;
-				// case Instr::LOAD_LAB:
-				// 	if (NOT_ASSIGN(target))
-				// 		REGPOOL_SAVE(target, $t0);
-				// 	break;
-				// case Instr::LOAD_LAB_IMM: break;
-				case Instr::LOAD_GLO:
-				case Instr::LOAD_STA:
-					if (NOT_ASSIGN(target))
-						REGPOOL_SAVE(target, $t0);
-					break;
-				// case Instr::SAVE_LAB:
-				// 	if (NOT_ASSIGN(target))
-				// 		REGPOOL_LOAD(target, $t0);
-				// 	break;
-				// case Instr::SAVE_LAB_IMM: break;
-				case Instr::SAVE_GLO:
-				case Instr::SAVE_STA:
-					if (NOT_ASSIGN(target))
-						REGPOOL_LOAD(target, $t0);
-					break;
-
-				case Instr::PLUS: 
-				case Instr::MINUS: 
-				case Instr::MULT:
-				case Instr::DIV:
-				case Instr::MOVE:
-				case Instr::LI:
-					if (NOT_ASSIGN(target)) 
-						REGPOOL_SAVE(target, $t0);
-					if (NOT_ASSIGN(source_a)) 
-						REGPOOL_LOAD(source_a, $t1);
-					if (NOT_ASSIGN(source_b))
-						REGPOOL_LOAD(source_b, $t2);
-					break;
-				case Instr::PUSH_REG:
-					if (NOT_ASSIGN(target))
-						REGPOOL_LOAD(target, $t0);
-					break;
-				case Instr::POP_REG: break;
-				case Instr::CALL: break;
-				case Instr::RETURN_END: break;
-				case Instr::JUMP: break;
-					
-				case Instr::BGEZ: 
-				case Instr::BLEZ:
-					if (NOT_ASSIGN(target))
-						REGPOOL_LOAD(target, $t0);
-					break;
-					
-				case Instr::BLT: 
-				case Instr::BGT: 
-				case Instr::BLE: 
-				case Instr::BGE: 
-				case Instr::BEQ: 
-				case Instr::BNE:
-					if (NOT_ASSIGN(target))
-						REGPOOL_LOAD(target, $t0);
-					if (NOT_ASSIGN(source_a))
-						REGPOOL_LOAD(source_a, $t1);
-					break;
-				case Instr::SCAN_CHAR: break;
-				case Instr::SCAN_GLOBAL_CHAR: break;
-				case Instr::SAVE_STA_ARR_GLO:
-				case Instr::SAVE_STA_ARR_STA:
-					if (NOT_ASSIGN(target))
-						REGPOOL_LOAD(target, $t0);
-					if (NOT_ASSIGN(source_a))
-						REGPOOL_LOAD(source_a, $t1);
-					if (NOT_ASSIGN(source_b))
-						REGPOOL_LOAD(source_b, $t1);
-					break;
-				case Instr::LOAD_STA_ARR_GLO:
-				case Instr::LOAD_STA_ARR_STA:
-					if (NOT_ASSIGN(target))
-						REGPOOL_SAVE(target, $t0);
-					if (NOT_ASSIGN(source_a))
-						REGPOOL_LOAD(source_a, $t1);
-					if (NOT_ASSIGN(source_b))
-						REGPOOL_LOAD(source_b, $t1);
-					break;
-				case Instr::LA:
-					if (NOT_ASSIGN(target))
-						REGPOOL_SAVE(target, $t0);
-					break;
 				case Instr::PUSH_REGPOOL:
 					ts.clear();
 					for (int i = 0; i < globalRegs.size(); i++) {
@@ -338,7 +260,6 @@ namespace buaac {
 						insertBefore(instrs, i, { Instr::POP_REG, ts[j] });
 					}
 					break;
-				case Instr::IR_SHOW: break;
 				default: ;
 				}
 				
@@ -551,22 +472,22 @@ namespace buaac {
 				releaseRegisters({ "$v0" });
 				break;
 
-			case Instr::SAVE_STA_ARR_STA:
+			case Instr::SAVE_ARR_STA:
 				write("sll $k0, {}, 2", instr.source_b);
 				write("sub $k0, $fp, $k0");
 				write("sw {}, {}($k0)", instr.target, instr.source_a);
 				break;
-			case Instr::LOAD_STA_ARR_STA:
+			case Instr::LOAD_ARR_STA:
 				write("sll $k0, {}, 2", instr.source_b);
 				write("sub $k0, $fp, $k0");
 				write("lw {}, {}($k0)", instr.target, instr.source_a);
 				break;
-			case Instr::SAVE_STA_ARR_GLO:
+			case Instr::SAVE_ARR_GLO:
 				write("sll $k0, {}, 2", instr.source_b);
 				write("add $k0, $k0, $gp");
 				write("sw {}, {}($k0)", instr.target, instr.source_a);
 				break;
-			case Instr::LOAD_STA_ARR_GLO:
+			case Instr::LOAD_ARR_GLO:
 				write("sll $k0, {}, 2", instr.source_b);
 				write("add $k0, $k0, $gp");
 				write("lw {}, {}($k0)", instr.target, instr.source_a);
@@ -588,6 +509,7 @@ namespace buaac {
 				popRegPool();
 				break;
 			case Instr::IR_SHOW: break;
+			case Instr::NOP: break;
 			default: ;
 
 

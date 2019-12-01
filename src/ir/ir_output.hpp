@@ -77,18 +77,28 @@ namespace buaac {
 			instr.source_a = removePrefix(instr.source_a);
 			// if (instr.show_c.size() == 0)
 			instr.source_b = removePrefix(instr.source_b);
+
+			instr.showas = removePrefix(instr.showas);
 			
 			switch (instr.type) {
 
 			case Instr::PRINT_GLOBAL_STR:
 			case Instr::PRINT_INT:
 			case Instr::PRINT_CHAR:
-				write("print({});", instr.target);
+				if (show_as) {
+					write("printf({});", instr.showas);
+					return;
+				}
+				write("printf({});", instr.target);
 				break;
 			case Instr::SCAN_INT: 
 			case Instr::SCAN_CHAR: 
 			case Instr::SCAN_GLOBAL_INT: 
 			case Instr::SCAN_GLOBAL_CHAR:
+				if (show_as) {
+					write("scanf({});", instr.showas);
+					return;
+				}
 				write("scanf({});", instr.target);
 				break;
 			case Instr::PRINT_LINE:
@@ -164,16 +174,16 @@ namespace buaac {
 				}
 				write("$sp[{}] = {};", instr.source_a, instr.target);
 				break;
-			case Instr::SAVE_STA_ARR_GLO:
-			case Instr::SAVE_STA_ARR_STA:
+			case Instr::SAVE_ARR_GLO:
+			case Instr::SAVE_ARR_STA:
 				if (show_as) {
 					write("{}[{}] = {};", instr.showas, instr.source_b, instr.target);
 					break;
 				}
 				write("[{}] = {};", instr.source_a, instr.target);
 				break;
-			case Instr::LOAD_STA_ARR_GLO:
-			case Instr::LOAD_STA_ARR_STA:
+			case Instr::LOAD_ARR_GLO:
+			case Instr::LOAD_ARR_STA:
 				if (show_as) {
 					write("{} = {}[{}];", instr.target, instr.showas, instr.source_b);
 					break;

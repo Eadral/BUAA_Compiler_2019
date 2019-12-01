@@ -370,7 +370,7 @@ namespace syntax{
 			default:
 				ERROR
 			}
-			checkPush(_symbol_table.push(Symbol(SymbolType::CHAR, ident_token.getValue(), char_token.getValue())));
+			checkPush(_symbol_table.push(Symbol(SymbolType::CHAR, ident_token.getValue(), i2a(int(char_token.getValue()[0])))));
 		}
 		// {,＜标识符＞＝＜整数＞}
 		void constDefIntGroup() {
@@ -430,7 +430,7 @@ namespace syntax{
 			default:
 				ERROR
 			}
-			checkPush(_symbol_table.push(Symbol(SymbolType::CHAR, ident_token.getValue(), char_token.getValue())));
+			checkPush(_symbol_table.push(Symbol(SymbolType::CHAR, ident_token.getValue(), i2a(int(char_token.getValue()[0])))));
 		}
 		// ＜无符号整数＞  ::= ＜非零数字＞｛＜数字＞｝| 0
 		Token uninteger() {
@@ -1138,11 +1138,11 @@ namespace syntax{
 						// Not Array
 						// ir.loadStack()
 						if (_symbol_table.isConst(token.getValue())) {
-							if (_symbol_table.isChar(token.getValue())) {
-								ir.exprPushLiteralInt(int(_symbol_table.getConstValue(token.getValue())[0]));
-							} else {
+							// if (_symbol_table.isChar(token.getValue())) {
+								// ir.exprPushLiteralInt(int(_symbol_table.getConstValue(token.getValue())[0]));
+							// } else {
 								ir.exprPushLiteralInt(a2i(_symbol_table.getConstValue(token.getValue())));
-							}
+							// }
 						}
 						else {
 							exprPushVar(token);
@@ -1311,9 +1311,9 @@ namespace syntax{
 					tie(expr_type, expr_ans_rhs) = expr();
 
 					if (_symbol_table.isGlobal(ident.getValue())) {
-						ir.appendInstr({ Instr::SAVE_STA_ARR_GLO, expr_ans_rhs, _symbol_table.getGlobalBytesByIdent(ident.getValue()), expr_ans_lhs });
+						ir.appendInstr({ Instr::SAVE_ARR_GLO, expr_ans_rhs, _symbol_table.getGlobalBytesByIdent(ident.getValue()), expr_ans_lhs });
 					} else {
-						ir.appendInstr({ Instr::SAVE_STA_ARR_STA, expr_ans_rhs, _symbol_table.getStackBytesByIdent(ident.getValue()), expr_ans_lhs });
+						ir.appendInstr({ Instr::SAVE_ARR_STA, expr_ans_rhs, _symbol_table.getStackBytesByIdent(ident.getValue()), expr_ans_lhs });
 					}
 					ir.instrShowAs(ident.getValue());
 					

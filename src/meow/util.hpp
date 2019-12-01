@@ -54,4 +54,8 @@ int a2i(char str[]) {
 	return atoi(str);
 }
 
+bool isNumber(std::string source) {
+	return isdigit(source[0]) || source[0] == '-';
+}
+
 #endif

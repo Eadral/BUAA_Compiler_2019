@@ -2,6 +2,7 @@
 
 #include "../meow/core.hpp"
 #include "ir.hpp"
+#include "interpreter.hpp"
 
 namespace buaac {
 
@@ -20,8 +21,18 @@ namespace buaac {
 		void optimize() {
 			removeRa(getFuncByName("main"));
 			removeUselessRa();
+			constantProgpagation();
 		}
 
+#pragma region Utils
+
+#define ForFuncs(i, func)	 for (int i = 0; i < ir.funcs.size(); i++) { auto& funcs = ir.funcs; auto& func = ir.funcs.at(i);
+
+#define ForBlocks(j, _blocks, block) for (int j = 0; j < _blocks->size(); j++) { auto& blocks = _blocks; auto& block = _blocks->at(j);
+
+#define ForInstrs(k, _instrs, instr) for (int k = 0; k < _instrs.size(); k++) { auto& instrs = _instrs; auto& instr = _instrs[k]; 
+
+		
 		void insertBefore(std::vector<Instr>& instrs, int& i, Instr instr) {
 			instrs.insert(instrs.begin() + i, instr);
 			i++;
@@ -44,7 +55,6 @@ namespace buaac {
 				}
 			}
 		}
-
 		
 		// helper
 		Func& getFuncByName(std::string name) {
@@ -55,7 +65,6 @@ namespace buaac {
 			}
 			panic("can not find this func");
 		}
-		
 
 		// checker
 		bool hasFuncCall(Func& func) {
@@ -72,7 +81,6 @@ namespace buaac {
 			return false;
 		}
 
-
 		// modifier
 		void removeRa(Func& func) {
 			for (int i = 0; i < func.blocks->size(); i++) {
@@ -87,8 +95,32 @@ namespace buaac {
 				}
 			}
 		}
+#pragma endregion 
+
+		
+#pragma region ConstantProgpagation
 
 
+		void constantProgpagation() {
+			ForFuncs(i, func)
+				ForBlocks(j, func.blocks, block)
+					constProgpaBlock(block);
+				}
+			}
+		}
+
+		void constProgpaBlock(Block& block) {
+			Interpreter interpreter;
+
+			ForInstrs(i, block.instrs, instr)
+				interpreter.eval(instr);
+			}
+
+	
+	
+		}
+		
+#pragma endregion 
 		
 	};
 	
