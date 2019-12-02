@@ -1798,16 +1798,20 @@ namespace syntax{
 					if (symbol.isGlobal()) {
 						if (symbol.getType().type_ == SymbolType::INT) {
 							ir.appendInstr({ Instr::SCAN_GLOBAL_INT, _symbol_table.getGlobalBytesByIdent(symbol.getIdent()) });
+							ir.instrShowAs(symbol.getIdent());
 						} else if (symbol.getType().type_ == SymbolType::CHAR) {
 							ir.appendInstr({ Instr::SCAN_GLOBAL_CHAR, _symbol_table.getGlobalBytesByIdent(symbol.getIdent()) });
+							ir.instrShowAs(symbol.getIdent());
 						}
 					}
 					else {
 						if (symbol.getType().type_ == SymbolType::INT) {
 							ir.appendInstr({ Instr::SCAN_INT, _symbol_table.getStackBytesByIdent(symbol.getIdent()) });
+							ir.instrShowAs(symbol.getIdent());
 						}
 						else if (symbol.getType().type_ == SymbolType::CHAR) {
 							ir.appendInstr({ Instr::SCAN_CHAR, _symbol_table.getStackBytesByIdent(symbol.getIdent()) });
+							ir.instrShowAs(symbol.getIdent());
 						}
 					}
 				}

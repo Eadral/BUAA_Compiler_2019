@@ -133,7 +133,8 @@ namespace buaac {
 				} else {
 					has_target_value = false;
 				}
-				
+				if (!showas.empty() && isGlobal())
+					showas = FORMAT("__G{}", showas);
 			}
 			
 			bool targetIsSave() {
@@ -252,12 +253,22 @@ namespace buaac {
 				case LI: 
 					return target;
 					break;
+				case LOAD_GLO:
+				case LOAD_STA:
+				case LOAD_ARR_GLO:
+				case LOAD_ARR_STA:
+					return target;
+				case SAVE_ARR_GLO:
+				case SAVE_ARR_STA:
 				case SAVE_GLO:
-					return FORMAT("__G{}", showas);
-					break;
 				case SAVE_STA:
 					return showas;
-					break;
+
+				case SCAN_CHAR:
+				case SCAN_GLOBAL_CHAR:
+				case SCAN_GLOBAL_INT:
+				case SCAN_INT:
+					return showas;
 				default:;
 					// panic("this is not store instr");
 				}
@@ -268,20 +279,29 @@ namespace buaac {
 				std::vector<std::string> loads;
 
 				switch (type) {
-				case LOAD_GLO:
-					loads.push_back(FORMAT("__G{}", showas));
-					return loads;
 				case LOAD_STA:
+				case LOAD_GLO:
 					loads.push_back(showas);
 					return loads;
-				case SAVE_GLO:
+				case LOAD_ARR_GLO:
+				case LOAD_ARR_STA:
+					loads.push_back(source_b);
+					loads.push_back(showas);
+					return loads;
 				case SAVE_STA:
+				case SAVE_GLO:
 					loads.push_back(target);
 					return loads;
+				case SAVE_ARR_GLO:
+				case SAVE_ARR_STA:
+					loads.push_back(target);
+					loads.push_back(source_b);
+					return loads;
+					
 				}
 				if (isInput())
 					return loads;
-				if (targetIsLoad() && !has_target_value && !isMemorySave())
+				if (targetIsLoad() && !has_target_value)
 					loads.push_back(target);
 				if (sourceAIsLoad() && !has_source_a_value)
 					loads.push_back(source_a);
@@ -289,6 +309,26 @@ namespace buaac {
 					loads.push_back(source_b);
 				return loads;
 			}
+
+			// TODO: remove this
+			bool doNotConstProp() {
+				return isInput() || isArrMemory() || isGlobal();
+			}
+
+			// TODO: remove this
+			bool doNotDelDead() {
+				return isInput() || isArrMemory() || isGlobal();
+			}
+			//
+			// bool isGlobalMem() {
+			// 	switch (type) {
+			// 	case SAVE_ARR_GLO:
+			// 	case SAVE_ARR_STA:
+			// 		return true;
+			// 	}
+			// }
+
+
 			
 			bool isInput() {
 				switch (type) {
@@ -540,79 +580,7 @@ namespace buaac {
 				}
 			}
 			
-			Instr(const Instr& other)
-				: type(other.type),
-				  target(other.target),
-				  source_a(other.source_a),
-				  source_b(other.source_b),
-				  target_value(other.target_value),
-				  source_a_value(other.source_a_value),
-				  source_b_value(other.source_b_value),
-				  has_target_value(other.has_target_value),
-				  has_source_a_value(other.has_source_a_value),
-				  has_source_b_value(other.has_source_b_value),
-				  ans(other.ans),
-				  has_ans(other.has_ans),
-				  show(other.show),
-				  showas(other.showas) {
-			}
-
-			Instr(Instr&& other) noexcept
-				: type(other.type),
-				  target(std::move(other.target)),
-				  source_a(std::move(other.source_a)),
-				  source_b(std::move(other.source_b)),
-				  target_value(other.target_value),
-				  source_a_value(other.source_a_value),
-				  source_b_value(other.source_b_value),
-				  has_target_value(other.has_target_value),
-				  has_source_a_value(other.has_source_a_value),
-				  has_source_b_value(other.has_source_b_value),
-				  ans(other.ans),
-				  has_ans(other.has_ans),
-				  show(other.show),
-				  showas(std::move(other.showas)) {
-			}
-
-			Instr& operator=(const Instr& other) {
-				if (this == &other)
-					return *this;
-				type = other.type;
-				target = other.target;
-				source_a = other.source_a;
-				source_b = other.source_b;
-				target_value = other.target_value;
-				source_a_value = other.source_a_value;
-				source_b_value = other.source_b_value;
-				has_target_value = other.has_target_value;
-				has_source_a_value = other.has_source_a_value;
-				has_source_b_value = other.has_source_b_value;
-				ans = other.ans;
-				has_ans = other.has_ans;
-				show = other.show;
-				showas = other.showas;
-				return *this;
-			}
-
-			Instr& operator=(Instr&& other) noexcept {
-				if (this == &other)
-					return *this;
-				type = other.type;
-				target = std::move(other.target);
-				source_a = std::move(other.source_a);
-				source_b = std::move(other.source_b);
-				target_value = other.target_value;
-				source_a_value = other.source_a_value;
-				source_b_value = other.source_b_value;
-				has_target_value = other.has_target_value;
-				has_source_a_value = other.has_source_a_value;
-				has_source_b_value = other.has_source_b_value;
-				ans = other.ans;
-				has_ans = other.has_ans;
-				show = other.show;
-				showas = std::move(other.showas);
-				return *this;
-			}
+		
 		};
 			
 			

@@ -28,6 +28,7 @@ namespace buaac {
 		void setInstrValue(Instr &instr) {
 			if (instr.type == Instr::IR_SHOW)
 				return;
+			
 			const auto &names = instr.getLoadName();
 			for (int i = 0; i < names.size(); i++) {
 				const auto& name = names[i];
@@ -35,11 +36,13 @@ namespace buaac {
 					instr.setValue(name, getVar(name));
 				}
 			}
+			if (instr.doNotConstProp())
+				return;
 			if (instr.isConst()) {
 				instr.eval();
 				instr.optimize();
 			}
-			// if (instr.has_ans) {
+			
 			auto store_name = instr.getStoreName();
 			int ans;
 			if (instr.has_ans) {

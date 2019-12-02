@@ -542,6 +542,10 @@ namespace buaac {
 					write("sll $k0, {}, 2", instr.source_b);
 					write("sub $k0, $fp, $k0");
 				}
+				if (isNumber(instr.target)) {
+					write("li $at, {}", instr.target);
+					instr.target = "$at";
+				}
 				write("sw {}, {}($k0)", instr.target, instr.source_a);
 				break;
 			case Instr::LOAD_ARR_STA:
@@ -550,6 +554,10 @@ namespace buaac {
 				} else {
 					write("sll $k0, {}, 2", instr.source_b);
 					write("sub $k0, $fp, $k0");
+				}
+				if (isNumber(instr.target)) {
+					write("li $at, {}", instr.target);
+					instr.target = "$at";
 				}
 				write("lw {}, {}($k0)", instr.target, instr.source_a);
 				break;
@@ -560,7 +568,10 @@ namespace buaac {
 					write("sll $k0, {}, 2", instr.source_b);
 					write("add $k0, $k0, $gp");
 				}
-				
+				if (isNumber(instr.target)) {
+					write("li $at, {}", instr.target);
+					instr.target = "$at";
+				}
 				write("sw {}, {}($k0)", instr.target, instr.source_a);
 				break;
 			case Instr::LOAD_ARR_GLO:
@@ -570,7 +581,10 @@ namespace buaac {
 					write("sll $k0, {}, 2", instr.source_b);
 					write("add $k0, $k0, $gp");
 				}
-				
+				if (isNumber(instr.target)) {
+					write("li $at, {}", instr.target);
+					instr.target = "$at";
+				}
 				write("lw {}, {}($k0)", instr.target, instr.source_a);
 				break;
 				

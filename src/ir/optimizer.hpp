@@ -157,6 +157,7 @@ namespace buaac {
 					if (!save_name.empty()
 						&& !starts_with(save_name, std::string("$"))
 						&& !starts_with(save_name, std::string("__G"))
+						&& !instr.doNotDelDead()
 						&& load_cnt.find(save_name) == load_cnt.end()) {
 						instr.type = Instr::NOP;
 						continue;
