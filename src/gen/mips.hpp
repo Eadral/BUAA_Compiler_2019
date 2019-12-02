@@ -346,15 +346,33 @@ namespace buaac {
 					break;
 				}
 				if (isNumber(instr.source_a)) {
-					write("subi {}, {}, {}", instr.target, instr.source_b, instr.source_a);
+					write("li $k0, {}", instr.source_a);
+					instr.source_a = "$k0";
+					write("sub {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 					break;
 				}
 				write("subu {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 				break;
 			case Instr::MULT:
+				if (isNumber(instr.source_b)) {
+					write("li $k0, {}", instr.source_b);
+					instr.source_b = "$k0";
+				}
+				if (isNumber(instr.source_a)) {
+					write("li $k0, {}", instr.source_a);
+					instr.source_a = "$k0";
+				}
 				write("mul {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 				break;
 			case Instr::DIV:
+				if (isNumber(instr.source_a)) {
+					write("li $k0, {}", instr.source_a);
+					instr.source_a = "$k0";
+				}
+				if (isNumber(instr.source_b)) {
+					write("li $k0, {}", instr.source_b);
+					instr.source_b = "$k0";
+				}
 				write("div {}, {}", instr.source_a, instr.source_b);
 				write("mflo {}", instr.target);
 				break;
@@ -372,12 +390,20 @@ namespace buaac {
 				write("lw {}, {}($fp)", instr.target, instr.source_a);
 				break;
 			case Instr::SAVE_STA:
+				if (isNumber(instr.target)) {
+					write("li $k0, {}", instr.target);
+					instr.target = "$k0";
+				}
 				write("sw {}, {}($fp)", instr.target, instr.source_a);
 				break;
 			case Instr::LOAD_GLO:
 				write("lw {}, {}($gp)", instr.target, instr.source_a);
 				break;
 			case Instr::SAVE_GLO:
+				if (isNumber(instr.target)) {
+					write("li $k0, {}", instr.target);
+					instr.target = "$k0";
+				}
 				write("sw {}, {}($gp)", instr.target, instr.source_a);
 				break;
 			// case Instr::LOAD_LAB_IMM:
@@ -387,6 +413,10 @@ namespace buaac {
 			// 	write("sw {}, {}+{}", instr.target, instr.source_a, instr.source_b);
 			// 	break;
 			case Instr::PUSH_REG:
+				if (isNumber(instr.target)) {
+					write("li $k0, {}", instr.target);
+					instr.target = "$k0";
+				}
 				write("sw {}, ($sp)", instr.target);
 				write("addi $sp, $sp, -4");
 				break;
@@ -410,27 +440,55 @@ namespace buaac {
 				write("blez {}, {}", instr.target, instr.source_a);
 				break;
 			case Instr::BLT:
+				if (isNumber(instr.target)) {
+					write("blt {}, {}, {}", instr.source_a, instr.target, instr.source_b);
+					break;
+				}
 				write("blt {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 				break;
 			case Instr::BGT:
+				if (isNumber(instr.target)) {
+					write("bgt {}, {}, {}", instr.source_a, instr.target, instr.source_b);
+					break;
+				}
 				write("bgt {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 				break;
 			case Instr::BLE:
+				if (isNumber(instr.target)) {
+					write("ble {}, {}, {}", instr.source_a, instr.target, instr.source_b);
+					break;
+				}
 				write("ble {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 				break;
 			case Instr::BGE:
+				if (isNumber(instr.target)) {
+					write("bge {}, {}, {}", instr.source_a, instr.target, instr.source_b);
+					break;
+				}
 				write("bge {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 				break;
 			case Instr::BEQ:
+				if (isNumber(instr.target)) {
+					write("beq {}, {}, {}", instr.source_a, instr.target, instr.source_b);
+					break;
+				}
 				write("beq {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 				break;
 			case Instr::BNE:
+				if (isNumber(instr.target)) {
+					write("bne {}, {}, {}", instr.source_a, instr.target, instr.source_b);
+					break;
+				}
 				write("bne {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 				break;
 				
 			case Instr::PRINT_INT:
 				getRegisters({ "$a0", "$v0" });
-				write("move $a0, {}", instr.target);
+				if (isNumber(instr.target)) {
+					write("li $a0, {}", instr.target);
+				} else {
+					write("move $a0, {}", instr.target);
+				}
 				write("li $v0, 1");
 				write("syscall");
 				releaseRegisters({ "$a0", "$v0" });
@@ -452,7 +510,12 @@ namespace buaac {
 				
 			case Instr::PRINT_CHAR:
 				getRegisters({ "$a0", "$v0" });
-				write("move $a0, {}", instr.target);
+				if (isNumber(instr.target)) {
+					write("li $a0, {}", instr.target);
+				}
+				else {
+					write("move $a0, {}", instr.target);
+				}
 				write("li $v0, 11");
 				write("syscall");
 				releaseRegisters({ "$a0", "$v0" });
@@ -473,23 +536,41 @@ namespace buaac {
 				break;
 
 			case Instr::SAVE_ARR_STA:
-				write("sll $k0, {}, 2", instr.source_b);
-				write("sub $k0, $fp, $k0");
+				if (isNumber(instr.source_b)) {
+					write("addi $k0, $fp, -{}", a2i(instr.source_b)*4);
+				} else {
+					write("sll $k0, {}, 2", instr.source_b);
+					write("sub $k0, $fp, $k0");
+				}
 				write("sw {}, {}($k0)", instr.target, instr.source_a);
 				break;
 			case Instr::LOAD_ARR_STA:
-				write("sll $k0, {}, 2", instr.source_b);
-				write("sub $k0, $fp, $k0");
+				if (isNumber(instr.source_b)) {
+					write("addi $k0, $fp, -{}", a2i(instr.source_b) * 4);
+				} else {
+					write("sll $k0, {}, 2", instr.source_b);
+					write("sub $k0, $fp, $k0");
+				}
 				write("lw {}, {}($k0)", instr.target, instr.source_a);
 				break;
 			case Instr::SAVE_ARR_GLO:
-				write("sll $k0, {}, 2", instr.source_b);
-				write("add $k0, $k0, $gp");
+				if (isNumber(instr.source_b)) {
+					write("addi $k0, $gp, {}", a2i(instr.source_b) * 4);
+				} else {
+					write("sll $k0, {}, 2", instr.source_b);
+					write("add $k0, $k0, $gp");
+				}
+				
 				write("sw {}, {}($k0)", instr.target, instr.source_a);
 				break;
 			case Instr::LOAD_ARR_GLO:
-				write("sll $k0, {}, 2", instr.source_b);
-				write("add $k0, $k0, $gp");
+				if (isNumber(instr.source_b)) {
+					write("addi $k0, $gp, {}", a2i(instr.source_b) * 4);
+				} else {
+					write("sll $k0, {}, 2", instr.source_b);
+					write("add $k0, $k0, $gp");
+				}
+				
 				write("lw {}, {}($k0)", instr.target, instr.source_a);
 				break;
 				

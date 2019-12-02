@@ -22,6 +22,7 @@ namespace buaac {
 			removeRa(getFuncByName("main"));
 			removeUselessRa();
 			constantProgpagation();
+			removeZeroLoad();
 		}
 
 #pragma region Utils
@@ -66,6 +67,12 @@ namespace buaac {
 			panic("can not find this func");
 		}
 
+		bool blockHasJump(Block& block) {
+			if (block.instrs.empty())
+				return false;
+			return block.instrs.at(block.instrs.size() - 1).isJump();
+		}
+
 		// checker
 		bool hasFuncCall(Func& func) {
 			for (int i = 0; i < func.blocks->size(); i++) {
@@ -100,11 +107,13 @@ namespace buaac {
 		
 #pragma region ConstantProgpagation
 
+		
 
 		void constantProgpagation() {
 			ForFuncs(i, func)
 				ForBlocks(j, func.blocks, block)
 					constProgpaBlock(block);
+					
 				}
 			}
 		}
@@ -115,12 +124,65 @@ namespace buaac {
 			ForInstrs(i, block.instrs, instr)
 				interpreter.eval(instr);
 			}
+		}
+
+		void removeZeroLoad() {
+			load_cnt.clear();
+			ForFuncs(i, func)
+				for (int j = func.blocks->size()-1; j >= 0; j--) {
+					auto& blocks = func.blocks;
+					auto& block = func.blocks->at(j);
+					
+						// TODO: remove this jump
+						removeZeroLoadInBlock(block);
+
+					
+
+				}
+			}
+			
+		}
+		std::map<std::string, int> load_cnt;
+
+
+		void removeZeroLoadInBlock(Block& block) {
+	
+			for (int i = block.instrs.size()-1; i >= 0; i--) {
+				auto& instr = block.instrs.at(i);
+
+				if (!blockHasJump(block)) {
+					// TODO: change to down jump
+					// TODO: remove this
+					auto save_name = instr.getStoreName();
+					if (!save_name.empty()
+						&& !starts_with(save_name, std::string("$"))
+						&& !starts_with(save_name, std::string("__G"))
+						&& load_cnt.find(save_name) == load_cnt.end()) {
+						instr.type = Instr::NOP;
+						continue;
+					}
+				}
+				
+				auto load_names = instr.getLoadName();
+				if (instr.isMemorySave()) {
+					load_names.push_back(instr.target);
+				}
+				for (int j = 0; j < load_names.size(); j++) {
+					auto& name = load_names[j];
+					if (load_cnt.find(name) == load_cnt.end()) {
+						load_cnt[name] = 1;
+					}
+				}
+				
+			}
 
 	
-	
 		}
+
+#pragma endregion
+
+
 		
-#pragma endregion 
 		
 	};
 	

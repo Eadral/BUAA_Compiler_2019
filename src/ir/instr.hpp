@@ -279,9 +279,9 @@ namespace buaac {
 					loads.push_back(target);
 					return loads;
 				}
-				if (isArrMemory() || isIO())
+				if (isInput())
 					return loads;
-				if (targetIsLoad() && !has_target_value)
+				if (targetIsLoad() && !has_target_value && !isMemorySave())
 					loads.push_back(target);
 				if (sourceAIsLoad() && !has_source_a_value)
 					loads.push_back(source_a);
@@ -290,17 +290,35 @@ namespace buaac {
 				return loads;
 			}
 			
-			bool isIO() {
+			bool isInput() {
 				switch (type) {
-				case PRINT_GLOBAL_STR: 
-				case PRINT_INT: 
-				case PRINT_CHAR:
+				// case PRINT_GLOBAL_STR: 
+				// case PRINT_INT: 
+				// case PRINT_CHAR:
 				case SCAN_INT: 
 				case SCAN_CHAR:
 				case SCAN_GLOBAL_INT: 
 				case SCAN_GLOBAL_CHAR:
-				case PRINT_LINE:
-				case LA:
+				// case PRINT_LINE:
+				// case LA:
+					return true;
+				default:
+					return false;
+				}
+			}
+
+			bool isMemorySave() {
+				switch (type) {
+
+				// case LOAD_GLO: 
+				// case LOAD_STA: 
+				case SAVE_GLO: 
+				case SAVE_STA: 
+				case SAVE_ARR_GLO: 
+				// case LOAD_ARR_GLO: 
+				case SAVE_ARR_STA:
+					
+				// case LOAD_ARR_STA: 
 					return true;
 				default:
 					return false;
@@ -310,13 +328,13 @@ namespace buaac {
 			bool isArrMemory() {
 				switch (type) {
 
-				// case LOAD_GLO: 
-				// case LOAD_STA: 
-				// case SAVE_GLO: 
-				// case SAVE_STA: 
-				case SAVE_ARR_GLO: 
+					// case LOAD_GLO: 
+					// case LOAD_STA: 
+					// case SAVE_GLO: 
+					// case SAVE_STA: 
+				case SAVE_ARR_GLO:
 				case LOAD_ARR_GLO: 
-				case SAVE_ARR_STA: 
+				case SAVE_ARR_STA:
 				case LOAD_ARR_STA: 
 					return true;
 				default:
@@ -343,14 +361,17 @@ namespace buaac {
 				if (target == reg) {
 					target_value = value;
 					has_target_value = true;
+					target = i2a(value);
 				}
 				if (source_a == reg) {
 					source_a_value = value;
 					has_source_a_value = true;
+					source_a = i2a(value);
 				}
 				if (source_b == reg) {
 					source_b_value = value;
 					has_source_b_value = true;
+					source_b = i2a(value);
 				}
 				if (type == LOAD_GLO || type == LOAD_STA) {
 					type = LI;
@@ -366,7 +387,7 @@ namespace buaac {
 			}
 
 			bool isConst() {
-				if (isIO())
+				if (isInput())
 					return false;
 				if (isArrMemory())
 					return false;
@@ -430,6 +451,10 @@ namespace buaac {
 				case BNE:
 					ans = target_value != source_a_value ? 1 : 0;
 					break;
+				case PRINT_INT:
+				case PRINT_CHAR:
+					ans = target_value;
+					break;
 				default:;
 					// panic("this type can not eval");
 				}
@@ -470,16 +495,51 @@ namespace buaac {
 						type = NOP;
 					}
 					break;
+				case PRINT_INT:
+				case PRINT_CHAR:
+					target = i2a(ans);
+					break;
+				
 				default:;
 					// panic("this type can not be optimized");
 				}
 			}
+
+			// void optimizeLoad() {
+				// switch (type) {
+				// 	
+				// }
+				// case LOAD_ARR_GLO:
+				// case LOAD_ARR_STA:
+				// case SAVE_ARR_GLO:
+				// case SAVE_ARR_STA:
+					
+			// }
 
 			int getAns() {
 				assert(has_ans);
 				return ans;
 			}
 
+			bool isJump() {
+				switch (type) {
+				case CALL: 
+				case RETURN_END:
+				case JUMP: 
+				case BGEZ: 
+				case BLEZ: 
+				case BLT: 
+				case BGT:
+				case BLE: 
+				case BGE: 
+				case BEQ:
+				case BNE: 
+					return true;
+				default:
+					return false;
+				}
+			}
+			
 			Instr(const Instr& other)
 				: type(other.type),
 				  target(other.target),
