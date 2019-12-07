@@ -6,9 +6,15 @@
 #define MEOW_CORE_HPP
 
 #define FORMAT meow::fmt::Format::format
+#define TOSTR fmt::Format::toString
 // #define PRINT_TRACE meow::core::printStack
 
 #pragma region MACRO
+
+#define print(...)                \
+    do {                            \
+        std::cout << FORMAT(__VA_ARGS__);        \
+    } while(0)
 
 #define println(...)                \
     do {                            \
@@ -64,10 +70,12 @@
 #include "fmt/display.hpp"
 #include "fmt/format.hpp"
 #include "result.hpp"
-#include "util.hpp"
 #include "enum.hpp"
 
 #include <tuple>
+#include <vector>
+#include <map>
+#include <set>
 
 namespace meow {
   
@@ -78,5 +86,11 @@ using std::tuple;
 using std::tie;
 using std::make_tuple;
 
+using std::vector;
+using std::map;
+using std::set;
+using std::string;
+
+#include "util.hpp"
 
 #endif

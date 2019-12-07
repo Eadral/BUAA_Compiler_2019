@@ -13,10 +13,10 @@ namespace buaac {
 		
 		class SymbolTable {
 
-			std::vector<Symbol> _symbol_stack;
-			std::vector<Symbol> _unactive_symbol;
+			vector<Symbol> _symbol_stack;
+			vector<Symbol> _unactive_symbol;
 
-			std::vector<int> _scope_index{-1};
+			vector<int> _scope_index{-1};
 			
 		public:
 			SymbolTable() {
@@ -53,32 +53,32 @@ namespace buaac {
 				// return SymbolTableResult::Ok();
 			}
 
-			bool isGlobal(std::string ident) {
+			bool isGlobal(string ident) {
 				Symbol symbol;
 				tie(std::ignore, symbol) = findSymbol(ident);
 				return symbol._is_global;
 			}
 
-			bool isConst(std::string ident) {
+			bool isConst(string ident) {
 				Symbol symbol;
 				tie(std::ignore, symbol) = findSymbol(ident);
 				return symbol.isConst();
 			}
 
-			bool isChar(std::string ident) {
+			bool isChar(string ident) {
 				Symbol symbol;
 				tie(std::ignore, symbol) = findSymbol(ident);
 				return symbol.getType().type_ == SymbolType::CHAR;
 			}
 
 
-			std::string getConstValue(std::string ident) {
+			string getConstValue(string ident) {
 				Symbol symbol;
 				tie(std::ignore, symbol) = findSymbol(ident);
 				return symbol.getConstValue();
 			}
 			
-			tuple<bool, Symbol> findSymbol(std::string ident) {
+			tuple<bool, Symbol> findSymbol(string ident) {
 				for (int i = _symbol_stack.size() - 1; i >= 0; i--) {
 					if (_symbol_stack[i].getIdent() == ident) {
 						return make_tuple(true, _symbol_stack[i]);
@@ -87,7 +87,7 @@ namespace buaac {
 				return make_tuple(false, Symbol{});
 			}
 
-			tuple<int, Symbol> findSymbolAndScope(std::string ident) {
+			tuple<int, Symbol> findSymbolAndScope(string ident) {
 				for (int i = _symbol_stack.size() - 1; i >= 0; i--) {
 					if (_symbol_stack[i].getIdent() == ident) {
 						return make_tuple(i, _symbol_stack[i]);
@@ -96,13 +96,13 @@ namespace buaac {
 				return make_tuple(-1, Symbol{});
 			}
 
-			// bool identExist(std::string ident) {
+			// bool identExist(string ident) {
 			// 	bool is_exist;
 			// 	tie(is_exist, std::ignore) = findSymbol(ident);
 			// 	return is_exist;
 			// }
 
-			tuple<bool, Symbol> findSymbolInScope(std::string ident) {
+			tuple<bool, Symbol> findSymbolInScope(string ident) {
 				for (int i = _symbol_stack.size() - 1; i >= 0 && i >= _scope_index.back(); i--) {
 					if (_symbol_stack[i].getIdent() == ident) {
 						return make_tuple(true, _symbol_stack[i]);
@@ -111,13 +111,13 @@ namespace buaac {
 				return make_tuple(false, Symbol{});
 			}
 			
-			bool identExistInScope(std::string ident) {
+			bool identExistInScope(string ident) {
 				bool is_exist;
 				tie(is_exist, std::ignore) = findSymbolInScope(ident);
 				return is_exist;
 			}
 
-			// bool isType(std::string ident, SymbolType symbol_type) {
+			// bool isType(string ident, SymbolType symbol_type) {
 			// 	bool is_exist;
 			// 	Symbol symbol;
 			// 	tie(is_exist, symbol) = findSymbol(ident);
@@ -125,7 +125,7 @@ namespace buaac {
 			// 	return symbol.getType() == symbol_type;
 			// }
 			//
-			// bool isConst(std::string ident) {
+			// bool isConst(string ident) {
 			// 	bool is_exist;
 			// 	Symbol symbol;
 			// 	tie(is_exist, symbol) = findSymbol(ident);
@@ -137,7 +137,7 @@ namespace buaac {
 				return _scope_index.back();
 			}
 
-			int getStackBytesByIdent(std::string ident) {
+			int getStackBytesByIdent(string ident) {
 				int s = 0;
 				for (int i = _scope_index.back(); i < _symbol_stack.size(); i++) {
 					if (_symbol_stack[i].getIdent() == ident)
@@ -163,7 +163,7 @@ namespace buaac {
 				return s;
 			}
 
-			int getGlobalBytesByIdent(std::string ident) {
+			int getGlobalBytesByIdent(string ident) {
 				int s = 0;
 				for (int i = 0; i < _scope_index[1]; i++) {
 					if (_symbol_stack[i].getIdent() == ident)

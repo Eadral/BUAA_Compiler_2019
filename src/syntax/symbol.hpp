@@ -16,16 +16,16 @@ namespace buaac {
 
 		class Symbol : implement fmt::Display {
 
-			std::string _ident;
+			string _ident;
 			SymbolType _symbol_type;
 			
 			bool _is_const;
-			std::string _const_value{};
+			string _const_value{};
 			
 			bool _is_array;
 			int _array_len = 0;
 			
-			std::vector<SymbolType> _function_parameters{};
+			vector<SymbolType> _function_parameters{};
 			
 		public:
 
@@ -35,7 +35,7 @@ namespace buaac {
 				
 			}
 
-			Symbol(SymbolType symbol_type, std::string ident, std::string const_value = "")
+			Symbol(SymbolType symbol_type, string ident, string const_value = "")
 				: _ident(ident), _symbol_type(symbol_type)
 			{
 				assert(symbol_type.isVar());
@@ -50,7 +50,7 @@ namespace buaac {
 				
 			}
 
-			Symbol(SymbolType symbol_type, std::string ident, int array_len)
+			Symbol(SymbolType symbol_type, string ident, int array_len)
 				: _ident(ident), _symbol_type(symbol_type)
 			{
 				assert(symbol_type.isVar());
@@ -60,7 +60,7 @@ namespace buaac {
 				
 			}
 
-			Symbol(SymbolType symbol_type, std::string ident, std::vector<SymbolType> function_parameters)
+			Symbol(SymbolType symbol_type, string ident, vector<SymbolType> function_parameters)
 				: _ident(ident), _symbol_type(symbol_type), _function_parameters(function_parameters)
 			{
 				assert(symbol_type.isFunc());
@@ -83,7 +83,7 @@ namespace buaac {
 				return !(lhs == rhs);
 			}
 
-			std::string getIdent() const {
+			string getIdent() const {
 				return _ident;
 			}
 
@@ -95,7 +95,7 @@ namespace buaac {
 				return _is_const;
 			}
 
-			std::string getConstValue() {
+			string getConstValue() {
 				return _const_value;
 			}
 
@@ -111,11 +111,11 @@ namespace buaac {
 				return _array_len;
 			}
 
-			std::vector<SymbolType> getParaList() const {
+			vector<SymbolType> getParaList() const {
 				return _function_parameters;
 			}
 
-			std::string toString() {
+			string toString() {
 				return _ident;
 			}
 		};

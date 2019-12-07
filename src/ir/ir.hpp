@@ -17,12 +17,12 @@ namespace buaac {
 	public:
 
 
-		std::vector<GlobalDefine> global_defines;
-		std::vector<Func> funcs{};
+		vector<GlobalDefine> global_defines;
+		vector<Func> funcs{};
 		// BlocksPtr main_blocks;
 
 		int cnt_c = 0;
-		std::string func_name;
+		string func_name;
 		
 		BlocksPtr blocks_now;
 
@@ -38,18 +38,18 @@ namespace buaac {
 		// 	// func_name = "main";
 		// }
 
-		void defineFunc(std::string func_name) {
+		void defineFunc(string func_name) {
 			// temp_cnt = 0;
 			funcs.emplace_back(Func(func_name));
 			blocks_now = funcs.back().blocks;
 			this->func_name = func_name;
 		}
 
-		std::string getReturnLabel() {
+		string getReturnLabel() {
 			return FORMAT("return_{}", func_name);
 		}
 		
-		void newBlock(std::string label) {
+		void newBlock(string label) {
 			blocks_now->emplace_back(Block(label));
 		}
 
@@ -61,17 +61,17 @@ namespace buaac {
 			appendInstr(Instr::PRINT_LINE);
 		}
 
-		void defineGlobalInt(std::string ident) {
+		void defineGlobalInt(string ident) {
 			globalDefine(global::VarInt{ (ident) });
 		}
 		
-		std::string defineConstStr(std::string str) {
-			std::string str_label = newConstLabel();
+		string defineConstStr(string str) {
+			string str_label = newConstLabel();
 			globalDefine(global::ConstStr{ str_label, str });
 			return str_label;
 		}
 		
-		void printGlobalStr(std::string label) {
+		void printGlobalStr(string label) {
 			appendInstr({ Instr::PRINT_GLOBAL_STR, label });
 		}
 		
@@ -81,23 +81,23 @@ namespace buaac {
 		// 	}
 		// }
 
-		// void printInt(std::string reg) {
+		// void printInt(string reg) {
 		// 	appendInstr({Instr::PRINT_INT, reg});
 		// }
 
-		// void pushStackReg(std::string reg) {
+		// void pushStackReg(string reg) {
 		// 	appendInstr(Instr(Instr::PUSH_REG, reg));
 		// }
 		//
-		// void popStackReg(std::string reg) {
+		// void popStackReg(string reg) {
 		// 	appendInstr(Instr(Instr::POP_REG, reg));
 		// }
 
-		void __pushStackReg(std::string reg) {
+		void __pushStackReg(string reg) {
 			appendInstr(Instr(Instr::PUSH_REG, reg));
 		}
 
-		void __popStackReg(std::string reg) {
+		void __popStackReg(string reg) {
 			appendInstr(Instr(Instr::POP_REG, reg));
 		}
 
@@ -115,15 +115,15 @@ namespace buaac {
 			instrNotShow();
 		}
 
-		void call(const std::string& func_name) {
+		void call(const string& func_name) {
 			appendInstr(Instr(Instr::CALL, func_name));
 		}
 
-		void moveReg(const std::string target, const std::string& source) {
+		void moveReg(const string target, const string& source) {
 			appendInstr({ Instr::MOVE, target,  source });
 		}
 
-		void defineGlobalIntArr(const std::string& ident, int len) {
+		void defineGlobalIntArr(const string& ident, int len) {
 			globalDefine(global::VarIntArr{ (ident), len });
 		}
 
@@ -135,10 +135,10 @@ namespace buaac {
 			DEFINE_DOWHILE,
 		} ;
 
-		std::vector<JumpDefine> jump_define_stack{};
-		std::vector<int> jump_cnt_stack{};
+		vector<JumpDefine> jump_define_stack{};
+		vector<int> jump_cnt_stack{};
 		int jump_cnt = 0;
-		// std::vector<std::string> label_stack{};
+		// vector<string> label_stack{};
 
 		void endJumpDefine() {
 			jump_define_stack.pop_back();
@@ -156,7 +156,7 @@ namespace buaac {
 			jump_define_stack.push_back(DEFINE_IF);
 		}
 
-		std::string getCondJumpName() {
+		string getCondJumpName() {
 			switch (jump_define_stack.back()) {
 
 			case DEFINE_IF:
@@ -175,23 +175,23 @@ namespace buaac {
 			}
 		}
 
-		std::string getIfName() {
+		string getIfName() {
 			return FORMAT("if_{}", jump_cnt_stack.back());
 		}
 
-		std::string getIfThanName() {
+		string getIfThanName() {
 			return FORMAT("if_{}_than", jump_cnt_stack.back());
 		}
 		
-		std::string getIfElseName() {
+		string getIfElseName() {
 			return FORMAT("if_{}_else", jump_cnt_stack.back());
 		}
 
-		std::string getIfEndName() {
+		string getIfEndName() {
 			return FORMAT("if_{}_end", jump_cnt_stack.back());
 		}
 
-		void jump(const std::string& label) {
+		void jump(const string& label) {
 			appendInstr(Instr(Instr::JUMP, label));
 		}
 
@@ -200,15 +200,15 @@ namespace buaac {
 			jump_define_stack.push_back(DEFINE_FOR);
 		}
 
-		std::string getForStartName() {
+		string getForStartName() {
 			return FORMAT("for_{}_start", jump_cnt_stack.back());
 		}
 
-		std::string getForBodyName() {
+		string getForBodyName() {
 			return FORMAT("for_{}_body", jump_cnt_stack.back());
 		}
 
-		std::string getForEndName() {
+		string getForEndName() {
 			return FORMAT("for_{}_end", jump_cnt_stack.back());
 		}
 
@@ -217,11 +217,11 @@ namespace buaac {
 			jump_define_stack.push_back(DEFINE_WHILE);
 		}
 
-		std::string getWhileName() {
+		string getWhileName() {
 			return FORMAT("while_{}", jump_cnt_stack.back());
 		}
 
-		std::string getWhileEndName() {
+		string getWhileEndName() {
 			return FORMAT("while_{}_end", jump_cnt_stack.back());
 		}
 
@@ -230,11 +230,11 @@ namespace buaac {
 			jump_define_stack.push_back(DEFINE_DOWHILE);
 		}
 
-		std::string getDoWhileName() {
+		string getDoWhileName() {
 			return FORMAT("dowhile_{}", jump_cnt_stack.back());
 		}
 
-		std::string getDoWhileEndName() {
+		string getDoWhileEndName() {
 			return FORMAT("dowhile_{}_end", jump_cnt_stack.back());
 		}
 
@@ -251,13 +251,13 @@ namespace buaac {
 		};
 		const int priority[10] = { 0, 0, 1, 1, 2, 2, 3 };
 
-		std::vector< std::vector<OP>> op_stack_stack{};
-		std::vector< std::vector<std::string> > obj_stack_stack{};
-		std::vector< std::vector<Instr> > instrs_stack{};
+		vector< vector<OP>> op_stack_stack{};
+		vector< vector<string> > obj_stack_stack{};
+		vector< vector<Instr> > instrs_stack{};
 		
-		std::vector<OP> op_stack;
-		std::vector<std::string> obj_stack;
-		std::vector<Instr> instrs;
+		vector<OP> op_stack;
+		vector<string> obj_stack;
+		vector<Instr> instrs;
 
 		void exprPush(OP op) {
 			switch (op) {
@@ -283,27 +283,27 @@ namespace buaac {
 			}
 		}
 
-		void exprPushGlobalVar(std::string ident, int bytes) {
+		void exprPushGlobalVar(string ident, int bytes) {
 			auto t = newTemp();
 			appendInstr(Instr(Instr::LOAD_GLO, t, bytes));
 			instrShowAs(ident);	
 			obj_stack.push_back(t);
 		}
 
-		void exprPushStackVar(std::string ident, int bytes) {
+		void exprPushStackVar(string ident, int bytes) {
 			auto t = newTemp();
 			appendInstr(Instr(Instr::LOAD_STA, t, bytes));
 			instrShowAs(ident);
 			obj_stack.push_back(t);
 		}
 
-		void exprPushStackArrGlo(int arr, std::string offset) {
+		void exprPushStackArrGlo(int arr, string offset) {
 			auto t = newTemp();
 			appendInstr(Instr(Instr::LOAD_ARR_GLO, t, arr, offset));
 			obj_stack.push_back(t);
 		}
 
-		void exprPushStackArrSta(int arr, std::string offset) {
+		void exprPushStackArrSta(int arr, string offset) {
 			auto t = newTemp();
 			appendInstr(Instr(Instr::LOAD_ARR_STA, t, arr, offset));
 			obj_stack.push_back(t);
@@ -315,13 +315,13 @@ namespace buaac {
 			obj_stack.push_back(t);
 		}
 
-		void exprPushReg(std::string reg) {
+		void exprPushReg(string reg) {
 			auto t = newTemp();
 			appendInstr(Instr(Instr::MOVE, t, reg));
 			obj_stack.push_back(t);
 		}
 
-		void exprPushLabel(std::string label) {
+		void exprPushLabel(string label) {
 			auto t = newTemp();
 			appendInstr(Instr(Instr::LA, t, label));
 			obj_stack.push_back(t);
@@ -349,7 +349,7 @@ namespace buaac {
 			obj_stack.clear();
 		}
 		
-		std::string gen() {
+		string gen() {
 			// if (not_gen > 0) {
 			// 	not_gen--;
 			// 	return "NOTGEN";
@@ -357,7 +357,7 @@ namespace buaac {
 			while (!op_stack.empty()) {
 				pop_op();
 			}
-			std::string ans = obj_stack.back();
+			string ans = obj_stack.back();
 			obj_stack.pop_back();
 			assert(obj_stack.empty());
 			for (int i = 0; i < instrs.size(); i++) {
@@ -393,8 +393,8 @@ namespace buaac {
 		obj_stack.push_back(temp);
 		
 		void pop_op() {
-			std::string source_a, source_b;
-			std::string temp;
+			string source_a, source_b;
+			string temp;
 			
 			switch (op_stack.back()) {
 
@@ -430,19 +430,19 @@ namespace buaac {
 #pragma endregion 
 
 
-		// void saveStack(std::string reg, int bytes) {
+		// void saveStack(string reg, int bytes) {
 		// 	appendInstr(Instr(Instr::SAVE_STA, reg, bytes));
 		// }
 		//
-		// void saveLabel(std::string label) {
+		// void saveLabel(string label) {
 		// 	appendInstr({ Instr::SAVE_LAB, label });
 		// }
 
-		// void loadStack(std::string reg, int bytes) {
+		// void loadStack(string reg, int bytes) {
 		// 	appendInstr(Instr(Instr::LOAD_STA, reg, bytes));
 		// }
 
-		void irShow(std::string str) {
+		void irShow(string str) {
 			appendInstr({ Instr::IR_SHOW,  str });
 		}
 
@@ -457,11 +457,11 @@ namespace buaac {
 			// blocks_now->back().instrs.back().show = false;
 		}
 
-		void instrShowAs(std::string showas) {
+		void instrShowAs(string showas) {
 			blocks_now->back().instrs.back().showas = showas;
 		}
 		
-		// std::string getGlobalName(std::string ident) {
+		// string getGlobalName(string ident) {
 		// 	return FORMAT("__GLOBAL_{}", ident);
 		// }
 
@@ -476,7 +476,7 @@ namespace buaac {
 
 		
 
-		std::string newTemp() {
+		string newTemp() {
 			return FORMAT("__T{}", temp_cnt++);
 		}
 
@@ -491,7 +491,7 @@ namespace buaac {
 			global_defines.emplace_back(global_define);
 		}
 
-		std::string newConstLabel() {
+		string newConstLabel() {
 			return FORMAT("__CONST_{}", cnt_c++);
 		}
 

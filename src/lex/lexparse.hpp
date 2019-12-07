@@ -24,9 +24,9 @@ namespace buaac {
 
 #define simpleMatch(regexStr, tokenType)	\
 	do	{	\
-		std::string value = std::string(regexStr);	\
-		if (meow::starts_with(in, std::string(regexStr))) {	\
-				in = in.substr(std::string(regexStr).length());	\
+		string value = string(regexStr);	\
+		if (meow::starts_with(in, string(regexStr))) {	\
+				in = in.substr(string(regexStr).length());	\
 				return LexResult::Ok(Token(TokenType::tokenType, value));	\
 		}	\
 	} while (0)
@@ -42,12 +42,12 @@ namespace buaac {
 
 		class LexParser {
 		public:
-			LexParser(std::string source, std::string output) : source_(source){
+			LexParser(string source, string output) : source_(source){
 				pointer_ = source_;
-				if (output.find('v') != std::string::npos) {
+				if (output.find('v') != string::npos) {
 					output_lex_ = true;
 				}
-				if (output.find('e') != std::string::npos) {
+				if (output.find('e') != string::npos) {
 					output_error_ = true;
 				}
 			}
@@ -60,7 +60,7 @@ namespace buaac {
 			}
 			
 			LexResult lookToken(int ahead = 0) {
-				std::string look_ = pointer_;
+				string look_ = pointer_;
 				while (ahead--) {
 					eat(look_);
 				}
@@ -72,8 +72,8 @@ namespace buaac {
 			}
 			
 		private:
-			const std::string source_;
-			std::string pointer_;
+			const string source_;
+			string pointer_;
 			bool output_lex_ = false;
 			bool output_error_ = false;
 			int line_ = 1;
@@ -104,7 +104,7 @@ namespace buaac {
 				return isPlus(c) || isMul(c) || isAlpha(c) || isDigit(c);
 			}
 
-			LexResult eat(std::string& in, bool advance = false) {
+			LexResult eat(string& in, bool advance = false) {
 				if (in.length() == 0) {
 					return LexResult::Err(LexError::END);
 				}
@@ -157,7 +157,7 @@ namespace buaac {
 						buf << c;
 					}
 
-					std::string value = buf.str();
+					string value = buf.str();
 					in = in.substr(value.length());
 
 					identMatch("const", CONSTTK);
@@ -186,7 +186,7 @@ namespace buaac {
 					while (c = sin.get(), isDigit(c)) {
 						buf << c;
 					}
-					std::string value = buf.str();
+					string value = buf.str();
 					in = in.substr(value.length());
 					return LexResult::Ok(Token(TokenType::INTCON, value));
 				}
@@ -207,7 +207,7 @@ namespace buaac {
 					}
 
 
-					std::string value = buf.str();
+					string value = buf.str();
 					if (!isChar(value[0])) {
 						if (advance) error();
 					}
@@ -242,7 +242,7 @@ namespace buaac {
 					}
 
 
-					std::string value = buf.str();
+					string value = buf.str();
 					in = in.substr(value.length() + 2 + offset);
 					return LexResult::Ok(Token(TokenType::STRCON, value));
 				}

@@ -22,9 +22,9 @@ int main() {
 	
 	string source = readFileToString("testfile.txt");
 	ofstream fout("output.txt");
-	cout.rdbuf(fout.rdbuf());
+	// cout.rdbuf(fout.rdbuf());
 
-	auto output_setting = "e";
+	auto output_setting = "";
 	// auto output_setting = "ve";
 	
 	lex::LexParser lex_parser(source, output_setting);

@@ -22,12 +22,12 @@ namespace meow {
             static std::string format(const char *fmt, Args... args) {
                 auto string_buffer = std::vector<std::string>();
                 auto strings = expandToString(string_buffer, args...);
-                std::stringstream out;
+				std::stringstream out;
                 int i = 0;
                 while (*fmt != '\0') {
                     if (*fmt == '{') {
                         fmt++;
-                        std::stringstream cmd_buffer;
+						std::stringstream cmd_buffer;
                         while (*fmt != '\0' && *fmt != '}') {
                             cmd_buffer << *fmt;
                             fmt++;
@@ -55,7 +55,7 @@ namespace meow {
         
         template<typename T>
         static std::string toString(T t) {
-            std::stringstream out;
+			std::stringstream out;
             out << t;
             return out.str();
         }

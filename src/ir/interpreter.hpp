@@ -9,10 +9,10 @@ namespace buaac {
 
 	class Interpreter {
 
-		// std::map<std::string, int> temp;
-		// std::map<std::string, int> local_var;
-		// std::map<std::string, int> global_var;
-		std::map<std::string, int> var;
+		// std::map<string, int> temp;
+		// std::map<string, int> local_var;
+		// std::map<string, int> global_var;
+		std::map<string, int> var;
 
 
 		
@@ -52,36 +52,36 @@ namespace buaac {
 			// }
 		}
 
-		void setVar(std::string name, int value) {
+		void setVar(string name, int value) {
 			var[name] = value;
 		}
 
-		bool hasVar(std::string name) {
+		bool hasVar(string name) {
 			return var.find(name) != var.end();
 		}
 		
-		int getVar(std::string name) {
+		int getVar(string name) {
 			assert(hasVar(name));
 			return var[name];
 		}
 
-		// void setLocalValue(std::string name, int value) {
+		// void setLocalValue(string name, int value) {
 		// 	local_var[name] = value;
 		// }
 		//
-		// void setGlobalValue(std::string name, int value) {
+		// void setGlobalValue(string name, int value) {
 		// 	global_var[name] = value;
 		// }
 		//
-		// bool hasLocalValue(std::string name) {
+		// bool hasLocalValue(string name) {
 		// 	return local_var.find(name) != local_var.end();
 		// }
 		//
-		// bool hasGlobalValue(std::string name) {
+		// bool hasGlobalValue(string name) {
 		// 	return global_var.find(name) != global_var.end();
 		// }
 		//
-		// int getLocalValue(std::string name) {
+		// int getLocalValue(string name) {
 		// 	assert(hasLocalValue(name));
 		// 	return local_var[name];
 		// }

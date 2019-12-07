@@ -100,21 +100,21 @@ namespace buaac {
 		}
 
 		int mempool_size = 0;
-		std::map<std::string, int> memPool;
+		std::map<string, int> memPool;
 
-		std::vector<std::string> globalRegs = {
+		vector<string> globalRegs = {
 			"$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$t8", "$t9",
 			"$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7",
 			"$v1",
 			"$k1",
-#ifndef STANDARD_REG_A
-			"$a1", "$a2", "$a3",
-#endif
+// #ifndef STANDARD_REG_A
+// 			"$a1", "$a2", "$a3",
+// #endif
 		};
 
-		std::map<std::string, std::string> regPool;
-		std::map<std::string, bool> availReg;
-		std::vector<std::vector<std::string>> t_stack;
+		std::map<string, string> regPool;
+		std::map<string, bool> availReg;
+		vector<vector<string>> t_stack;
 
 		void resetRegPool() {
 			mempool_size = 0;
@@ -126,19 +126,19 @@ namespace buaac {
 			t_stack.clear();
 		}
 
-		int allocMemPool(std::string id) {
+		int allocMemPool(string id) {
 			memPool[id] = mempool_size;
 			return mempool_size++;
 		}
 
-		int getMemPool(std::string id) {
+		int getMemPool(string id) {
 			if (memPool.find(id) == memPool.end()) {
 				return allocMemPool(id);
 			}
 			return memPool[id];
 		}
 
-		std::string getReg() {
+		string getReg() {
 			for (int i = 0; i < globalRegs.size(); i++) {
 				if (availReg[globalRegs[i]]) {
 					availReg[globalRegs[i]] = false;
@@ -157,12 +157,12 @@ namespace buaac {
 			return false;
 		}
 		
-		void allocRegPool(std::string id) {
-			std::string reg = getReg();
+		void allocRegPool(string id) {
+			string reg = getReg();
 			regPool[id] = reg;
 		}
 
-		std::string getRegPool(std::string id) {
+		string getRegPool(string id) {
 			if (regPool.find(id) == regPool.end()) {
 				if (haveAvailReg()) {
 					allocRegPool(id);
@@ -176,7 +176,7 @@ namespace buaac {
 #define REGPOOL_LOAD(ir_reg, assign_reg)	\
 		do {	\
 			auto& instr = instrs[i];	\
-			if (starts_with(instr.ir_reg, std::string("__T"))) {	\
+			if (starts_with(instr.ir_reg, string("__T"))) {	\
 				int loc = 4 * getMemPool(instr.ir_reg.substr(3));	\
 				instr.ir_reg = #assign_reg;	\
 				insertBefore(instrs, i, Instr(Instr::LOAD_GLO, #assign_reg, REGPOOL_START+loc));	\
@@ -186,19 +186,19 @@ namespace buaac {
 #define REGPOOL_SAVE(ir_reg, assign_reg)	\
 		do {	\
 			auto& instr = instrs[i];	\
-			if (starts_with(instr.ir_reg, std::string("__T"))) {	\
+			if (starts_with(instr.ir_reg, string("__T"))) {	\
 				int loc = 4 * getMemPool(instr.ir_reg.substr(3));	\
 				instr.ir_reg = #assign_reg;	\
 				insertAfter(instrs, i, Instr(Instr::SAVE_GLO, #assign_reg, REGPOOL_START+loc));	\
 			}	\
 		} while(0)
 
-#define NOT_ASSIGN(ir_reg) starts_with(instrs[i].ir_reg, std::string("__T"))
+#define NOT_ASSIGN(ir_reg) starts_with(instrs[i].ir_reg, string("__T"))
 
 
 #define assignReg(ir_reg)	\
 		do {	\
-			if (starts_with(ir_reg, std::string("__T"))) {	\
+			if (starts_with(ir_reg, string("__T"))) {	\
 				ir_reg = getRegPool(ir_reg);	\
 			} \
 		} while(0)
@@ -216,21 +216,21 @@ namespace buaac {
 				
 				if (NOT_ASSIGN(target)) {
 					if (instrs[i].targetIsLoad())
-						REGPOOL_LOAD(target, $t0);
+						REGPOOL_LOAD(target, $a0);
 					if (instrs[i].targetIsSave())
-						REGPOOL_SAVE(target, $t0);
+						REGPOOL_SAVE(target, $a0);
 				}
 				if (NOT_ASSIGN(source_a)) {
 					if (instrs[i].sourceAIsLoad())
-						REGPOOL_LOAD(source_a, $t1);
+						REGPOOL_LOAD(source_a, $a1);
 					if (instrs[i].sourceAIsSave())
-						REGPOOL_SAVE(source_a, $t1);
+						REGPOOL_SAVE(source_a, $a1);
 				}
 				if (NOT_ASSIGN(source_b)) {
 					if (instrs[i].sourceBIsLoad())
-						REGPOOL_LOAD(source_b, $t2);
+						REGPOOL_LOAD(source_b, $a2);
 					if (instrs[i].sourceBIsSave())
-						REGPOOL_SAVE(source_b, $t2);
+						REGPOOL_SAVE(source_b, $a2);
 				}
 				
 				switch (instrs[i].type) {
@@ -267,8 +267,8 @@ namespace buaac {
 			}
 		}
 
-		std::vector<std::string> ts;
-		std::vector<int> pushPoolSize;
+		vector<string> ts;
+		vector<int> pushPoolSize;
 		
 		void pushRegPool() {
 			pushPoolSize.push_back(mempool_size);
@@ -289,12 +289,12 @@ namespace buaac {
 			pushPoolSize.pop_back();
 		}
 
-		void insertBefore(std::vector<Instr> &instrs, int &i, Instr instr) {
+		void insertBefore(vector<Instr> &instrs, int &i, Instr instr) {
 			instrs.insert(instrs.begin() + i, instr);
 			i++;
 		}
 
-		void insertAfter(std::vector<Instr> &instrs, int &i, Instr instr) {
+		void insertAfter(vector<Instr> &instrs, int &i, Instr instr) {
 			instrs.insert(instrs.begin() + i + 1, instr);
 		}
 
@@ -306,7 +306,7 @@ namespace buaac {
 			}
 		}
 
-		bool isNumber(std::string source) {
+		bool isNumber(string source) {
 			return isdigit(source[0]) || source[0] == '-';
 		}
 
@@ -613,7 +613,7 @@ namespace buaac {
 
 		
 
-		void getRegisters(std::vector<std::string> regs) {
+		void getRegisters(vector<string> regs) {
 #ifdef STANDARD_REG_A
 			if (regs.size() == 1) {
 				write("move {}, {}", "$k0", regs[0]);
@@ -624,7 +624,7 @@ namespace buaac {
 #endif
 		}
 
-		void releaseRegisters(std::vector<std::string> regs) {
+		void releaseRegisters(vector<string> regs) {
 #ifdef STANDARD_REG_A
 			if (regs.size() == 1) {
 				write("move {}, {}", regs[0], "$k0");

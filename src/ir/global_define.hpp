@@ -5,16 +5,16 @@
 namespace buaac {
 	namespace global {
 		struct ConstStr {
-			std::string label;
-			std::string value;
+			string label;
+			string value;
 		};
 
 		struct VarInt {
-			std::string label;
+			string label;
 		};
 		
 		struct VarIntArr {
-			std::string label;
+			string label;
 			int len;
 		};
 

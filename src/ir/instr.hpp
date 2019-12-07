@@ -67,24 +67,24 @@ namespace buaac {
 			} type;
 
 			
-			std::string target{}, source_a{}, source_b{};
+			string target{}, source_a{}, source_b{};
 			int target_value, source_a_value, source_b_value;
 			bool has_target_value = false, has_source_a_value = false, has_source_b_value = false;
 			int ans;
 			bool has_ans = false;
 			bool show = true;
-			std::string showas;
+			string showas;
 
 			Instr(Type type) : type(type) { init(); }
-			Instr(Type type, std::string target)
+			Instr(Type type, string target)
 				: type(type), target(target) {
 				init();
 			}
-			Instr(Type type, std::string target, std::string source_a)
+			Instr(Type type, string target, string source_a)
 				: type(type), target(target), source_a(source_a) {
 				init();
 			}
-			Instr(Type type, std::string target, std::string source_a, std::string source_b)
+			Instr(Type type, string target, string source_a, string source_b)
 				: type(type), target(target), source_a(source_a), source_b(source_b) {
 				init();
 			}
@@ -93,23 +93,23 @@ namespace buaac {
 				: type(type), target(i2a(target)) {
 				init();
 			}
-			Instr(Type type, int target, std::string source_a)
+			Instr(Type type, int target, string source_a)
 				: type(type), target(i2a(target)), source_a(source_a) {
 				init();
 			}
-			Instr(Type type, std::string target, int source_a)
+			Instr(Type type, string target, int source_a)
 				: type(type), target(target), source_a(i2a(source_a)) {
 				init();
 			}
-			Instr(Type type, int target, std::string source_a, std::string source_b)
+			Instr(Type type, int target, string source_a, string source_b)
 				: type(type), target(i2a(target)), source_a(source_a), source_b(source_b) {
 				init();
 			}
-			Instr(Type type, std::string target, int source_a, std::string source_b)
+			Instr(Type type, string target, int source_a, string source_b)
 				: type(type), target(target), source_a(i2a(source_a)), source_b(source_b) {
 				init();
 			}
-			Instr(Type type, std::string target, std::string source_a, int source_b)
+			Instr(Type type, string target, string source_a, int source_b)
 				: type(type), target(target), source_a(source_a), source_b(i2a(source_b)) {
 				init();
 			}
@@ -242,7 +242,7 @@ namespace buaac {
 
 			
 
-			std::string getStoreName() {
+			string getStoreName() {
 				switch (type) {
 				case PLUS:
 				case MINUS: 
@@ -275,8 +275,8 @@ namespace buaac {
 				return "";
 			}
 
-			std::vector<std::string> getLoadName() {
-				std::vector<std::string> loads;
+			vector<string> getLoadName() {
+				vector<string> loads;
 
 				switch (type) {
 				case LOAD_STA:
@@ -397,7 +397,7 @@ namespace buaac {
 				}
 			}
 
-			void setValue(std::string reg, int value) {
+			void setValue(string reg, int value) {
 				if (target == reg) {
 					target_value = value;
 					has_target_value = true;
@@ -579,7 +579,27 @@ namespace buaac {
 					return false;
 				}
 			}
-			
+
+			string getJumpTarget() {
+				switch (type) {
+				case CALL:
+				case RETURN_END:
+				case JUMP:
+					return target;
+				case BGEZ:
+				case BLEZ:
+					return source_a;
+				case BLT:
+				case BGT:
+				case BLE:
+				case BGE:
+				case BEQ:
+				case BNE:
+					return source_b;
+				default:
+					panic("not jump instr");
+				}
+			}
 		
 		};
 			

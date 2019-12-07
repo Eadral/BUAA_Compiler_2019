@@ -10,10 +10,10 @@ namespace buaac {
 	class Block {
 	public:
 
-		std::string label;
-		std::vector<Instr> instrs;
+		string label;
+		vector<Instr> instrs;
 		
-		Block(std::string label): label(label) {
+		Block(string label): label(label) {
 			instrs.clear();
 		}
 		
@@ -24,7 +24,7 @@ namespace buaac {
 		
 	};
 
-	using Blocks = std::vector<Block>;
+	using Blocks = vector<Block>;
 	
 	using BlocksPtr = std::shared_ptr<Blocks>;
 	

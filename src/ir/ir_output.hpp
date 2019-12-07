@@ -11,8 +11,8 @@ namespace buaac {
 
 		int output_offset = 0;
 
-		std::string outputOffset() {
-			std::string offset = "";
+		string outputOffset() {
+			string offset = "";
 			for (int i = 0; i < output_offset; i++) {
 				offset += " ";
 			}
@@ -236,7 +236,7 @@ namespace buaac {
 			}
 		}
 
-		std::string removePrefix(std::string input) {
+		string removePrefix(string input) {
 			if (input == "$v0")
 				return "RET";
 			if (input.size() >= 3) {
@@ -253,7 +253,7 @@ namespace buaac {
 		
 		IrGen(IR ir): ir(ir) {}
 
-		void output(std::string filename) {
+		void output(string filename) {
 			fout.open(filename);
 
 			write("// BUAAC IR, Build: {}, qaq", __TIMESTAMP__);

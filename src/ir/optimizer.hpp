@@ -3,6 +3,9 @@
 #include "../meow/core.hpp"
 #include "ir.hpp"
 #include "interpreter.hpp"
+#include "flowgraph.hpp"
+#include "define_arrival.hpp"
+#include "define_use_chain.hpp"
 
 namespace buaac {
 
@@ -23,8 +26,90 @@ namespace buaac {
 			removeUselessRa();
 			constantProgpagation();
 			removeZeroLoad();
+			FlowGraph flow_graph = constructFlowGraph();
+			// flow_graph.printGraph();
+
+			unitTestDefineUseChain();
 		}
 
+		void unitTestDefineUseChain() {
+			FlowGraph flow_graph;
+			flow_graph.addEdge("B1", "B2");
+			flow_graph.addEdge("B2", "B3");
+			flow_graph.addEdge("B2", "B4");
+			flow_graph.addEdge("B3", "B2");
+			flow_graph.addEdge("B4", "B5");
+			flow_graph.addEdge("B5", "B6");
+			flow_graph.addEdge("B5", "exit");
+			flow_graph.addEdge("B6", "B5");
+
+			DefineUseChain define_use_chain;
+			define_use_chain.addDef("B1", 1, "a");
+			define_use_chain.addDef("B1", 2, "i");
+			
+			define_use_chain.addUse("B2", 1, "i");
+			
+			define_use_chain.addDef("B3", 1, "a");
+			define_use_chain.addUse("B3", 1, "a");
+			define_use_chain.addUse("B3", 1, "i");
+
+			define_use_chain.addDef("B3", 2, "i");
+			define_use_chain.addUse("B3", 2, "i");
+
+			define_use_chain.addDef("B4", 1, "b");
+			define_use_chain.addUse("B4", 1, "a");
+			define_use_chain.addDef("B4", 2, "i");
+			
+			define_use_chain.addUse("B5", 1, "i");
+			
+			define_use_chain.addDef("B6", 1, "b");
+			define_use_chain.addUse("B6", 1, "b");
+			define_use_chain.addUse("B6", 1, "i");
+
+			define_use_chain.addDef("B6", 2, "i");
+			define_use_chain.addUse("B6", 2, "i");
+
+			
+			define_use_chain.generate(flow_graph);
+			define_use_chain.printChain();
+		}
+
+
+		void unitTestDefineArrival() {
+			FlowGraph flow_graph;
+			flow_graph.addEdge("B1", "B2");
+			flow_graph.addEdge("B2", "B3");
+			flow_graph.addEdge("B2", "exit");
+			flow_graph.addEdge("B3", "B4");
+			flow_graph.addEdge("B3", "B5");
+			flow_graph.addEdge("B4", "B5");
+			flow_graph.addEdge("B5", "B2");
+
+			DefineArrival define_arrival;
+			define_arrival.addGen("B1", vector<string>{"d1", "d2", "d3"});
+			define_arrival.addKill("B1", vector<string>{"d5", "d6", "d7", "d8"});
+
+			define_arrival.addGen("B3", vector<string>{"d4", "d5"});
+			define_arrival.addKill("B3", vector<string>{"d1", "d6"});
+
+			define_arrival.addGen("B4", vector<string>{"d6"});
+			define_arrival.addKill("B4", vector<string>{"d1", "d5"});
+
+			define_arrival.addGen("B5", vector<string>{"d7", "d8"});
+			define_arrival.addKill("B5", vector<string>{"d2", "d3"});
+
+			define_arrival.generate(flow_graph);
+			define_arrival.iterate(flow_graph);
+			// define_arrival.printInOut();
+			// TODO: p350 artificial check
+		}
+
+
+		void unitTests() {
+			unitTestDefineArrival();
+
+		}
+		
 #pragma region Utils
 
 #define ForFuncs(i, func)	 for (int i = 0; i < ir.funcs.size(); i++) { auto& funcs = ir.funcs; auto& func = ir.funcs.at(i);
@@ -33,17 +118,31 @@ namespace buaac {
 
 #define ForInstrs(k, _instrs, instr) for (int k = 0; k < _instrs.size(); k++) { auto& instrs = _instrs; auto& instr = _instrs[k]; 
 
+#define EndFor }
 		
-		void insertBefore(std::vector<Instr>& instrs, int& i, Instr instr) {
+		Instr getJumpInstr(Block& block) {
+			Instr nop = Instr( Instr::NOP );
+			if (block.instrs.empty()) {
+				return nop;
+			}
+			Instr last = block.instrs.back();
+			if (last.isJump()) {
+				return last;
+			} else {
+				return nop;
+			}
+		}
+		
+		void insertBefore(vector<Instr>& instrs, int& i, Instr instr) {
 			instrs.insert(instrs.begin() + i, instr);
 			i++;
 		}
 
-		void insertAfter(std::vector<Instr>& instrs, int& i, Instr instr) {
+		void insertAfter(vector<Instr>& instrs, int& i, Instr instr) {
 			instrs.insert(instrs.begin() + i + 1, instr);
 		}
 
-		void deleteThis(std::vector<Instr>& instrs, int& i, Instr instr) {
+		void deleteThis(vector<Instr>& instrs, int& i, Instr instr) {
 			instrs.erase(instrs.begin() + i);
 			
 		}
@@ -58,7 +157,7 @@ namespace buaac {
 		}
 		
 		// helper
-		Func& getFuncByName(std::string name) {
+		Func& getFuncByName(string name) {
 			for (int i = 0; i < ir.funcs.size(); i++) {
 				if (ir.funcs[i].func_name == name) {
 					return ir.funcs[i];
@@ -142,7 +241,7 @@ namespace buaac {
 			}
 			
 		}
-		std::map<std::string, int> load_cnt;
+		std::map<string, int> load_cnt;
 
 
 		void removeZeroLoadInBlock(Block& block) {
@@ -155,8 +254,8 @@ namespace buaac {
 					// TODO: remove this
 					auto save_name = instr.getStoreName();
 					if (!save_name.empty()
-						&& !starts_with(save_name, std::string("$"))
-						&& !starts_with(save_name, std::string("__G"))
+						&& !starts_with(save_name, string("$"))
+						&& !starts_with(save_name, string("__G"))
 						&& !instr.doNotDelDead()
 						&& load_cnt.find(save_name) == load_cnt.end()) {
 						instr.type = Instr::NOP;
@@ -183,7 +282,29 @@ namespace buaac {
 #pragma endregion
 
 
-		
+		FlowGraph constructFlowGraph() {
+			FlowGraph flow_graph;
+
+			ForFuncs(i, func)
+				flow_graph.addEntry(func.func_name);
+				ForBlocks(j, func.blocks, block)
+					if (j + 1 < blocks->size()) {
+						Instr jump_instr = getJumpInstr(block);
+						if (jump_instr.type != Instr::NOP && jump_instr.type != Instr::CALL) {
+							flow_graph.addEdge(block.label, jump_instr.getJumpTarget());
+						}
+						if (jump_instr.type != Instr::JUMP) {
+							flow_graph.addEdge(blocks->at(j).label, blocks->at(j + 1).label);
+						}
+					}
+				EndFor
+				// if (func.func_name == "main") {
+				// 	flow_graph.addEdge(flow_graph.entry, func.blocks->at(0).label);
+				// 	flow_graph.addEdge(func.blocks->back().label, flow_graph.exit);
+				// }
+			EndFor
+			return flow_graph;
+		}
 		
 	};
 	

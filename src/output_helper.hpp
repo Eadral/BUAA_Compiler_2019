@@ -28,7 +28,7 @@ namespace buaac {
 			mpis.open("mips.txt");
 		}
 
-		void cout(std::string str) {
+		void cout(string str) {
 			std::cerr << str << std::endl;
 		}
 

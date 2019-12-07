@@ -32,11 +32,11 @@ namespace syntax{
 		IR ir;
 		
 	public:
-		SyntaxParser(lex::LexParser& lex_parser, std::string output): lex_parser_(lex_parser) {
-			if (output.find('v') != std::string::npos) {
+		SyntaxParser(lex::LexParser& lex_parser, string output): lex_parser_(lex_parser) {
+			if (output.find('v') != string::npos) {
 				output_syntax_ = true;
 			}
-			if (output.find('e') != std::string::npos) {
+			if (output.find('e') != string::npos) {
 				output_error_ = true;
 			}
 		}
@@ -69,7 +69,7 @@ namespace syntax{
 		}	\
 	} while (0)
 		
-		std::map<std::string, bool> funcName2IsRet;
+		std::map<string, bool> funcName2IsRet;
 
 		bool stack_output_constDec_ = false;
 		bool stack_output_verDec_ = false;
@@ -84,7 +84,7 @@ namespace syntax{
 			stack_output_statementCol_ = false;
 		}
 		
-		void syntaxOutput(std::string output) {
+		void syntaxOutput(string output) {
 			if (!output_syntax_)
 				return;
 			if (output == "<常量说明>") {
@@ -173,7 +173,7 @@ namespace syntax{
 			return cmp_token;
 		}
 		// ＜字符串＞   ::=  "｛十进制编码为32,33,35-126的ASCII字符｝"
-		std::string strconst() {
+		string strconst() {
 			Token str_token;
 			
 			switch (lookTokenType()) {
@@ -325,7 +325,7 @@ namespace syntax{
 			Token int_token;
 			bool int_success;
 
-			std::vector<TokenType> except_end = { TokenType::COMMA, TokenType::SEMICN };
+			vector<TokenType> except_end = { TokenType::COMMA, TokenType::SEMICN };
 			
 			switch (lookTokenType()) {
 			case TokenType::INTTK:
@@ -349,7 +349,7 @@ namespace syntax{
 			Token ident_token;
 			Token char_token;
 
-			std::vector<TokenType> except_end = { TokenType::COMMA, TokenType::SEMICN };
+			vector<TokenType> except_end = { TokenType::COMMA, TokenType::SEMICN };
 			
 			switch (lookTokenType()) {
 			case TokenType::CHARTK:
@@ -378,7 +378,7 @@ namespace syntax{
 			Token int_token;
 			bool int_success;
 
-			std::vector<TokenType> except_end = { TokenType::COMMA, TokenType::SEMICN };
+			vector<TokenType> except_end = { TokenType::COMMA, TokenType::SEMICN };
 			
 			switch (lookTokenType()) {
 			case TokenType::COMMA:
@@ -405,7 +405,7 @@ namespace syntax{
 			Token ident_token;
 			Token char_token;
 
-			std::vector<TokenType> except_end = { TokenType::COMMA, TokenType::SEMICN };
+			vector<TokenType> except_end = { TokenType::COMMA, TokenType::SEMICN };
 			
 			switch (lookTokenType()) {
 			case TokenType::COMMA:
@@ -435,7 +435,7 @@ namespace syntax{
 		// ＜无符号整数＞  ::= ＜非零数字＞｛＜数字＞｝| 0
 		Token uninteger() {
 			Token intcon;
-			std::string intcon_str;
+			string intcon_str;
 			switch (lookTokenType()) {
 			case TokenType::INTCON:
 				intcon = eatToken(TokenType::INTCON);
@@ -453,7 +453,7 @@ namespace syntax{
 		// ＜整数＞        ::= ［＋｜－］＜无符号整数＞
 		tuple<bool, Token> integer() {
 			Token ret;
-			std::string neg;
+			string neg;
 			switch (lookTokenType()) {
 			case TokenType::INTCON:
 				ret = uninteger();
@@ -539,7 +539,7 @@ namespace syntax{
 		}
 
 		SymbolType _status_vardef_type;
-		std::string _status_vardef_type_str;
+		string _status_vardef_type_str;
 		//＜变量定义＞ ::= ＜类型标识符＞
 		//				(＜标识符＞|＜标识符＞'['＜无符号整数＞']')
 		//				{,(＜标识符＞|＜标识符＞'['＜无符号整数＞']' )} 
@@ -610,12 +610,12 @@ namespace syntax{
 			syntaxOutput("<变量定义>");
 		}
 
-		void pushStackReg(std::string reg) {
+		void pushStackReg(string reg) {
 			ir.__pushStackReg(reg);
 			// _symbol_table.addOffset(4);
 		}
 
-		void popStackReg(std::string reg) {
+		void popStackReg(string reg) {
 			ir.__popStackReg(reg);
 			// _symbol_table.subOffset(4);
 		}
@@ -695,7 +695,7 @@ namespace syntax{
 			Token type;
 			Token name;
 			SymbolType func_type;
-			std::vector<Symbol> para_list;
+			vector<Symbol> para_list;
 			
 			switch (lookTokenType()) {
 			case TokenType::INTTK:
@@ -742,7 +742,7 @@ namespace syntax{
 		// ＜无返回值函数定义＞  ::= void＜标识符＞'('＜参数表＞')''{'＜复合语句＞'}'
 		void nonRetFuncDef() {
 			Token name;
-			std::vector<Symbol> para_list;
+			vector<Symbol> para_list;
 			
 			switch (lookTokenType()) {
 			case TokenType::VOIDTK:
@@ -822,9 +822,9 @@ namespace syntax{
 			}
 			syntaxOutput("<复合语句>");
 		}
-		std::vector<Symbol> _status_paralist;
+		vector<Symbol> _status_paralist;
 		// ＜参数表＞::= ＜类型标识符＞＜标识符＞{,＜类型标识符＞＜标识符＞}| ＜空＞
-		std::vector<Symbol> paraList() {
+		vector<Symbol> paraList() {
 			_status_paralist.clear();
 			Token type;
 			Token ident;
@@ -902,7 +902,7 @@ namespace syntax{
 			syntaxOutput("<主函数>");
 		}
 		// ＜表达式＞    ::= ［＋｜－］＜项＞{＜加法运算符＞＜项＞}
-		tuple<SymbolType, std::string> expr() {
+		tuple<SymbolType, string> expr() {
 			// ir.exprStart();
 			SymbolType expr_type = SymbolType::INT;
 			Token token;
@@ -1058,7 +1058,7 @@ namespace syntax{
 			return -offset / 4 < 4;
 		}
 
-		std::string offset2rega(int offset) {
+		string offset2rega(int offset) {
 			return FORMAT("$a{}", -offset / 4);
 		}
 
@@ -1071,7 +1071,7 @@ namespace syntax{
 			Token token;
 
 			Token int_token, char_token;
-			std::string expr_ans, addr;
+			string expr_ans, addr;
 			
 			switch (lookTokenType()) {
 			case TokenType::IDENFR:
@@ -1257,7 +1257,7 @@ namespace syntax{
 			syntaxOutput("<语句>");
 		}
 	
-		void assign(std::string ident, std::string ans) {
+		void assign(string ident, string ans) {
 			if (_symbol_table.isGlobal(ident)) {
 				ir.appendInstr(Instr(Instr::SAVE_GLO, ans, _symbol_table.getGlobalBytesByIdent(ident)));
 				ir.instrShowAs(ident);
@@ -1273,7 +1273,7 @@ namespace syntax{
 			Symbol symbol;
 
 			SymbolType expr_type;
-			std::string expr_reg, expr_ans_lhs, expr_ans_rhs;
+			string expr_reg, expr_ans_lhs, expr_ans_rhs;
 
 			
 			switch (lookTokenType()) {
@@ -1385,7 +1385,7 @@ namespace syntax{
 			SymbolType expr_type_rhs;
 			Token cmp_token;
 			TokenType cmp_type;
-			std::string expr_ans_lhs, expr_ans_rhs;
+			string expr_ans_lhs, expr_ans_rhs;
 			
 			switch (lookTokenType()) {
 			case TokenType::IDENFR:
@@ -1466,7 +1466,7 @@ namespace syntax{
 			}
 		}
 
-		void saveVar(std::string expr_reg, Token ident) {
+		void saveVar(string expr_reg, Token ident) {
 			assign(ident.getValue(), expr_reg);
 		}
 		
@@ -1481,9 +1481,9 @@ namespace syntax{
 			Token for_step_op;
 			Token for_step;
 			Token for_step_ident_lhs, for_step_ident_rhs;
-			std::string step_str;
+			string step_str;
 			Token for_start_token;
-			std::string for_start_ans;
+			string for_start_ans;
 			
 			switch (lookTokenType()) {
 			case TokenType::DOTK:
@@ -1596,7 +1596,7 @@ namespace syntax{
 		// ＜有/无返回值函数调用语句＞ ::= ＜标识符＞'('＜值参数表＞')'
 		void funcCall() {
 			Token name;
-			std::vector<SymbolType> val_para_list, excepted_para_list;
+			vector<SymbolType> val_para_list, excepted_para_list;
 			Symbol func_symbol;
 			
 			pushStackReg("$fp");
@@ -1658,14 +1658,14 @@ namespace syntax{
 				syntaxOutput("<无返回值函数调用语句>");
 			}
 		}
-		std::vector<SymbolType> _val_para_list{};
+		vector<SymbolType> _val_para_list{};
 		// ＜值参数表＞   ::= ＜表达式＞{,＜表达式＞}｜＜空＞
-		std::vector<SymbolType> valParaList(std::vector<SymbolType> expected_symbols) {
+		vector<SymbolType> valParaList(vector<SymbolType> expected_symbols) {
 			int index = 0;
-			std::vector<SymbolType> backup = _val_para_list;
+			vector<SymbolType> backup = _val_para_list;
 			_val_para_list.clear();
 
-			std::string expr_ans_reg;
+			string expr_ans_reg;
 			
 			SymbolType expr_type;
 			switch (lookTokenType()) {
@@ -1697,7 +1697,7 @@ namespace syntax{
 			}
 			// ir.popStack(_val_para_list.size()*4);
 			syntaxOutput("<值参数表>");
-			std::vector<SymbolType> ret = _val_para_list;
+			vector<SymbolType> ret = _val_para_list;
 			_val_para_list = backup;
 			// if (func_type == SymbolType::FUNC_INT) {
 			// 	_val_para_list.push_back(SymbolType::INT);
@@ -1709,9 +1709,9 @@ namespace syntax{
 			return ret;
 		}
 		// {,＜表达式＞}
-		void valParaListGroup(std::vector<SymbolType> expected_symbols, int index) {
+		void valParaListGroup(vector<SymbolType> expected_symbols, int index) {
 			SymbolType expr_type;
-			std::string expr_ans_reg;
+			string expr_ans_reg;
 			
 			switch (lookTokenType()) {
 			case TokenType::COMMA:
@@ -1825,7 +1825,7 @@ namespace syntax{
 			}
 			syntaxOutput("<读语句>");
 		}
-		std::vector<std::string> _status_ident_group;
+		vector<string> _status_ident_group;
 		// {,＜标识符＞}
 		void identGroup() {
 			Token ident_token;
@@ -1847,11 +1847,11 @@ namespace syntax{
 		//	| printf '('＜字符串＞ ')'
 		//	| printf '('＜表达式＞')'
 		void printfStat() {
-			std::string str;
-			std::string str_label;
+			string str;
+			string str_label;
 
 			SymbolType expr_type;
-			std::string expr_ans;
+			string expr_ans;
 			
 			switch (lookTokenType()) {
 			case TokenType::PRINTFTK:
@@ -1910,7 +1910,7 @@ namespace syntax{
 		// ＜返回语句＞   ::=  return['('＜表达式＞')']    
 		void retStat() {
 			SymbolType expr_type;
-			std::string expr_ans;
+			string expr_ans;
 			
 			switch (lookTokenType()) {
 			case TokenType::RETURNTK:
@@ -1994,7 +1994,7 @@ namespace syntax{
 			return token;
 		}
 
-		std::vector<char> _error_status{};
+		vector<char> _error_status{};
 		
 		void errorByStatus() {
 			if (!_error_status.empty())
@@ -2034,8 +2034,8 @@ namespace syntax{
 			}
 		}
 
-		std::vector<SymbolType> symbolList2SymbolTypeList(std::vector<Symbol> symbols) {
-			std::vector<SymbolType> symbol_types;
+		vector<SymbolType> symbolList2SymbolTypeList(vector<Symbol> symbols) {
+			vector<SymbolType> symbol_types;
 			for (int i = 0; i < symbols.size(); i++) {
 				symbol_types.push_back(symbols[i].getType());
 			}
@@ -2045,7 +2045,7 @@ namespace syntax{
 		lex::LexParser& lex_parser_;
 
 
-		bool exceptTokens(std::vector<TokenType> tokens) {
+		bool exceptTokens(vector<TokenType> tokens) {
 			TokenType token = lookTokenType();
 			for (int i = 0; i < tokens.size(); i++) {
 				if (token == tokens[i]) {
@@ -2055,7 +2055,7 @@ namespace syntax{
 			return false;
 		}
 
-		void jumpUntil(std::vector<TokenType> tokens) {
+		void jumpUntil(vector<TokenType> tokens) {
 			while (!exceptTokens(tokens)) {
 				jumpToken();
 			}

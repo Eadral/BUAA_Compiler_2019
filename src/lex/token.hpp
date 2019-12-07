@@ -107,7 +107,7 @@ namespace buaac {
 				has_value_ = false;
 			}
 
-			Token(const TokenType& token_type, std::string& value) {
+			Token(const TokenType& token_type, string& value) {
 				token_type_ = token_type;
 				value_ = value;
 				has_value_ = true;
@@ -147,11 +147,11 @@ namespace buaac {
 				return token_type_;
 			}
 
-			const std::string& getValue() const {
+			const string& getValue() const {
 				return value_;
 			}
 
-			std::string toString() {
+			string toString() {
 				if (has_value_) {
 					return fmt::Format::format("{} {}", token_type_, value_);
 				} else {
@@ -173,7 +173,7 @@ namespace buaac {
 				return !(lhs == rhs);
 			}
 
-			// std::string output() {
+			// string output() {
 			// 	if (has_value_) {
 			// 		return fmt::Format::format("{} {}", token_type_, value_);
 			// 	} else {
@@ -182,7 +182,7 @@ namespace buaac {
 			// }
 		private:
 			TokenType token_type_;
-			std::string value_;
+			string value_;
 			bool has_value_{};
 		};
 

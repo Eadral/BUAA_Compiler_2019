@@ -58,4 +58,53 @@ bool isNumber(std::string source) {
 	return isdigit(source[0]) || source[0] == '-';
 }
 
+template<typename C, typename I>
+bool notFound(C &container, I item) {
+	return container.find(item) == container.end();
+}
+
+template<typename C, typename I>
+bool found(C &container, I item) {
+	return !notFound(container, item);
+}
+
+template<typename T>
+set<T> setOr(const set<T> &a, const set<T> &b) {
+	set<T> ans;
+	for (auto i = a.begin(); i != a.end(); i++) {
+		ans.insert(*i);
+	}
+	for (auto i = b.begin(); i != b.end(); i++) {
+		ans.insert(*i);
+	}
+	return ans;
+}
+
+template<typename T>
+set<T> setAnd(const set<T> &a, const set<T> &b) {
+	set<T> ans;
+	for (auto i = a.begin(); i != a.end(); i++) {
+		if (found(b, *i)) {
+			ans.insert(*i);
+		}
+	}
+	for (auto i = b.begin(); i != b.end(); i++) {
+		if (found(a, *i)) {
+			ans.insert(*i);
+		}
+	}
+	return ans;
+}
+
+template<typename T>
+set<T> setSub(const set<T> &a, const set<T> &b) {
+	set<T> ans;
+	for (auto i = a.begin(); i != a.end(); i++) {
+		if (notFound(b, *i)) {
+			ans.insert(*i);
+		}
+	}
+	return ans;
+}
+
 #endif
