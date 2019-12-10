@@ -11,7 +11,7 @@ namespace buaac {
 
 		BlocksPtr blocks;
 
-		string  func_name;
+		string func_name;
 		
 		Func(string func_name) :func_name(func_name) {
 			blocks = std::make_shared<Blocks>();

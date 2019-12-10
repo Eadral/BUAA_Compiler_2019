@@ -95,9 +95,9 @@ namespace buaac {
 		// 	appendInstr(Instr(Instr::POP_REG, reg));
 		// }
 
-		void __pushStackReg(string reg) {
-			appendInstr(Instr(Instr::PUSH_REG, reg));
-		}
+		// void __pushStackReg(string reg) {
+		// 	appendInstr(Instr(Instr::PUSH_REG, reg));
+		// }
 
 		void __popStackReg(string reg) {
 			appendInstr(Instr(Instr::POP_REG, reg));
@@ -446,6 +446,10 @@ namespace buaac {
 
 		void irShow(string str) {
 			appendInstr({ Instr::IR_SHOW,  str });
+		}
+
+		void para(string type, string ident) {
+			appendInstr({ Instr::PARA, type, ident });
 		}
 
 		

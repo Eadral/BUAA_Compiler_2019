@@ -57,7 +57,8 @@ public:
 	}
 
 	bool in(int block_index, int block_line_number) {
-		return inBlock(block_index) && inLine(block_line_number);
+		return tie(first.block_index, first.line_number) <= tie(block_index, block_line_number)
+			&& tie(block_index, block_line_number) <= tie(last.block_index, last.line_number);
 	}
 
 	bool out(int block_index, int block_line_number) {
@@ -65,11 +66,11 @@ public:
 	}
 
 private:
-	bool inBlock(int block_index) {
-		return first.block_index <= block_index && block_index <= last.block_index;
-	}
-
-	bool inLine(int line_number) {
-		return first.line_number <= line_number && line_number <= last.line_number;
-	}
+	// bool inBlock(int block_index) {
+	// 	return first.block_index <= block_index && block_index <= last.block_index;
+	// }
+	//
+	// bool inLine(int line_number) {
+	// 	return first.line_number <= line_number && line_number <= last.line_number;
+	// }
 };

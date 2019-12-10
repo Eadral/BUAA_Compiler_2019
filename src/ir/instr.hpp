@@ -64,6 +64,8 @@ namespace buaac {
 				// IR
 				IR_SHOW,
 
+				PARA,
+
 			} type;
 
 			
@@ -74,6 +76,7 @@ namespace buaac {
 			bool has_ans = false;
 			bool show = true;
 			string showas;
+			int block_line_number=-1;
 
 			Instr(Type type) : type(type) { init(); }
 			Instr(Type type, string target)

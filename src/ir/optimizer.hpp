@@ -24,13 +24,13 @@ namespace buaac {
 		void optimize() {
 			removeRa(getFuncByName("main"));
 			removeUselessRa();
+
+			inlineFuncs();
+			
 			// constantProgpagation();
 			// removeZeroLoad();
-			// FlowGraph flow_graph = constructFlowGraph();
-			// flow_graph.printGraph();
-			regAssign();
+			// regAssign();
 			
-			// unitTestDefineUseChain();
 		}
 
 		void unitTestDefineUseChain() {
@@ -47,6 +47,7 @@ namespace buaac {
 			DefineUseChain define_use_chain;
 			define_use_chain.addDef(1, "B1", 1, "a");
 			define_use_chain.addDef(1, "B1", 2, "i");
+			// define_use_chain.addDef(1, "B1", 3, "i");
 			
 			define_use_chain.addUse(2, "B2", 1, "i");
 			
@@ -158,7 +159,8 @@ namespace buaac {
 					return ir.funcs[i];
 				}
 			}
-			panic("can not find this func");
+			panic("aho no this func");
+			// return Func("");
 		}
 
 		bool blockHasJump(Block& block) {
@@ -276,6 +278,115 @@ namespace buaac {
 
 #pragma endregion
 
+#pragma region FunctionInline
+
+		void inlineFuncs() {
+			ForFuncs(i, func)
+				if (!hasFuncCall(func))
+					inlineFunc(func);
+			EndFor
+		}
+		
+		void inlineFunc(Func &func) {
+			auto paras = getParas(func);
+			removeFuncPara(func, paras);
+			// is, func_name, block_index, line_number;
+			while (true) {
+				bool found;
+				string func_name;
+				int block_index, line_number;
+				tie(found, func_name, block_index, line_number) = findFuncCall(func.func_name);
+				if (!found)
+					break;
+
+				Func& fromfunc = getFuncByName(func_name);
+				fromfunc.blocks->at(block_index).instrs[line_number - 1] = Instr(Instr::NOP); // remove $fp = $sp + x;
+
+				
+				
+			}
+			
+			
+			// TODO: removeFunc(func);
+		}
+
+		void removeBeforeFuncCall(Func& func, int block_index, int line_number) {
+			
+		}
+
+		void removeAfterFuncCall(Func& func, int block_index, int line_number) {
+			
+		}
+
+		void replaceFuncCall() {
+			
+		}
+
+		void removeFuncPara(Func &func, vector<string> paras) {
+			// int index = 0;
+			ForBlocks(j, func.blocks, block)
+				if (block.label == FORMAT("return_{}", func.func_name)) {
+					block.instrs.clear();
+					continue;
+				}
+				ForInstrs(k, block.instrs, instr)
+					if (instr.type == Instr::PARA)
+						instr = Instr(Instr::NOP);
+					if (instr.type == Instr::LOAD_STA) {
+						int index = getFoundIndex(paras, instr.showas);
+						if (index == -1)
+							continue;
+						instr = Instr(Instr::MOVE, instr.target, getInlineTempName(func.func_name, index, paras[index]));
+					}
+					// if (instr.type == Instr::JUMP && instr.target == FORMAT("return_{}", func.func_name))
+					// 	instr = Instr(Instr::NOP);
+				EndFor
+			EndFor
+		}
+
+		int getFoundIndex(vector<string> paras, string x) {
+			for (int i = 0; i < paras.size(); i++) {
+				if (paras[i] == x)
+					return i;
+			}
+			return -1;
+		}
+
+		// is, func_name, block_index, line_number
+		tuple<bool, string, int, int> findFuncCall(string func_name) {
+			ForFuncs(i, func)
+			
+				ForBlocks(j, func.blocks, block)
+						ForInstrs(k, block.instrs, instr)
+							if (instr.type == Instr::CALL && instr.target == func_name) {
+								// while (!(instrs[k].type == Instr::PUSH_REG && instr.target == "$fp")) {
+								// 	k--;
+								// }
+								return make_tuple(true, func.func_name, j, k);
+							}
+						EndFor
+					EndFor
+				EndFor
+			return make_tuple(false, "", 0, 0);
+		}
+
+		vector<string> getParas(Func &func) {
+			vector<string> idents;
+			ForBlocks(j, func.blocks, block)
+				ForInstrs(k, block.instrs, instr)
+					if (instr.type == Instr::PARA) {
+						idents.push_back(instr.source_a);
+					}
+				EndFor
+			EndFor
+			return idents;
+		}
+
+		string getInlineTempName(string func_name, int index, string ident) {
+			return FORMAT("__T{}_{}_{}", func_name, index, ident);
+		}
+		
+#pragma endregion 
 
 		// FlowGraph constructFlowGraph() {
 		//
@@ -308,6 +419,8 @@ namespace buaac {
 			return flow_graph;
 		}
 
+#pragma region RegAssign
+		
 		void regAssign() {
 			ForFuncs(i, func)
 				regAssignFunc(func);
@@ -319,11 +432,21 @@ namespace buaac {
 				
 		}
 
+		bool hasDefAfter(Block &block, int block_line_number, string use) {
+			for (int i = block_line_number+1; i < block.instrs.size(); i++) {
+				if (block.instrs[i].getStoreName() == use) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
 		void regAssignFunc(Func& func) {
 			FlowGraph flow_graph = constructFlowGraphFunc(func);
 			DefineUseChain define_use_chain;
 			
 			ForBlocks(block_index, func.blocks, block)
+				
 				ForInstrs(line_number_in_block, block.instrs, instr)
 					if (instr.type == Instr::IR_SHOW)
 						continue;
@@ -333,18 +456,22 @@ namespace buaac {
 							define_use_chain.addUse(block_index, block.label, line_number_in_block, load);
 					}
 					auto use = instr.getStoreName();
-					if (needAssign(use))
+					if (needAssign(use) && !hasDefAfter(block, line_number_in_block, use))
 						define_use_chain.addDef(block_index, block.label, line_number_in_block, use);
+					instr.block_line_number = line_number_in_block;
 
 				EndFor
 			EndFor
 
 			define_use_chain.generate(flow_graph);
 			ir.func_to_ident_to_range[func.func_name] = define_use_chain.getRanges();
-			define_use_chain.printChain();
+			
+			// define_use_chain.printChain();
 			
 		}
 
+#pragma  endregion 
+		
 	};
 	
 }

@@ -612,13 +612,19 @@ namespace syntax{
 			syntaxOutput("<变量定义>");
 		}
 
-		void pushStackReg(string reg) {
-			ir.__pushStackReg(reg);
+		void pushStackReg(string reg, string func_name="", int index = -1) {
+			if (index != -1)
+				ir.appendInstr(Instr(Instr::PUSH_REG, reg, func_name, index));
+			else
+				ir.appendInstr(Instr(Instr::PUSH_REG, reg, func_name));
 			// _symbol_table.addOffset(4);
 		}
 
-		void popStackReg(string reg) {
-			ir.__popStackReg(reg);
+		void popStackReg(string reg, string func_name = "", int index = -1) {
+			if (index != -1)
+				ir.appendInstr(Instr(Instr::POP_REG, reg, func_name, index));
+			else
+				ir.appendInstr(Instr(Instr::POP_REG, reg, func_name));
 			// _symbol_table.subOffset(4);
 		}
 
@@ -729,7 +735,7 @@ namespace syntax{
 				// debugln("exprPush at {}", getLineNumber());
 				compStatement();
 				eatToken(TokenType::RBRACE);
-				ir.popStack(_symbol_table.getStackScopeBytes());
+				ir.popStack(_symbol_table.getStackScopeBytes() - para_list.size()*4);
 				// _symbol_table.clearOffset();
 				_symbol_table.popScope();
 				// debugln("pop at {}", getLineNumber());
@@ -768,7 +774,7 @@ namespace syntax{
 				// debugln("exprPush at {}", getLineNumber());
 				compStatement();
 				eatToken(TokenType::RBRACE);
-				ir.popStack(_symbol_table.getStackScopeBytes());
+				ir.popStack(_symbol_table.getStackScopeBytes() - para_list.size() * 4);
 				// _symbol_table.clearOffset();
 				_symbol_table.popScope();
 				// debugln("pop at {}", getLineNumber());
@@ -839,7 +845,7 @@ namespace syntax{
 				// ＜标识符＞
 				ident = eatToken(TokenType::IDENFR);
 				_status_paralist.push_back(Symbol(token2SymbolType(type), ident.getValue()));
-				ir.irShow(FORMAT("para {} {};", type.getValue(), ident.getValue()));
+				ir.para(type.getValue(), ident.getValue());
 				// {, ＜类型标识符＞＜标识符＞}
 				paraListGroup();
 				break;
@@ -865,7 +871,7 @@ namespace syntax{
 				// ＜标识符＞
 				ident = eatToken(TokenType::IDENFR);
 				_status_paralist.push_back(Symbol(token2SymbolType(type), ident.getValue()));
-				ir.irShow(FORMAT("para {} {};", type.getValue(), ident.getValue()));
+				ir.para(type.getValue(), ident.getValue());
 				// Group
 				paraListGroup();
 				break;
@@ -1606,9 +1612,7 @@ namespace syntax{
 			vector<SymbolType> val_para_list, excepted_para_list;
 			Symbol func_symbol;
 			
-			pushStackReg("$fp");
-
-			ir.appendInstr({ Instr::PUSH_REGPOOL });
+			
 			// pushRegPool();
 
 			// ir.appendInstr({ Instr::MINUS, "$k1", "$sp", "4"});
@@ -1618,11 +1622,15 @@ namespace syntax{
 			switch (lookTokenType()) {
 			case TokenType::IDENFR:
 				name = eatToken(TokenType::IDENFR);
+
+				pushStackReg("$fp", name.getValue());
+
+				
 				tie(_find_success, func_symbol) = _symbol_table.findSymbol(name.getValue());
 				checkFind();
 				
 				eatToken(TokenType::LPARENT);
-				val_para_list = valParaList(func_symbol.getParaList());
+				val_para_list = valParaList(name.getValue(), func_symbol.getParaList());
 				// _symbol_table.subOffset(val_para_list.size() * 4);
 				excepted_para_list = func_symbol.getParaList();
 				if (excepted_para_list != val_para_list) {
@@ -1645,9 +1653,11 @@ namespace syntax{
 				ERROR
 			}
 
+			ir.appendInstr({ Instr::PUSH_REGPOOL , int(val_para_list.size()) });
+
 			
 			// popStackReg("$k1");
-			ir.appendInstr({ Instr::PLUS, "$fp", "$sp", int(val_para_list.size() * 4) });
+			// ir.appendInstr({ Instr::PLUS, "$fp", "$sp", int(val_para_list.size() * 4) });
 
 			
 			ir.call(name.getValue());
@@ -1656,7 +1666,9 @@ namespace syntax{
 			// popRegPool();
 			ir.appendInstr({ Instr::POP_REGPOOL });
 
-			popStackReg("$fp");
+			ir.popStack(val_para_list.size() * 4);
+			
+			popStackReg("$fp", name.getValue());
 
 			// // debugln("!{}", name.getValue());
 			if (funcName2IsRet[name.getValue()]) {
@@ -1667,7 +1679,7 @@ namespace syntax{
 		}
 		vector<SymbolType> _val_para_list{};
 		// ＜值参数表＞   ::= ＜表达式＞{,＜表达式＞}｜＜空＞
-		vector<SymbolType> valParaList(vector<SymbolType> expected_symbols) {
+		vector<SymbolType> valParaList(string func_name, vector<SymbolType> expected_symbols) {
 			int index = 0;
 			vector<SymbolType> backup = _val_para_list;
 			_val_para_list.clear();
@@ -1685,7 +1697,7 @@ namespace syntax{
 				// ＜表达式＞
 				ir.exprStart();
 				tie(expr_type, expr_ans_reg) = expr();
-				pushStackReg(expr_ans_reg);
+				pushStackReg(expr_ans_reg, func_name, index);
 #ifdef STANDARD_REG_A
 				ir.appendInstr({ Instr::MOVE, "$a0", expr_ans_reg });
 #endif
@@ -1694,7 +1706,7 @@ namespace syntax{
 					error('e');
 				}
 				// {,＜表达式＞}
-				valParaListGroup(expected_symbols, index+1);
+				valParaListGroup(func_name, expected_symbols, index+1);
 				break;
 			case TokenType::RPARENT:
 				// ＜空＞
@@ -1716,7 +1728,7 @@ namespace syntax{
 			return ret;
 		}
 		// {,＜表达式＞}
-		void valParaListGroup(vector<SymbolType> expected_symbols, int index) {
+		void valParaListGroup(string func_name, vector<SymbolType> expected_symbols, int index) {
 			SymbolType expr_type;
 			string expr_ans_reg;
 			
@@ -1727,7 +1739,7 @@ namespace syntax{
 				ir.exprStart();
 				tie(expr_type, expr_ans_reg) = expr();
 				
-				pushStackReg(expr_ans_reg);
+				pushStackReg(expr_ans_reg, func_name, index);
 #ifdef STANDARD_REG_A
 				if (index < 4) {
 					ir.appendInstr({ Instr::MOVE, FORMAT("$a{}", index), expr_ans_reg });
@@ -1738,7 +1750,7 @@ namespace syntax{
 					error('e');
 				}
 				// Group
-				valParaListGroup(expected_symbols, index+1);
+				valParaListGroup(func_name, expected_symbols, index+1);
 				break;
 			case TokenType::RPARENT:
 				return;

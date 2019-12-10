@@ -132,10 +132,10 @@ namespace buaac {
 				write("pop {}B;", instr.target);
 				break;
 			case Instr::PUSH_REG:
-				write("push {};", instr.target);
+				write("push {} {} {};", instr.target, instr.source_a, instr.source_b);
 				break;
 			case Instr::POP_REG:
-				write("pop {};", instr.target);
+				write("pop {} {} {};", instr.target, instr.source_a, instr.source_b);
 				break;
 			case Instr::LOAD_GLO:
 				if (show_as) {
@@ -232,6 +232,8 @@ namespace buaac {
 			case Instr::POP_REGPOOL:
 				write("pop regpool");
 				break;
+			case Instr::PARA:
+				write("para {} {}", instr.target, instr.source_a);
 			default: ;
 			}
 		}

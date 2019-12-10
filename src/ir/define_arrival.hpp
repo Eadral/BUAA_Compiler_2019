@@ -76,8 +76,8 @@ namespace buaac {
 		}
 
 		void iterate(FlowGraph& flow_graph) {
-			for (auto i = block_names.begin(); i != block_names.end(); i++) {
-				const string& block_name = *i;
+			for (auto block_name: block_names) {
+				// const string& block_name = *i;
 
 				// in
 				auto preds = flow_graph.getPreds(block_name);
@@ -97,30 +97,30 @@ namespace buaac {
 		}
 
 		void printInOut() {
-			for (auto i = block_names.begin(); i != block_names.end(); i++) {
-				const string& block_name = *i;
+			for (auto block_name : block_names) {
+				// const string& block_name = *i;
 
 				print("Gen[{}]: ", block_name);
-				for (auto j = gen[block_name].begin(); j != gen[block_name].end(); j++) {
-					print("{}, ", *j);
+				for (auto block_name : gen[block_name]) {
+					print("{}, ", block_name);
 				}
 				println("");
 
 				print("Kill[{}]: ", block_name);
-				for (auto j = kill[block_name].begin(); j != kill[block_name].end(); j++) {
-					print("{}, ", *j);
+				for (auto block_name : kill[block_name]) {
+					print("{}, ", block_name);
 				}
 				println("");
 				
 				print("In[{}]: ", block_name);
-				for (auto j = in[block_name].begin(); j != in[block_name].end(); j++) {
-					print("{}, ", *j);
+				for (auto block_name : in[block_name]) {
+					print("{}, ", block_name);
 				}
 				println("");
 
 				print("Out[{}]: ", block_name);
-				for (auto j = out[block_name].begin(); j != out[block_name].end(); j++) {
-					print("{}, ", *j);
+				for (auto block_name : out[block_name]) {
+					print("{}, ", block_name);
 				}
 				println("");
 				println("");

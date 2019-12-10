@@ -2,16 +2,14 @@
 
 #include "../meow/core.hpp"
 #include "../ir/ir.hpp"
+#include "reg_pool.hpp"
 
 namespace buaac {
 
 // #define DO_NOT_ASSIGN_REGS
 
 	
-	class RegPool {
-	public:
-		
-	};
+	
 
 	class MIPS {
 
@@ -22,6 +20,8 @@ namespace buaac {
 
 		std::ofstream fout;
 
+		RegPool reg_pool_;
+		
 	public:
 		MIPS(IR ir): ir(ir) {
 			fout.open("mips.txt");
@@ -73,7 +73,7 @@ namespace buaac {
 		void genFuncs() {
 			auto& funcs = ir.funcs;
 			for (int i = 0; i < funcs.size(); i++) {
-				resetRegPool();
+				reg_pool_.resetRegPool();
 				genFunc(funcs[i]);
 			}
 			// main Func
@@ -83,196 +83,50 @@ namespace buaac {
 			// 	genBlock(blocks[i]);
 			// }
 		}
-
-		void genFunc(Func &func) {
-			auto& blocks = *(func.blocks);
-			for (int i = 0; i < blocks.size(); i++) {
-				genBlock(blocks[i]);
-			}
-		}
 		
-		void genBlock(Block& block) {
-			
-#ifndef DO_NOT_ASSIGN_REGS
-			assignRegs(block);
-#endif
-			genInstrs(block);
-		}
-
-		int mempool_size = 0;
-		std::map<string, int> memPool;
-
-		vector<string> globalRegs = {
-			"$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$t8", "$t9",
-			"$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7",
-			"$v1",
-			"$k1",
-// #ifndef STANDARD_REG_A
-// 			"$a1", "$a2", "$a3",
-// #endif
-		};
-
-		std::map<string, string> regPool;
-		std::map<string, bool> availReg;
-		vector<vector<string>> t_stack;
-
-		void resetRegPool() {
-			mempool_size = 0;
-			memPool.clear();
-			regPool.clear();
-			for (int i = 0; i < globalRegs.size(); i++) {
-				availReg[globalRegs[i]] = true;
-			}
-			t_stack.clear();
-		}
-
-		int allocMemPool(string id) {
-			memPool[id] = mempool_size;
-			return mempool_size++;
-		}
-
-		int getMemPool(string id) {
-			if (memPool.find(id) == memPool.end()) {
-				return allocMemPool(id);
-			}
-			return memPool[id];
-		}
-
-		string getReg() {
-			for (int i = 0; i < globalRegs.size(); i++) {
-				if (availReg[globalRegs[i]]) {
-					availReg[globalRegs[i]] = false;
-					return globalRegs[i];
-				}
-			}
-			panic("no avail reg");
-		}
-
-		bool haveAvailReg() {
-			for (int i = 0; i < globalRegs.size(); i++) {
-				if (availReg[globalRegs[i]]) {
-					return true;
-				}
-			}
-			return false;
-		}
 		
-		void allocRegPool(string id) {
-			string reg = getReg();
-			regPool[id] = reg;
-		}
-
-		string getRegPool(string id) {
-			if (regPool.find(id) == regPool.end()) {
-				if (haveAvailReg()) {
-					allocRegPool(id);
-				} else {
-					return id;
-				}
-			}
-			return regPool[id];
-		}
 
 #define REGPOOL_LOAD(ir_reg, assign_reg)	\
 		do {	\
-			auto& instr = instrs[i];	\
+			auto& instr = instrs[k];	\
 			if (starts_with(instr.ir_reg, string("__T"))) {	\
-				int loc = 4 * getMemPool(instr.ir_reg.substr(3));	\
+				int loc = 4 * reg_pool_.getMemPool(instr.ir_reg.substr(3));	\
 				instr.ir_reg = #assign_reg;	\
-				insertBefore(instrs, i, Instr(Instr::LOAD_GLO, #assign_reg, REGPOOL_START+loc));	\
+				insertBefore(instrs, k, Instr(Instr::LOAD_GLO, #assign_reg, REGPOOL_START+loc));	\
 			}	\
 		} while(0)
 
 #define REGPOOL_SAVE(ir_reg, assign_reg)	\
 		do {	\
-			auto& instr = instrs[i];	\
+			auto& instr = instrs[k];	\
 			if (starts_with(instr.ir_reg, string("__T"))) {	\
-				int loc = 4 * getMemPool(instr.ir_reg.substr(3));	\
+				int loc = 4 * reg_pool_.getMemPool(instr.ir_reg.substr(3));	\
 				instr.ir_reg = #assign_reg;	\
-				insertAfter(instrs, i, Instr(Instr::SAVE_GLO, #assign_reg, REGPOOL_START+loc));	\
+				insertAfter(instrs, k, Instr(Instr::SAVE_GLO, #assign_reg, REGPOOL_START+loc));	\
 			}	\
 		} while(0)
 
-#define NOT_ASSIGN(ir_reg) starts_with(instrs[i].ir_reg, string("__T"))
+#define NOT_ASSIGN(ir_reg) starts_with(instrs[k].ir_reg, string("__T"))
 
 
 #define assignReg(ir_reg)	\
 		do {	\
 			if (starts_with(ir_reg, string("__T"))) {	\
-				ir_reg = getRegPool(ir_reg);	\
+				ir_reg = reg_pool_.getRegPool(ir_reg);	\
 			} \
 		} while(0)
 	
 		
-		void assignRegs(Block& block) {
-			auto& instrs = block.instrs;
-			for (int i = 0; i < instrs.size(); i++) {
-				
-				// auto& instr = instrs[i];
-				
-				assignReg(instrs[i].target);
-				assignReg(instrs[i].source_a);
-				assignReg(instrs[i].source_b);
-				
-				if (NOT_ASSIGN(target)) {
-					if (instrs[i].targetIsLoad())
-						REGPOOL_LOAD(target, $a0);
-					if (instrs[i].targetIsSave())
-						REGPOOL_SAVE(target, $a0);
-				}
-				if (NOT_ASSIGN(source_a)) {
-					if (instrs[i].sourceAIsLoad())
-						REGPOOL_LOAD(source_a, $a1);
-					if (instrs[i].sourceAIsSave())
-						REGPOOL_SAVE(source_a, $a1);
-				}
-				if (NOT_ASSIGN(source_b)) {
-					if (instrs[i].sourceBIsLoad())
-						REGPOOL_LOAD(source_b, $a2);
-					if (instrs[i].sourceBIsSave())
-						REGPOOL_SAVE(source_b, $a2);
-				}
-				
-				switch (instrs[i].type) {
-
-				case Instr::PUSH_REGPOOL:
-					ts.clear();
-					for (int i = 0; i < globalRegs.size(); i++) {
-						if (availReg[globalRegs[i]] == false) {
-							ts.push_back(globalRegs[i]);
-						}
-					}
-#ifdef STANDARD_REG_A
-					ts.push_back("$a0");
-					ts.push_back("$a1");
-					ts.push_back("$a2");
-					ts.push_back("$a3");
-#endif
-					t_stack.push_back(ts);
-					for (int j = 0; j < ts.size(); j++) {
-						insertAfter(instrs, i, { Instr::PUSH_REG, ts[j] });
-					}
-					break;
-				case Instr::POP_REGPOOL:
-					ts = t_stack.back();
-					t_stack.pop_back();
-					for (int j = 0; j < ts.size(); j++) {
-						insertBefore(instrs, i, { Instr::POP_REG, ts[j] });
-					}
-					break;
-				default: ;
-				}
-				
-				
-			}
-		}
+		// void assignRegs(Block& block) {
+		// 	
+		// }
 
 		vector<string> ts;
 		vector<int> pushPoolSize;
 		
-		void pushRegPool() {
-			pushPoolSize.push_back(mempool_size);
-			for (int i = 0; i < mempool_size; i++) {
+		void pushRegPool(int size) {
+			pushPoolSize.push_back(size);
+			for (int i = 0; i < size; i++) {
 				write("lw {}, {}($gp)", "$k0", REGPOOL_START + 4 * i);
 				write("sw {}, ($sp)", "$k0");
 				write("addi $sp, $sp, -4");
@@ -310,6 +164,97 @@ namespace buaac {
 			return isdigit(source[0]) || source[0] == '-';
 		}
 
+		void assignRegister(string &reg) {
+			if (starts_with(reg, string("__T"))) {
+				reg = reg_pool_.getRegPool(reg);
+			}
+		}
+
+		void genFunc(Func& func) {
+
+			ForBlocks(j, func.blocks, block)
+				ForInstrs(k, block.instrs, instr)
+
+				if (instr.type == Instr::IR_SHOW)
+					continue;
+				// for (int i = 0; i < instrs.size(); i++) {
+
+					// auto& instr = instrs[i];
+					// if (starts_with(instrs[k].target, string("__T"))) {
+					// 	instrs[k].target = reg_pool_.getRegPool(instrs[k].target);
+					// }
+				if (instr.block_line_number != -1) {
+					reg_pool_.checkAndRelease(ir.func_to_ident_to_range[func.func_name], j, instr.block_line_number);
+				}
+				assignRegister(instrs[k].target);
+				assignRegister(instrs[k].source_a);
+				assignRegister(instrs[k].source_b);
+
+				if (NOT_ASSIGN(target)) {
+					if (instrs[k].targetIsLoad())
+						REGPOOL_LOAD(target, $a0);
+					if (instrs[k].targetIsSave())
+						REGPOOL_SAVE(target, $a0);
+				}
+				if (NOT_ASSIGN(source_a)) {
+					if (instrs[k].sourceAIsLoad())
+						REGPOOL_LOAD(source_a, $a1);
+					if (instrs[k].sourceAIsSave())
+						REGPOOL_SAVE(source_a, $a1);
+				}
+				if (NOT_ASSIGN(source_b)) {
+					if (instrs[k].sourceBIsLoad())
+						REGPOOL_LOAD(source_b, $a2);
+					if (instrs[k].sourceBIsSave())
+						REGPOOL_SAVE(source_b, $a2);
+				}
+
+				if (instrs[k].type == Instr::PUSH_REGPOOL) {
+
+					// case Instr::PUSH_REGPOOL:
+					int push_number = a2i(instr.target);
+
+					ts.clear();
+					for (int x = 0; x < reg_pool_.globalRegs.size(); x++) {
+						if (reg_pool_.availReg[reg_pool_.globalRegs[x]] == false) {
+							ts.push_back(reg_pool_.globalRegs[x]);
+						}
+					}
+#ifdef STANDARD_REG_A
+					ts.push_back("$a0");
+					ts.push_back("$a1");
+					ts.push_back("$a2");
+					ts.push_back("$a3");
+#endif
+					reg_pool_.t_stack.push_back(ts);
+					for (int y = 0; y < ts.size(); y++) {
+						insertAfter(instrs, k, { Instr::PUSH_REG, ts[y] });
+						push_number++;
+					}
+					instrs[k].source_b = i2a(reg_pool_.mempool_size);
+					push_number += reg_pool_.mempool_size;
+					instrs.insert(instrs.begin() + k + 1 + ts.size(), Instr(Instr::PLUS, "$fp", "$sp", int(push_number*4)));
+				}
+				else if (instrs[k].type == Instr::POP_REGPOOL) {
+					ts = reg_pool_.t_stack.back();
+					reg_pool_.t_stack.pop_back();
+					for (int y = 0; y < ts.size(); y++) {
+						insertBefore(instrs, k, { Instr::POP_REG, ts[y] });
+					}
+				}
+
+				EndFor
+			// }
+
+			
+			genInstrs(block);
+
+
+			EndFor
+
+
+		}
+		
 		void genInstr(Instr instr) {
 			switch (instr.type) {
 
@@ -598,7 +543,7 @@ namespace buaac {
 				write("li {}, {}", instr.target, instr.source_a);
 				break;
 			case Instr::PUSH_REGPOOL:
-				pushRegPool();
+				pushRegPool(a2i(instr.source_b));
 				break;
 			case Instr::POP_REGPOOL:
 				popRegPool();

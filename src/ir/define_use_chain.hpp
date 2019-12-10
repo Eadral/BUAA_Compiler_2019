@@ -190,6 +190,8 @@ namespace buaac {
 		}
 
 		void generate(FlowGraph &flow_graph) {
+			reAddDef();
+
 			define_arrival_.generate(flow_graph);
 			genWebs();
 			genRanges();
@@ -197,7 +199,6 @@ namespace buaac {
 
 
 		void printChain() {
-			reAddDef();
 			define_arrival_.printInOut();
 
 			for (auto i = idents.begin(); i != idents.end(); i++) {
