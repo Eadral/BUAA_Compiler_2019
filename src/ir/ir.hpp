@@ -503,6 +503,67 @@ namespace buaac {
 
 		
 	};
+
+	class InstrIterator {
+
+		Func& func;
+		int block_index;
+		int line_number;
+
+	public:
+
+		InstrIterator(Func& func) : func(func), block_index(0), line_number(0) {}
+		InstrIterator(Func& func, int block_index, int line_number) : func(func), block_index(block_index), line_number(line_number) {}
+
+		int getInstrIndex() {
+			return line_number;
+		}
+
+		Instr& getInstr() {
+			return func.blocks->at(block_index).instrs[line_number];
+		}
+
+		// Instr& operator->() {
+		// 	return getInstr();
+		// }
+
+		
+
+		int getBlockIndex() {
+			return block_index;
+		}
+
+		Block& getBlock() {
+			return func.blocks->at(block_index);
+		}
+
+		bool next() {
+			line_number++;
+			if (line_number >= getBlock().instrs.size()) {
+				block_index++;
+				line_number = 0;
+				if (block_index >= func.blocks->size()) {
+					panic("cross the border");
+				}
+			}
+			return true;
+		}
+
+		bool previous() {
+			line_number--;
+			if (line_number < 0) {
+				block_index--;
+				line_number = getBlock().instrs.size() - 1;
+				if (block_index < 0) {
+					panic("cross the border");
+				}
+			}
+			return true;
+		}
+
+		
+
+	};
 	
 }
 
@@ -511,4 +572,6 @@ namespace buaac {
 #define ForBlocks(j, _blocks, block) for (int j = 0; j < _blocks->size(); j++) { auto& blocks = _blocks; auto& block = _blocks->at(j);
 
 #define ForInstrs(k, _instrs, instr) for (int k = 0; k < _instrs.size(); k++) { auto& instrs = _instrs; auto& instr = _instrs[k]; 
+
+
 

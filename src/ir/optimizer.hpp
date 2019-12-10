@@ -25,9 +25,9 @@ namespace buaac {
 			removeRa(getFuncByName("main"));
 			removeUselessRa();
 
-			inlineFuncs();
+			// inlineFuncs();
 			
-			// constantProgpagation();
+			constantProgpagation();
 			// removeZeroLoad();
 			// regAssign();
 			
@@ -291,17 +291,21 @@ namespace buaac {
 			auto paras = getParas(func);
 			removeFuncPara(func, paras);
 			// is, func_name, block_index, line_number;
-			while (true) {
+			// TODO: while (true)
+			{
 				bool found;
-				string func_name;
+				string fromfunc_name;
 				int block_index, line_number;
-				tie(found, func_name, block_index, line_number) = findFuncCall(func.func_name);
-				if (!found)
-					break;
+				tie(found, fromfunc_name, block_index, line_number) = findFuncCall(func.func_name);
+				// if (!found)
+				// 	break;
 
-				Func& fromfunc = getFuncByName(func_name);
-				fromfunc.blocks->at(block_index).instrs[line_number - 1] = Instr(Instr::NOP); // remove $fp = $sp + x;
+				Func& fromfunc = getFuncByName(fromfunc_name);
 
+				
+				removeBeforeFuncCall(func.func_name, fromfunc, block_index, line_number);
+				removeAfterFuncCall(func.func_name, fromfunc, block_index, line_number);
+				replaceFuncCall(func.func_name, fromfunc, block_index, line_number);
 				
 				
 			}
@@ -310,16 +314,22 @@ namespace buaac {
 			// TODO: removeFunc(func);
 		}
 
-		void removeBeforeFuncCall(Func& func, int block_index, int line_number) {
+		
+
+		void removeBeforeFuncCall(string inline_func_name, Func& fromfunc, int block_index, int line_number) {
+			auto i = InstrIterator(fromfunc, block_index, line_number);
+			while (!(i.getInstr().type == Instr::PUSH_REG && i.getInstr().source_a == inline_func_name)) {
+				i.previous();
+			}
 			
 		}
 
-		void removeAfterFuncCall(Func& func, int block_index, int line_number) {
+		void removeAfterFuncCall(string inline_func_name, Func& fromfunc, int block_index, int line_number) {
 			
 		}
 
-		void replaceFuncCall() {
-			
+		void replaceFuncCall(string inline_func_name, Func& fromfunc, int block_index, int line_number) {
+			// fromfunc.blocks->at(block_index).instrs[line_number - 1] = Instr(Instr::NOP); // remove $fp = $sp + x;
 		}
 
 		void removeFuncPara(Func &func, vector<string> paras) {
