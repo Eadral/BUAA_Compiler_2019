@@ -39,6 +39,11 @@ namespace meow {
 		return valid_ && ends_with_;
 	}
 
+	// bool starts_with(const std::string big, const char* small) {
+	// 	starts_with(big, std::string(small));
+	// }
+	
+
 }
 
 
@@ -106,5 +111,12 @@ set<T> setSub(const set<T> &a, const set<T> &b) {
 	}
 	return ans;
 }
+
+
+// TODO: move these
+string getGlobalName(string ident) {
+	return FORMAT("g_{}", ident);
+}
+
 
 #endif

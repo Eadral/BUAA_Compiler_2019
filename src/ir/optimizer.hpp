@@ -24,12 +24,13 @@ namespace buaac {
 		void optimize() {
 			removeRa(getFuncByName("main"));
 			removeUselessRa();
-			constantProgpagation();
-			removeZeroLoad();
-			FlowGraph flow_graph = constructFlowGraph();
+			// constantProgpagation();
+			// removeZeroLoad();
+			// FlowGraph flow_graph = constructFlowGraph();
 			// flow_graph.printGraph();
-
-			unitTestDefineUseChain();
+			regAssign();
+			
+			// unitTestDefineUseChain();
 		}
 
 		void unitTestDefineUseChain() {
@@ -44,30 +45,30 @@ namespace buaac {
 			flow_graph.addEdge("B6", "B5");
 
 			DefineUseChain define_use_chain;
-			define_use_chain.addDef("B1", 1, "a");
-			define_use_chain.addDef("B1", 2, "i");
+			define_use_chain.addDef(1, "B1", 1, "a");
+			define_use_chain.addDef(1, "B1", 2, "i");
 			
-			define_use_chain.addUse("B2", 1, "i");
+			define_use_chain.addUse(2, "B2", 1, "i");
 			
-			define_use_chain.addDef("B3", 1, "a");
-			define_use_chain.addUse("B3", 1, "a");
-			define_use_chain.addUse("B3", 1, "i");
+			define_use_chain.addDef(3, "B3", 1, "a");
+			define_use_chain.addUse(3, "B3", 1, "a");
+			define_use_chain.addUse(3, "B3", 1, "i");
 
-			define_use_chain.addDef("B3", 2, "i");
-			define_use_chain.addUse("B3", 2, "i");
+			define_use_chain.addDef(3, "B3", 2, "i");
+			define_use_chain.addUse(3, "B3", 2, "i");
 
-			define_use_chain.addDef("B4", 1, "b");
-			define_use_chain.addUse("B4", 1, "a");
-			define_use_chain.addDef("B4", 2, "i");
+			define_use_chain.addDef(4, "B4", 1, "b");
+			define_use_chain.addUse(4, "B4", 1, "a");
+			define_use_chain.addDef(4, "B4", 2, "i");
 			
-			define_use_chain.addUse("B5", 1, "i");
+			define_use_chain.addUse(5, "B5", 1, "i");
 			
-			define_use_chain.addDef("B6", 1, "b");
-			define_use_chain.addUse("B6", 1, "b");
-			define_use_chain.addUse("B6", 1, "i");
+			define_use_chain.addDef(6, "B6", 1, "b");
+			define_use_chain.addUse(6, "B6", 1, "b");
+			define_use_chain.addUse(6, "B6", 1, "i");
 
-			define_use_chain.addDef("B6", 2, "i");
-			define_use_chain.addUse("B6", 2, "i");
+			define_use_chain.addDef(6, "B6", 2, "i");
+			define_use_chain.addUse(6, "B6", 2, "i");
 
 			
 			define_use_chain.generate(flow_graph);
@@ -111,12 +112,6 @@ namespace buaac {
 		}
 		
 #pragma region Utils
-
-#define ForFuncs(i, func)	 for (int i = 0; i < ir.funcs.size(); i++) { auto& funcs = ir.funcs; auto& func = ir.funcs.at(i);
-
-#define ForBlocks(j, _blocks, block) for (int j = 0; j < _blocks->size(); j++) { auto& blocks = _blocks; auto& block = _blocks->at(j);
-
-#define ForInstrs(k, _instrs, instr) for (int k = 0; k < _instrs.size(); k++) { auto& instrs = _instrs; auto& instr = _instrs[k]; 
 
 #define EndFor }
 		
@@ -213,8 +208,8 @@ namespace buaac {
 				ForBlocks(j, func.blocks, block)
 					constProgpaBlock(block);
 					
-				}
-			}
+				EndFor
+			EndFor
 		}
 
 		void constProgpaBlock(Block& block) {
@@ -222,7 +217,7 @@ namespace buaac {
 
 			ForInstrs(i, block.instrs, instr)
 				interpreter.eval(instr);
-			}
+			EndFor
 		}
 
 		void removeZeroLoad() {
@@ -238,7 +233,7 @@ namespace buaac {
 					
 
 				}
-			}
+			EndFor
 			
 		}
 		std::map<string, int> load_cnt;
@@ -282,30 +277,74 @@ namespace buaac {
 #pragma endregion
 
 
-		FlowGraph constructFlowGraph() {
+		// FlowGraph constructFlowGraph() {
+		//
+		// 	ForFuncs(i, func)
+		// 		
+		// 		// if (func.func_name == "main") {
+		// 		// 	flow_graph.addEdge(flow_graph.entry, func.blocks->at(0).label);
+		// 		// 	flow_graph.addEdge(func.blocks->back().label, flow_graph.exit);
+		// 		// }
+		// 	EndFor
+		// 	return flow_graph;
+		// }
+
+		FlowGraph constructFlowGraphFunc(Func &func) {
 			FlowGraph flow_graph;
 
-			ForFuncs(i, func)
-				flow_graph.addEntry(func.func_name);
-				ForBlocks(j, func.blocks, block)
-					if (j + 1 < blocks->size()) {
-						Instr jump_instr = getJumpInstr(block);
-						if (jump_instr.type != Instr::NOP && jump_instr.type != Instr::CALL) {
-							flow_graph.addEdge(block.label, jump_instr.getJumpTarget());
-						}
-						if (jump_instr.type != Instr::JUMP) {
-							flow_graph.addEdge(blocks->at(j).label, blocks->at(j + 1).label);
-						}
+			flow_graph.addEntry(func.func_name);
+			ForBlocks(j, func.blocks, block)
+				if (j + 1 < blocks->size()) {
+					Instr jump_instr = getJumpInstr(block);
+					if (jump_instr.type != Instr::NOP && jump_instr.type != Instr::CALL) {
+						flow_graph.addEdge(block.label, jump_instr.getJumpTarget());
 					}
-				EndFor
-				// if (func.func_name == "main") {
-				// 	flow_graph.addEdge(flow_graph.entry, func.blocks->at(0).label);
-				// 	flow_graph.addEdge(func.blocks->back().label, flow_graph.exit);
-				// }
+					if (jump_instr.type != Instr::JUMP) {
+						flow_graph.addEdge(blocks->at(j).label, blocks->at(j + 1).label);
+					}
+				}
 			EndFor
+
 			return flow_graph;
 		}
-		
+
+		void regAssign() {
+			ForFuncs(i, func)
+				regAssignFunc(func);
+			EndFor
+		}
+
+		bool needAssign(string reg) {
+			return !reg.empty() && !starts_with(reg, string("$"));
+				
+		}
+
+		void regAssignFunc(Func& func) {
+			FlowGraph flow_graph = constructFlowGraphFunc(func);
+			DefineUseChain define_use_chain;
+			
+			ForBlocks(block_index, func.blocks, block)
+				ForInstrs(line_number_in_block, block.instrs, instr)
+					if (instr.type == Instr::IR_SHOW)
+						continue;
+					auto loads = instr.getLoadName();
+					for (auto load : loads) {
+						if (needAssign(load))
+							define_use_chain.addUse(block_index, block.label, line_number_in_block, load);
+					}
+					auto use = instr.getStoreName();
+					if (needAssign(use))
+						define_use_chain.addDef(block_index, block.label, line_number_in_block, use);
+
+				EndFor
+			EndFor
+
+			define_use_chain.generate(flow_graph);
+			ir.func_to_ident_to_range[func.func_name] = define_use_chain.getRanges();
+			define_use_chain.printChain();
+			
+		}
+
 	};
 	
 }

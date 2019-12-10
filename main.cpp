@@ -36,6 +36,10 @@ int main() {
 	
 
 	Optimizer optimizer(ir);
+
+	IrGen irgen_before(ir);
+	irgen_before.output("ir_before.txt");
+	
 	optimizer.optimize();
 	IR optimized_ir = optimizer.getIR();
 

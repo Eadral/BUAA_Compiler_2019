@@ -16,19 +16,19 @@ namespace buaac {
 			
 		}
 
-		auto& getIn(string block_name) {
+		set<string>& getIn(string block_name) {
 			return in[block_name];
 		}
 
-		auto& getOut(string block_name) {
+		set<string>& getOut(string block_name) {
 			return out[block_name];
 		}
 
-		auto& getGen(string block_name) {
+		set<string>& getGen(string block_name) {
 			return gen[block_name];
 		}
 
-		auto& getKill(string block_name) {
+		set<string>& getKill(string block_name) {
 			return kill[block_name];
 		}
 

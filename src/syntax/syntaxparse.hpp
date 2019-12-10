@@ -538,6 +538,8 @@ namespace syntax{
 			syntaxOutput("<变量说明>");
 		}
 
+		
+		
 		SymbolType _status_vardef_type;
 		string _status_vardef_type_str;
 		//＜变量定义＞ ::= ＜类型标识符＞
@@ -1113,10 +1115,13 @@ namespace syntax{
 
 						if (_symbol_table.isGlobal(token.getValue())) {
 							ir.exprPushStackArrGlo(_symbol_table.getGlobalBytesByIdent(token.getValue()), expr_ans);
+							ir.instrShowAs(getGlobalName(token.getValue()));
+
 						} else {
 							ir.exprPushStackArrSta(_symbol_table.getStackBytesByIdent(token.getValue()), expr_ans);
+							ir.instrShowAs(token.getValue());
+
 						}
-						ir.instrShowAs(token.getValue());
 						
 						ir.instrNotShow();
 						
@@ -1260,7 +1265,7 @@ namespace syntax{
 		void assign(string ident, string ans) {
 			if (_symbol_table.isGlobal(ident)) {
 				ir.appendInstr(Instr(Instr::SAVE_GLO, ans, _symbol_table.getGlobalBytesByIdent(ident)));
-				ir.instrShowAs(ident);
+				ir.instrShowAs(getGlobalName(ident));
 			} else {
 				ir.appendInstr(Instr(Instr::SAVE_STA, ans, _symbol_table.getStackBytesByIdent(ident)));
 				ir.instrShowAs(ident);
@@ -1312,10 +1317,12 @@ namespace syntax{
 
 					if (_symbol_table.isGlobal(ident.getValue())) {
 						ir.appendInstr({ Instr::SAVE_ARR_GLO, expr_ans_rhs, _symbol_table.getGlobalBytesByIdent(ident.getValue()), expr_ans_lhs });
+						ir.instrShowAs(getGlobalName(ident.getValue()));
+
 					} else {
 						ir.appendInstr({ Instr::SAVE_ARR_STA, expr_ans_rhs, _symbol_table.getStackBytesByIdent(ident.getValue()), expr_ans_lhs });
+						ir.instrShowAs(ident.getValue());
 					}
-					ir.instrShowAs(ident.getValue());
 					
 					break;
 				default:
@@ -1798,10 +1805,10 @@ namespace syntax{
 					if (symbol.isGlobal()) {
 						if (symbol.getType().type_ == SymbolType::INT) {
 							ir.appendInstr({ Instr::SCAN_GLOBAL_INT, _symbol_table.getGlobalBytesByIdent(symbol.getIdent()) });
-							ir.instrShowAs(symbol.getIdent());
+							ir.instrShowAs(getGlobalName(symbol.getIdent()));
 						} else if (symbol.getType().type_ == SymbolType::CHAR) {
 							ir.appendInstr({ Instr::SCAN_GLOBAL_CHAR, _symbol_table.getGlobalBytesByIdent(symbol.getIdent()) });
-							ir.instrShowAs(symbol.getIdent());
+							ir.instrShowAs(getGlobalName(symbol.getIdent()));
 						}
 					}
 					else {

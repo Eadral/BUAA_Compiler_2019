@@ -5,6 +5,7 @@
 #include "block.hpp"
 #include "func.hpp"
 #include <memory>
+#include "var_range.hpp"
 
 // #define POOLSIZE 30
 
@@ -16,6 +17,7 @@ namespace buaac {
 	class IR {
 	public:
 
+		map<string, map<string, VarRange>> func_to_ident_to_range;
 
 		vector<GlobalDefine> global_defines;
 		vector<Func> funcs{};
@@ -286,7 +288,7 @@ namespace buaac {
 		void exprPushGlobalVar(string ident, int bytes) {
 			auto t = newTemp();
 			appendInstr(Instr(Instr::LOAD_GLO, t, bytes));
-			instrShowAs(ident);	
+			instrShowAs(getGlobalName(ident));	
 			obj_stack.push_back(t);
 		}
 
@@ -499,4 +501,10 @@ namespace buaac {
 	};
 	
 }
+
+#define ForFuncs(i, func)	 for (int i = 0; i < ir.funcs.size(); i++) { auto& funcs = ir.funcs; auto& func = ir.funcs.at(i);
+
+#define ForBlocks(j, _blocks, block) for (int j = 0; j < _blocks->size(); j++) { auto& blocks = _blocks; auto& block = _blocks->at(j);
+
+#define ForInstrs(k, _instrs, instr) for (int k = 0; k < _instrs.size(); k++) { auto& instrs = _instrs; auto& instr = _instrs[k]; 
 

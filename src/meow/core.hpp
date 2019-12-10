@@ -60,6 +60,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstdint>
 #include <string>
 #include <array>
 #include <memory>
