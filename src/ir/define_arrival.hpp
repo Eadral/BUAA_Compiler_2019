@@ -32,6 +32,10 @@ namespace buaac {
 			return kill[block_name];
 		}
 
+		void addName(string block_name) {
+			block_names.insert(block_name);
+		}
+		
 		void addGen(string block_name, string define_name) {
 			block_names.insert(block_name);
 			gen[block_name].insert(define_name);

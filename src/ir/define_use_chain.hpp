@@ -257,6 +257,7 @@ namespace buaac {
 			Node new_node{ block_index, block_name, line_number };
 			
 			ident_to_uses[ident].insert(new_node);
+			define_arrival_.addName(block_name);
 		}
 
 

@@ -27,14 +27,14 @@ namespace buaac {
 
 			removeFuncsVars();
 			inlineFuncs();
-			// inlineFuncsNoVar();
 
-			
+			blockMerge();
 			//
 			constantProgpagation();
-
+			copyPropagation();
 			
 			removeZeroLoad();
+			removeZeroLoadGlobal();
 			regAssign();
 			
 		}
@@ -235,8 +235,35 @@ namespace buaac {
 					auto& blocks = func.blocks;
 					auto& block = func.blocks->at(j);
 					
-						// TODO: remove this jump
-						removeZeroLoadInBlock(block);
+					for (int i = block.instrs.size() - 1; i >= 0; i--) {
+						auto& instr = block.instrs.at(i);
+
+						if (!blockHasJump(block)) {
+							// TODO: change to down jump
+							// TODO: remove this
+							auto save_name = instr.getStoreName();
+							if (!save_name.empty()
+								&& !starts_with(save_name, string("$"))
+								&& !starts_with(save_name, string("__G"))
+								&& !instr.doNotDelDead()
+								&& load_cnt.find(save_name) == load_cnt.end()) {
+								instr.type = Instr::NOP;
+								continue;
+							}
+						}
+
+						auto load_names = instr.getLoadName();
+						if (instr.isMemorySave()) {
+							load_names.push_back(instr.target);
+						}
+						for (int j = 0; j < load_names.size(); j++) {
+							auto& name = load_names[j];
+							if (load_cnt.find(name) == load_cnt.end()) {
+								load_cnt[name] = 1;
+							}
+						}
+
+					}
 
 					
 
@@ -246,41 +273,47 @@ namespace buaac {
 		}
 		std::map<string, int> load_cnt;
 
+		void removeZeroLoadGlobal() {
+			ForFuncs(i, func)
+				removeZeroLoadFunc(func);
+			EndFor
+		}
 
-		void removeZeroLoadInBlock(Block& block) {
-	
-			for (int i = block.instrs.size()-1; i >= 0; i--) {
-				auto& instr = block.instrs.at(i);
+		void removeZeroLoadFunc(Func& func) {
+			map<string, int> load_cnt;
 
-				if (!blockHasJump(block)) {
-					// TODO: change to down jump
-					// TODO: remove this
+			ForBlocks(j, func.blocks, block)
+				ForInstrs(k, block.instrs, instr)
+					auto loads = instr.getLoadName();
+					for (auto load : loads) {
+						load_cnt[load]++;
+					}
+				EndFor
+			EndFor
+
+			ForBlocks(j, func.blocks, block)
+				ForInstrs(k, block.instrs, instr)
 					auto save_name = instr.getStoreName();
 					if (!save_name.empty()
 						&& !starts_with(save_name, string("$"))
 						&& !starts_with(save_name, string("__G"))
-						&& !instr.doNotDelDead()
+						// && !instr.doNotDelDead()
 						&& load_cnt.find(save_name) == load_cnt.end()) {
 						instr.type = Instr::NOP;
 						continue;
 					}
-				}
-				
-				auto load_names = instr.getLoadName();
-				if (instr.isMemorySave()) {
-					load_names.push_back(instr.target);
-				}
-				for (int j = 0; j < load_names.size(); j++) {
-					auto& name = load_names[j];
-					if (load_cnt.find(name) == load_cnt.end()) {
-						load_cnt[name] = 1;
-					}
-				}
-				
-			}
-
-	
+				EndFor
+			EndFor
+			
 		}
+		
+		//
+		// void removeZeroLoadInBlock(Block& block) {
+		//
+		// 	
+		//
+		//
+		// }
 
 #pragma endregion
 
@@ -683,6 +716,168 @@ namespace buaac {
 		}
 
 #pragma  endregion 
+
+		void copyPropagation() {
+			ForFuncs(i, func)
+				copyPropagationFunc(func);
+
+			EndFor
+		}
+
+		void copyPropagationFunc(Func &func) {
+			
+			FlowGraph flow_graph = constructFlowGraphFunc(func);
+
+			ForBlocks(j, func.blocks, block)
+				map<string, string> copy;
+
+				ForInstrs(k, block.instrs, instr)
+
+					if (instr.targetIsLoad() && found(copy, instr.target)) {
+						instr.target = copy[instr.target];
+					}
+					if (instr.sourceAIsLoad() && found(copy, instr.source_a)) {
+						instr.source_a = copy[instr.source_a];
+					}
+					if (instr.sourceBIsLoad() && found(copy, instr.source_b)) {
+						instr.source_b = copy[instr.source_b];
+					}
+			
+					if (instr.type == Instr::MOVE 
+						&& starts_with(instr.source_a, string("__T")) 
+						&& !starts_with(instr.source_a, string("$"))
+						&& noSaveAfter(instr.source_a, block, k)
+						)
+
+					{
+						copy[instr.target] = instr.source_a;
+					}
+					
+				EndFor
+			EndFor
+
+			
+		}
+
+		bool noSaveAfter(string save_name, Block &block, int line_number) {
+			for (int i = line_number; i < block.instrs.size(); i++) {
+				auto& instr = block.instrs.at(i);
+				if (instr.getStoreName() == save_name) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+#pragma region BlockMerge
+
+		void blockMerge() {
+			blockMergeEmpty();
+			blockMergeJump();
+			blockMergeSimple();
+		}
+
+		
+		void blockMergeEmpty() {
+			ForFuncs(i, func)
+				blockMergeEmptyFunc(func);
+			EndFor
+		}
+
+		void blockMergeEmptyFunc(Func &func) {
+			ForBlocks(j, func.blocks, block)
+				if (block.instrs.size() == 0 && j < blocks->size()-1) {
+					changeJumpInFunc(func, blocks->at(j).label, blocks->at(j + 1).label);
+					blocks->erase(blocks->begin() + j);
+					j--;
+				}
+			EndFor
+		}
+
+		void changeJumpInFunc(Func &func, string from, string to) {
+			ForBlocks(j, func.blocks, block)
+				ForInstrs(k, block.instrs, instr)
+					if (instr.isJump() && instr.getJumpTarget() == from) {
+						instr.changeJumpTarget(to);
+					}
+				EndFor
+			EndFor
+		}
+		
+		void blockMergeJump() {
+			ForFuncs(i, func)
+				blockMergeJumpFunc(func);
+			EndFor
+		}
+
+		void blockMergeJumpFunc(Func &func) {
+
+			bool flag;
+			do {
+				flag = false;
+				FlowGraph flow_graph = constructFlowGraphFunc(func);
+
+				ForBlocks(j, func.blocks, block)
+					if (block.instrs.size() == 0 || j >= blocks->size() - 2)
+						continue;
+				auto& back_instr = block.instrs.back();
+				if (!(back_instr.type == Instr::JUMP || back_instr.type == Instr::RETURN_END)) {
+					continue;
+				}
+				auto next_label = blocks->at(j + 1).label;
+				if (back_instr.getJumpTarget() == next_label && !hasMultiEntry(flow_graph, next_label)) {
+					back_instr = Instr(Instr::NOP);
+					ForInstrs(k, blocks->at(j + 1).instrs, instr)
+						blocks->at(j).instrs.push_back(instr);
+					EndFor
+					blocks->erase(blocks->begin() + j + 1);
+					flag = true;
+				}
+				EndFor
+				
+			} while (flag);
+			
+			
+		}
+
+		bool hasMultiEntry(FlowGraph &flow_graph, string label) {
+			return flow_graph.getPreds(label).size() > 1;
+		}
+
+		void blockMergeSimple() {
+			ForFuncs(i, func)
+				blockMergeSimpleFunc(func);
+			EndFor
+		}
+
+		void blockMergeSimpleFunc(Func &func) {
+			bool flag;
+			do {
+				flag = false;
+				FlowGraph flow_graph = constructFlowGraphFunc(func);
+
+				ForBlocks(j, func.blocks, block)
+					if (block.instrs.size() == 0 || j >= blocks->size() - 2)
+						continue;
+				auto& back_instr = block.instrs.back();
+				if (back_instr.isJump())
+					continue;
+				// nojump
+				auto next_label = blocks->at(j + 1).label;
+				if (!hasMultiEntry(flow_graph, next_label)) {
+					ForInstrs(k, blocks->at(j + 1).instrs, instr)
+						blocks->at(j).instrs.push_back(instr);
+					EndFor
+					blocks->erase(blocks->begin() + j + 1);
+					flag = true;
+				}
+				EndFor
+			} while (flag);
+		
+		}
+		
+#pragma endregion 
+		
 		
 	};
 	
