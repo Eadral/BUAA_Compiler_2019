@@ -49,7 +49,9 @@ namespace buaac {
 			if (instr.has_ans) {
 				ans = instr.getAns();
 				setVar(store_name, ans);
-			} 
+			} else {
+				clearVar(store_name);
+			}
 			// }
 		}
 
@@ -57,6 +59,10 @@ namespace buaac {
 			var[name] = value;
 		}
 
+		void clearVar(string name) {
+			var.erase(name);
+		}
+		
 		bool hasVar(string name) {
 			return var.find(name) != var.end();
 		}

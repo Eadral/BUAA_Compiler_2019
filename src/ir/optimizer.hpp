@@ -32,6 +32,8 @@ namespace buaac {
 			
 			//
 			constantProgpagation();
+
+			
 			removeZeroLoad();
 			regAssign();
 			
@@ -292,7 +294,7 @@ namespace buaac {
 				removeUselessRa();
 				flag = false;
 				ForFuncs(i, func)
-					if (!hasLocalArr(func) && !hasFuncCall(func) && func.func_name != "main") {
+					if (!hasLocalArr(func) && !hasFuncCall(func) &&!hasLoop(func) && func.func_name != "main") {
 						flag = true;
 						inlineFunc(func);
 						// remove
@@ -320,6 +322,17 @@ namespace buaac {
 				EndFor
 			} while (flag);
 
+		}
+
+		bool hasLoop(Func& func) {
+			ForBlocks(j, func.blocks, block)
+				if (starts_with(block.label, string("for")) 
+					|| starts_with(block.label, string("while"))
+					|| starts_with(block.label, string("do"))
+					)
+					return true;
+			EndFor
+			return false;
 		}
 
 		bool hasLocalArr(Func& func) {
@@ -570,7 +583,7 @@ namespace buaac {
 		}
 
 		string getInlineTempName(string func_name, int index, string ident) {
-			return FORMAT("__T{}_{}_{}", func_name, index, ident);
+			return FORMAT("__T0{}_{}_{}", func_name, index, ident);
 		}
 
 		string getVarTempName(string ident) {

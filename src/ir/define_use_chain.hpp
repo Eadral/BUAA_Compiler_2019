@@ -280,7 +280,6 @@ namespace buaac {
 		}
 
 		void fixChainLoop(Chain &chain, vector<VarRange> &loops) {
-
 			bool flag;
 			do {
 				flag = false;
@@ -295,9 +294,6 @@ namespace buaac {
 				}
 			fixChainLoop_outside:;
 			} while (flag);
-			
-			
-			
 		
 			chain.sort();
 		}
@@ -366,10 +362,13 @@ namespace buaac {
 			}
 
 #ifndef FORSPEED
-			auto loops = getLoops(flow_graph);
-			for (auto &chain : chains) {
-				fixChainLoop(chain, loops);
+			if (!(starts_with(ident, string("__T")) && isdigit(ident[3]))) {
+				auto loops = getLoops(flow_graph);
+				for (auto& chain : chains) {
+					fixChainLoop(chain, loops);
+				}
 			}
+			
 #endif
 
 			vector<Chain> old_chains;
