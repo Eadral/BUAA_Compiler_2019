@@ -25,7 +25,7 @@ namespace buaac {
 			removeRa(getFuncByName("main"));
 			removeUselessRa();
 
-			// inlineFuncs();
+			inlineFuncs();
 			//
 			// constantProgpagation();
 			// removeZeroLoad();
@@ -295,8 +295,12 @@ namespace buaac {
 
 		bool hasLocalArr(Func& func) {
 			ForBlocks(j, func.blocks, block)
-				// ForInstrs(k, block.instrs, )
+				ForInstrs(k, block.instrs, instr)
+				if (instr.type == Instr::VAR && instr.source_a == "0")
+					return true;
+				EndFor
 			EndFor
+			return false;
 		}
 		
 		void inlineFunc(Func &func) {
@@ -352,6 +356,10 @@ namespace buaac {
 				i.previous();
 			}
 			i.getInstr() = Instr(Instr::NOP);
+
+			i.next();
+			i.getInstr() = Instr(Instr::NOP);	// remove push regpool
+			
 			int index = 0;
 			while (index < paras.size()) {
 				i.next();
@@ -365,27 +373,36 @@ namespace buaac {
 		void removeAfterFuncCall(string inline_func_name, Func& fromfunc, int block_index, int line_number) {
 			auto i = InstrIterator(fromfunc, block_index, line_number);
 
-			while (!(i.getInstr().type == Instr::POP && i.getInstr().source_a == inline_func_name)) {
-				i.next();
-			}
+			i.next();
+			i.getInstr() = Instr(Instr::NOP);
+
+			i.next();
 			i.getInstr() = Instr(Instr::NOP);
 			
-			while (!(i.getInstr().type == Instr::POP_REG && i.getInstr().target == "$fp" && i.getInstr().source_a == inline_func_name)) {
-				i.next();
-			}
+			i.next();
 			i.getInstr() = Instr(Instr::NOP);
+			
+			// while (!(i.getInstr().type == Instr::POP && i.getInstr().source_a == inline_func_name)) {
+			// 	i.next();
+			// }
+			// i.getInstr() = Instr(Instr::NOP);
+			//
+			// while (!(i.getInstr().type == Instr::POP_REG && i.getInstr().target == "$fp" && i.getInstr().source_a == inline_func_name)) {
+			// 	i.next();
+			// }
+			// i.getInstr() = Instr(Instr::NOP);
 			
 			
 		}
 
 		void removeFuncCall(string inline_func_name, Func& fromfunc, int block_index, int line_number) {
 			auto i = InstrIterator(fromfunc, block_index, line_number);
-			i.getInstr() = Instr(Instr::NOP);
+			i.getInstr() = Instr(Instr::NOP); // fp
 			i.previous();
-			i.getInstr() = Instr(Instr::NOP);
-			i.next();
-			i.next();
-			i.getInstr() = Instr(Instr::NOP);
+			i.getInstr() = Instr(Instr::NOP); // call
+			// i.next();
+			// i.next();
+			// i.getInstr() = Instr(Instr::NOP);
 		}
 
 		void removeFuncPara(Func &func, vector<string> paras) {
