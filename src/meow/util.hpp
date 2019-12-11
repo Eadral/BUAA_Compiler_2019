@@ -122,5 +122,14 @@ bool ispow2(int x) {
 	return x != 0 && (x & (x - 1)) == 0;
 }
 
+template <typename T>
+int getFoundIndex(vector<T> container, T x) {
+	for (int i = 0; i < container.size(); i++) {
+		if (container[i] == x)
+			return i;
+	}
+	return -1;
+}
+
 
 #endif

@@ -154,6 +154,10 @@ namespace buaac {
 				case LOAD_ARR_GLO:
 				case LOAD_ARR_STA:
 				case LA:
+
+				case SCAN_INT:
+				case SCAN_CHAR:
+					
 					return true;
 				default:
 					return false;

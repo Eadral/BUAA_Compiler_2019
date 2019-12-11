@@ -99,7 +99,7 @@ namespace meow {
 		    if (result_type_ == ResultType::OK) {
 				return value_;
 		    }
-			panic("get value on error");
+ 			panic("get value on error");
 	    }
 
 		Value getValue() {

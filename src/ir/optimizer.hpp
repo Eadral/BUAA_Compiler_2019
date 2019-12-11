@@ -23,13 +23,17 @@ namespace buaac {
 		// OPTIMIZE
 		void optimize() {
 			removeRa(getFuncByName("main"));
-			removeUselessRa();
+			
 
+			removeFuncsVars();
 			inlineFuncs();
+			// inlineFuncsNoVar();
+
+			
 			//
-			// constantProgpagation();
-			// removeZeroLoad();
-			// regAssign();
+			constantProgpagation();
+			removeZeroLoad();
+			regAssign();
 			
 		}
 
@@ -283,20 +287,55 @@ namespace buaac {
 		
 		
 		void inlineFuncs() {
-			ForFuncs(i, func)
-				if (!hasLocalArr(func) && !hasFuncCall(func) && func.func_name != "main") {
-					inlineFunc(func);
-					// remove
-					ir.funcs.erase(ir.funcs.begin() + i);
-					i--;
-				}
-			EndFor
+			bool flag = false;
+			do {
+				removeUselessRa();
+				flag = false;
+				ForFuncs(i, func)
+					if (!hasLocalArr(func) && !hasFuncCall(func) && func.func_name != "main") {
+						flag = true;
+						inlineFunc(func);
+						// remove
+						ir.funcs.erase(ir.funcs.begin() + i);
+						i--;
+					}
+				EndFor
+			} while (flag);
+			
+		}
+
+		void inlineFuncsNoVar() {
+			bool flag = false;
+			do {
+				removeUselessRa();
+				flag = false;
+				ForFuncs(i, func)
+					if (!hasLocalArr(func) && !hasFuncCall(func) && !hasLocalVar(func) && func.func_name != "main") {
+						flag = true;
+						inlineFunc(func);
+						// remove
+						ir.funcs.erase(ir.funcs.begin() + i);
+						i--;
+					}
+				EndFor
+			} while (flag);
+
 		}
 
 		bool hasLocalArr(Func& func) {
 			ForBlocks(j, func.blocks, block)
 				ForInstrs(k, block.instrs, instr)
-				if (instr.type == Instr::VAR && instr.source_a == "0")
+				if (instr.type == Instr::VAR && instr.source_a != "0")
+					return true;
+				EndFor
+			EndFor
+			return false;
+		}
+
+		bool hasLocalVar(Func& func) {
+			ForBlocks(j, func.blocks, block)
+				ForInstrs(k, block.instrs, instr)
+				if (instr.type == Instr::VAR)
 					return true;
 				EndFor
 			EndFor
@@ -321,7 +360,7 @@ namespace buaac {
 				Func& fromfunc = getFuncByName(fromfunc_name);
 
 				
-				removeBeforeFuncCall(func.func_name, fromfunc, block_index, line_number, paras);
+				removeBeforeFuncCall(func.func_name, fromfunc, block_index, line_number, paras, cnt);
 				removeAfterFuncCall(func.func_name, fromfunc, block_index, line_number);
 				removeFuncCall(func.func_name, fromfunc, block_index, line_number);
 
@@ -339,6 +378,21 @@ namespace buaac {
 						if (instr.isJump() && getFoundIndex( labels, instr.getJumpTarget()) != -1) {
 							instr.changeJumpTarget(FORMAT("inline_{}_{}", cnt, instr.getJumpTarget()));
 						}
+						// if (instr.type == Instr::MOVE && starts_with(instr.source_a, FORMAT("__T{}", func.func_name))) {
+						// 	instr.source_a = FORMAT("{}_{}", instr.source_a, cnt);
+						// }
+						// if (instr.type == Instr::MOVE && starts_with(instr.target, FORMAT("__T{}", func.func_name))) {
+						// 	instr.target = FORMAT("{}_{}", instr.target, cnt);
+						// }
+						if (starts_with(instr.target, string("__T"))) {
+							instr.target = FORMAT("{}_{}", instr.target, cnt);
+						}
+						if (starts_with(instr.source_a, string("__T"))) {
+							instr.source_a = FORMAT("{}_{}", instr.source_a, cnt);
+						}
+						if (starts_with(instr.source_b, string("__T"))) {
+							instr.source_b = FORMAT("{}_{}", instr.source_b, cnt);
+						}
 					}
 					fromfunc.blocks->insert(fromfunc.blocks->begin() + block_index + 1, new_block );
 				}
@@ -350,7 +404,7 @@ namespace buaac {
 
 		
 
-		void removeBeforeFuncCall(string inline_func_name, Func& fromfunc, int block_index, int line_number, vector<string> paras) {
+		void removeBeforeFuncCall(string inline_func_name, Func& fromfunc, int block_index, int line_number, vector<string> paras, int cnt) {
 			auto i = InstrIterator(fromfunc, block_index, line_number);
 			while (!(i.getInstr().type == Instr::PUSH_REG && i.getInstr().target == "$fp" && i.getInstr().source_a == inline_func_name)) {
 				i.previous();
@@ -364,7 +418,7 @@ namespace buaac {
 			while (index < paras.size()) {
 				i.next();
 				if (i.getInstr().type == Instr::PUSH_REG && i.getInstr().source_a == inline_func_name) {
-					i.getInstr() = Instr(Instr::MOVE, getInlineTempName(inline_func_name, index, paras[index]), i.getInstr().target);
+					i.getInstr() = Instr(Instr::MOVE, getInlineTempNameWithCnt(inline_func_name, index, paras[index], cnt), i.getInstr().target);
 					index++;
 				}
 			}
@@ -405,6 +459,54 @@ namespace buaac {
 			// i.getInstr() = Instr(Instr::NOP);
 		}
 
+		vector<string> getFuncVars(Func &func) {
+			vector<string> idents;
+			ForBlocks(j, func.blocks, block)
+				ForInstrs(k, block.instrs, instr)
+					if (instr.type == Instr::VAR && instr.source_a == "0") {
+						idents.push_back(instr.target);
+					}
+				EndFor
+			EndFor
+			return idents;
+		}
+
+		void removeFuncVars(Func& func, vector<string> idents) {
+			ForBlocks(j, func.blocks, block)
+				ForInstrs(k, block.instrs, instr)
+					if (instr.type == Instr::VAR && getFoundIndex(idents, instr.target) != -1) {
+						instr = Instr(Instr::NOP);
+					}
+					if (instr.type == Instr::LOAD_STA) {
+						int index = getFoundIndex(idents, instr.showas);
+						if (index == -1)
+							continue;
+						instr = Instr(Instr::MOVE, instr.target, getVarTempName(idents[index]));
+					}
+					if (instr.type == Instr::SAVE_STA) {
+						int index = getFoundIndex(idents, instr.showas);
+						if (index == -1)
+							continue;
+						instr = Instr(Instr::MOVE, getVarTempName(idents[index]), instr.target);
+					}
+					if (instr.type == Instr::SCAN_INT || instr.type == Instr::SCAN_CHAR) {
+						int index = getFoundIndex(idents, instr.showas);
+						if (index == -1)
+							continue;
+						instr.target = getVarTempName(idents[index]);
+						instr.showas = getVarTempName(idents[index]);
+					}
+				EndFor
+			EndFor
+		}
+
+		void removeFuncsVars() {
+			ForFuncs(i, func)
+				auto idents = getFuncVars(func);
+				removeFuncVars(func, idents);
+			EndFor
+		}
+
 		void removeFuncPara(Func &func, vector<string> paras) {
 			// int index = 0;
 			ForBlocks(j, func.blocks, block)
@@ -414,6 +516,8 @@ namespace buaac {
 				}
 				ForInstrs(k, block.instrs, instr)
 					if (instr.type == Instr::PARA)
+						instr = Instr(Instr::NOP);
+					if (instr.type == Instr::PUSH)
 						instr = Instr(Instr::NOP);
 					if (instr.type == Instr::LOAD_STA) {
 						int index = getFoundIndex(paras, instr.showas);
@@ -433,13 +537,7 @@ namespace buaac {
 			EndFor
 		}
 
-		int getFoundIndex(vector<string> paras, string x) {
-			for (int i = 0; i < paras.size(); i++) {
-				if (paras[i] == x)
-					return i;
-			}
-			return -1;
-		}
+		
 
 		// is, func_name, block_index, line_number
 		tuple<bool, string, int, int> findFuncCall(string func_name) {
@@ -474,6 +572,14 @@ namespace buaac {
 		string getInlineTempName(string func_name, int index, string ident) {
 			return FORMAT("__T{}_{}_{}", func_name, index, ident);
 		}
+
+		string getVarTempName(string ident) {
+			return FORMAT("__T{}", ident);
+		}
+
+		string getInlineTempNameWithCnt(string func_name, int index, string ident, int cnt) {
+			return FORMAT("{}_{}", getInlineTempName(func_name, index, ident), cnt);
+		}
 		
 #pragma endregion 
 
@@ -492,8 +598,9 @@ namespace buaac {
 		FlowGraph constructFlowGraphFunc(Func &func) {
 			FlowGraph flow_graph;
 
-			flow_graph.addEntry(func.func_name);
+			// flow_graph.addEntry(func.func_name);
 			ForBlocks(j, func.blocks, block)
+				flow_graph.addId(block.label, j);
 				if (j + 1 < blocks->size()) {
 					Instr jump_instr = getJumpInstr(block);
 					if (jump_instr.type != Instr::NOP && jump_instr.type != Instr::CALL) {
@@ -545,7 +652,8 @@ namespace buaac {
 							define_use_chain.addUse(block_index, block.label, line_number_in_block, load);
 					}
 					auto use = instr.getStoreName();
-					if (needAssign(use) && !hasDefAfter(block, line_number_in_block, use))
+					// TODO: bug here: deref
+					if (needAssign(use) )
 						define_use_chain.addDef(block_index, block.label, line_number_in_block, use);
 					instr.block_line_number = line_number_in_block;
 
@@ -554,8 +662,10 @@ namespace buaac {
 
 			define_use_chain.generate(flow_graph);
 			ir.func_to_ident_to_range[func.func_name] = define_use_chain.getRanges();
-			
-			// define_use_chain.printChain();
+
+#ifdef SHOWALLOC
+			define_use_chain.printChain();
+#endif
 			
 		}
 

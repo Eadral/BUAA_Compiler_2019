@@ -454,21 +454,11 @@ namespace buaac {
 				getRegisters({ "$v0" });
 				write("li $v0, 5");
 				write("syscall");
-				write("sw $v0, {}($fp)", instr.target);
+				if (starts_with(instr.target, string("$")))
+					write("move {}, $v0", instr.target);
+				else
+					write("sw $v0, {}($fp)", instr.target);
 				releaseRegisters({ "$v0" });
-				break;
-				
-			case Instr::PRINT_CHAR:
-				getRegisters({ "$a0", "$v0" });
-				if (isNumber(instr.target)) {
-					write("li $a0, {}", instr.target);
-				}
-				else {
-					write("move $a0, {}", instr.target);
-				}
-				write("li $v0, 11");
-				write("syscall");
-				releaseRegisters({ "$a0", "$v0" });
 				break;
 			case Instr::SCAN_GLOBAL_CHAR:
 				getRegisters({ "$v0" });
@@ -481,9 +471,25 @@ namespace buaac {
 				getRegisters({ "$v0" });
 				write("li $v0, 12");
 				write("syscall");
-				write("sw $v0, {}($fp)", instr.target);
+				if (starts_with(instr.target, string("$")))
+					write("move {}, $v0", instr.target);
+				else
+					write("sw $v0, {}($fp)", instr.target);
 				releaseRegisters({ "$v0" });
 				break;
+			case Instr::PRINT_CHAR:
+				getRegisters({ "$a0", "$v0" });
+				if (isNumber(instr.target)) {
+					write("li $a0, {}", instr.target);
+				}
+				else {
+					write("move $a0, {}", instr.target);
+				}
+				write("li $v0, 11");
+				write("syscall");
+				releaseRegisters({ "$a0", "$v0" });
+				break;
+			
 
 			case Instr::SAVE_ARR_STA:
 				if (isNumber(instr.source_b)) {

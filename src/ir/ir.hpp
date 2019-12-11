@@ -223,6 +223,10 @@ namespace buaac {
 			return FORMAT("while_{}", jump_cnt_stack.back());
 		}
 
+		string getWhileBodyName() {
+			return FORMAT("while_body_{}", jump_cnt_stack.back());
+		}
+
 		string getWhileEndName() {
 			return FORMAT("while_{}_end", jump_cnt_stack.back());
 		}
@@ -234,6 +238,10 @@ namespace buaac {
 
 		string getDoWhileName() {
 			return FORMAT("dowhile_{}", jump_cnt_stack.back());
+		}
+
+		string getDoWhileBodyName() {
+			return FORMAT("dowhile_body_{}", jump_cnt_stack.back());
 		}
 
 		string getDoWhileEndName() {

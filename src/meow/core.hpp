@@ -95,4 +95,6 @@ using std::string;
 
 #include "util.hpp"
 
+// #define SHOWALLOC
+
 #endif

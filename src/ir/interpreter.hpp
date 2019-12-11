@@ -38,7 +38,7 @@ namespace buaac {
 			}
 			if (instr.doNotConstProp())
 				return;
-			
+
 			if (instr.isConst()) {
 				instr.eval();
 				instr.optimize();

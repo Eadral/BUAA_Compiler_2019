@@ -76,11 +76,11 @@ namespace buaac {
 		}
 
 		void iterate(FlowGraph& flow_graph) {
-			for (auto block_name: block_names) {
+			for (const auto &block_name: block_names) {
 				// const string& block_name = *i;
 
 				// in
-				auto preds = flow_graph.getPreds(block_name);
+				const auto &preds = flow_graph.getPreds(block_name);
 				set<string> inMerge;
 				for (int j = 0; j < preds.size(); j++) {
 					block_names.insert(preds[j]);

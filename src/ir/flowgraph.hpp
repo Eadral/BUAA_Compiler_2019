@@ -9,13 +9,25 @@ namespace buaac {
 
 		std::map<string, vector<string>> nextNodes;
 		std::map<string, vector<string>> predNodes;
+		map<string, int> label_to_id;
 
-		vector<string> entrys;
+		// vector<string> entrys;
 		
 	public:
 		// const string entry = "entry";
 		// const string exit = "exit";
 
+		std::map<string, vector<string>> getNextNodes() {
+			return nextNodes;
+		}
+
+		void addId(string label, int id) {
+			label_to_id[label] = id;
+		}
+
+		int getId(string label) {
+			return label_to_id[label];
+		}
 		
 		void addEdge(string prev, string next) {
 			// if (nextNodes.find(prev) == nextNodes.end()) {
@@ -29,13 +41,13 @@ namespace buaac {
 			predNodes[next].push_back(prev);
 		}
 
-		void addEntry(string entry) {
-			entrys.push_back(entry);
-		}
-
-		vector<string> getEntryNames() {
-			return entrys;
-		}
+		// void addEntry(string entry) {
+		// 	entrys.push_back(entry);
+		// }
+		//
+		// vector<string> getEntryNames() {
+		// 	return entrys;
+		// }
 		
 		string getExitName(string entry) {
 			return FORMAT("return_{}", entry);

@@ -234,6 +234,7 @@ namespace buaac {
 				break;
 			case Instr::PARA:
 				write("para {} {};", instr.target, instr.source_a);
+				break;
 			case Instr::VAR:
 				if (a2i(instr.source_a) == 0) {
 					write("{} {};", instr.source_b, instr.target);

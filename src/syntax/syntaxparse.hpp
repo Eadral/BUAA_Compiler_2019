@@ -1525,6 +1525,7 @@ namespace syntax{
 				eatToken(TokenType::WHILETK);
 				eatToken(TokenType::LPARENT);
 				cond();
+				ir.newBlock(ir.getWhileBodyName());
 				eatToken(TokenType::RPARENT);
 				statement();
 				ir.jump(ir.getWhileName());

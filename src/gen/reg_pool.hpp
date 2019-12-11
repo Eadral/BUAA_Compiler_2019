@@ -46,6 +46,8 @@ namespace buaac {
 			return regPool[id];
 		}
 
+// #define SHOWALLOC
+		
 		void checkAndRelease(map<Id, VarRange> ident_to_range, int block_index, int block_line_number) {
 			vector<Id> erase_list;
 			
@@ -53,7 +55,9 @@ namespace buaac {
 				if (ident_to_range[id.first].out(block_index, block_line_number)) {
 					availReg[id.second] = true;
 					erase_list.push_back(id.first);
-					// debugln("ReleaReg: {} {}", id.first, id.second);
+#ifdef SHOWALLOC
+					debugln("ReleaReg: {} {}", id.first, id.second);
+#endif
 				}
 			}
 
@@ -105,7 +109,10 @@ namespace buaac {
 		void allocRegPool(string id) {
 			string reg = getReg();
 			regPool[id] = reg;
-			// debugln("AllocReg {} {}", id, reg);
+#ifdef SHOWALLOC
+			debugln("AllocReg {} {}", id, reg);
+#endif
+
 		}
 
 		
