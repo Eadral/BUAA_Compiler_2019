@@ -107,14 +107,14 @@ namespace buaac {
 			if (bytes == 0)
 				return;
 			appendInstr(Instr(Instr::PUSH, bytes));
-			instrNotShow();
+			// instrNotShow();
 		}
 		
 		void popStack(size_t size) {
-			if (size == 0)
-				return;
+			// if (size == 0)
+			// 	return;
 			appendInstr(Instr(Instr::POP, size));
-			instrNotShow();
+			// instrNotShow();
 		}
 
 		void call(const string& func_name) {
@@ -444,9 +444,9 @@ namespace buaac {
 		// 	appendInstr(Instr(Instr::LOAD_STA, reg, bytes));
 		// }
 
-		void irShow(string str) {
-			appendInstr({ Instr::IR_SHOW,  str });
-		}
+		// void irShow(string str) {
+		// 	appendInstr({ Instr::IR_SHOW,  str });
+		// }
 
 		void para(string type, string ident) {
 			appendInstr({ Instr::PARA, type, ident });
@@ -539,7 +539,7 @@ namespace buaac {
 
 		bool next() {
 			line_number++;
-			if (line_number >= getBlock().instrs.size()) {
+			while (line_number >= getBlock().instrs.size()) {
 				block_index++;
 				line_number = 0;
 				if (block_index >= func.blocks->size()) {
@@ -551,7 +551,7 @@ namespace buaac {
 
 		bool previous() {
 			line_number--;
-			if (line_number < 0) {
+			while (line_number < 0) {
 				block_index--;
 				line_number = getBlock().instrs.size() - 1;
 				if (block_index < 0) {

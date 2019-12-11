@@ -26,8 +26,8 @@ namespace buaac {
 			removeUselessRa();
 
 			// inlineFuncs();
-			
-			constantProgpagation();
+			//
+			// constantProgpagation();
 			// removeZeroLoad();
 			// regAssign();
 			
@@ -280,10 +280,22 @@ namespace buaac {
 
 #pragma region FunctionInline
 
+		
+		
 		void inlineFuncs() {
 			ForFuncs(i, func)
-				if (!hasFuncCall(func))
+				if (!hasLocalArr(func) && !hasFuncCall(func) && func.func_name != "main") {
 					inlineFunc(func);
+					// remove
+					ir.funcs.erase(ir.funcs.begin() + i);
+					i--;
+				}
+			EndFor
+		}
+
+		bool hasLocalArr(Func& func) {
+			ForBlocks(j, func.blocks, block)
+				// ForInstrs(k, block.instrs, )
 			EndFor
 		}
 		
@@ -291,45 +303,89 @@ namespace buaac {
 			auto paras = getParas(func);
 			removeFuncPara(func, paras);
 			// is, func_name, block_index, line_number;
-			// TODO: while (true)
+			int cnt = 0;
+			while (true)
 			{
+				cnt++;
 				bool found;
 				string fromfunc_name;
 				int block_index, line_number;
 				tie(found, fromfunc_name, block_index, line_number) = findFuncCall(func.func_name);
-				// if (!found)
-				// 	break;
+				if (!found)
+					break;
 
 				Func& fromfunc = getFuncByName(fromfunc_name);
 
 				
-				removeBeforeFuncCall(func.func_name, fromfunc, block_index, line_number);
+				removeBeforeFuncCall(func.func_name, fromfunc, block_index, line_number, paras);
 				removeAfterFuncCall(func.func_name, fromfunc, block_index, line_number);
-				replaceFuncCall(func.func_name, fromfunc, block_index, line_number);
+				removeFuncCall(func.func_name, fromfunc, block_index, line_number);
+
+				// replace Function
+				vector<string> labels;
+				for (int i = 0; i < func.blocks->size(); i++) {
+					labels.push_back(func.blocks->at(i).label);
+				}
 				
+				for (int i = func.blocks->size() - 1; i >= 0; i--) {
+					auto new_block = func.blocks->at(i);
+					new_block.label = FORMAT("inline_{}_{}", cnt, new_block.label);
+					for (int j = 0; j < new_block.instrs.size(); j++) {
+						auto& instr = new_block.instrs[j];
+						if (instr.isJump() && getFoundIndex( labels, instr.getJumpTarget()) != -1) {
+							instr.changeJumpTarget(FORMAT("inline_{}_{}", cnt, instr.getJumpTarget()));
+						}
+					}
+					fromfunc.blocks->insert(fromfunc.blocks->begin() + block_index + 1, new_block );
+				}
 				
 			}
-			
 			
 			// TODO: removeFunc(func);
 		}
 
 		
 
-		void removeBeforeFuncCall(string inline_func_name, Func& fromfunc, int block_index, int line_number) {
+		void removeBeforeFuncCall(string inline_func_name, Func& fromfunc, int block_index, int line_number, vector<string> paras) {
 			auto i = InstrIterator(fromfunc, block_index, line_number);
-			while (!(i.getInstr().type == Instr::PUSH_REG && i.getInstr().source_a == inline_func_name)) {
+			while (!(i.getInstr().type == Instr::PUSH_REG && i.getInstr().target == "$fp" && i.getInstr().source_a == inline_func_name)) {
 				i.previous();
 			}
-			
+			i.getInstr() = Instr(Instr::NOP);
+			int index = 0;
+			while (index < paras.size()) {
+				i.next();
+				if (i.getInstr().type == Instr::PUSH_REG && i.getInstr().source_a == inline_func_name) {
+					i.getInstr() = Instr(Instr::MOVE, getInlineTempName(inline_func_name, index, paras[index]), i.getInstr().target);
+					index++;
+				}
+			}
 		}
 
 		void removeAfterFuncCall(string inline_func_name, Func& fromfunc, int block_index, int line_number) {
+			auto i = InstrIterator(fromfunc, block_index, line_number);
+
+			while (!(i.getInstr().type == Instr::POP && i.getInstr().source_a == inline_func_name)) {
+				i.next();
+			}
+			i.getInstr() = Instr(Instr::NOP);
+			
+			while (!(i.getInstr().type == Instr::POP_REG && i.getInstr().target == "$fp" && i.getInstr().source_a == inline_func_name)) {
+				i.next();
+			}
+			i.getInstr() = Instr(Instr::NOP);
+			
 			
 		}
 
-		void replaceFuncCall(string inline_func_name, Func& fromfunc, int block_index, int line_number) {
-			// fromfunc.blocks->at(block_index).instrs[line_number - 1] = Instr(Instr::NOP); // remove $fp = $sp + x;
+		void removeFuncCall(string inline_func_name, Func& fromfunc, int block_index, int line_number) {
+			auto i = InstrIterator(fromfunc, block_index, line_number);
+			i.getInstr() = Instr(Instr::NOP);
+			i.previous();
+			i.getInstr() = Instr(Instr::NOP);
+			i.next();
+			i.next();
+			i.getInstr() = Instr(Instr::NOP);
 		}
 
 		void removeFuncPara(Func &func, vector<string> paras) {
@@ -347,6 +403,12 @@ namespace buaac {
 						if (index == -1)
 							continue;
 						instr = Instr(Instr::MOVE, instr.target, getInlineTempName(func.func_name, index, paras[index]));
+					}
+					if (instr.type == Instr::SAVE_STA) {
+						int index = getFoundIndex(paras, instr.showas);
+						if (index == -1)
+							continue;
+						instr = Instr(Instr::MOVE, getInlineTempName(func.func_name, index, paras[index]), instr.target);
 					}
 					// if (instr.type == Instr::JUMP && instr.target == FORMAT("return_{}", func.func_name))
 					// 	instr = Instr(Instr::NOP);

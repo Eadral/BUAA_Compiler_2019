@@ -118,8 +118,9 @@ string getGlobalName(string ident) {
 	return FORMAT("g_{}", ident);
 }
 
-
-
+bool ispow2(int x) {
+	return x != 0 && (x & (x - 1)) == 0;
+}
 
 
 #endif

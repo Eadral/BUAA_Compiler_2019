@@ -65,6 +65,7 @@ namespace buaac {
 				IR_SHOW,
 
 				PARA,
+				VAR,
 
 			} type;
 
@@ -599,6 +600,30 @@ namespace buaac {
 				case BEQ:
 				case BNE:
 					return source_b;
+				default:
+					panic("not jump instr");
+				}
+			}
+
+			void changeJumpTarget(string new_target) {
+				switch (type) {
+				case CALL:
+				case RETURN_END:
+				case JUMP:
+					target = new_target;
+					break;
+				case BGEZ:
+				case BLEZ:
+					source_a = new_target;
+					break;
+				case BLT:
+				case BGT:
+				case BLE:
+				case BGE:
+				case BEQ:
+				case BNE:
+					source_b = new_target;
+					break;
 				default:
 					panic("not jump instr");
 				}

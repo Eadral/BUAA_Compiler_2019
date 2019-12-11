@@ -581,7 +581,7 @@ namespace syntax{
 						if (_symbol_table.getScope() == -1) {
 							ir.defineGlobalIntArr(ident.getValue(), a2i(uninteger_token.getValue()));
 						} else {
-							ir.irShow(FORMAT("{} {}[{}];", _status_vardef_type_str, ident.getValue(), uninteger_token.getValue()));
+							ir.appendInstr(Instr(Instr::VAR, ident.getValue(), uninteger_token.getValue(), _status_vardef_type_str));
 						}
 						checkPush(_symbol_table.push(Symbol(_status_vardef_type, ident.getValue(), atoi(uninteger_token.getValue().c_str()))));
 						
@@ -592,7 +592,7 @@ namespace syntax{
 						if (_symbol_table.getScope() == -1) {
 							ir.defineGlobalInt(ident.getValue());
 						} else {
-							ir.irShow(FORMAT("{} {};", _status_vardef_type_str, ident.getValue()));
+							ir.appendInstr(Instr(Instr::VAR, ident.getValue(), 0, _status_vardef_type_str));
 						}
 						break;
 					default:
@@ -654,7 +654,8 @@ namespace syntax{
 						if (_symbol_table.getScope() == -1) {
 							ir.defineGlobalIntArr(ident.getValue(), a2i(uninteger_token.getValue()));
 						} else
-						ir.irShow(FORMAT("{} {}[{}];", _status_vardef_type_str, ident.getValue(), uninteger_token.getValue()));
+
+							ir.appendInstr(Instr(Instr::VAR, ident.getValue(), uninteger_token.getValue(), _status_vardef_type_str));
 						checkPush(_symbol_table.push(Symbol(_status_vardef_type, ident.getValue(), atoi(uninteger_token.getValue().c_str()))));
 
 						break;
@@ -664,7 +665,7 @@ namespace syntax{
 						if (_symbol_table.getScope() == -1) {
 							ir.defineGlobalInt(ident.getValue());
 						} else
-						ir.irShow(FORMAT("{} {};", _status_vardef_type_str, ident.getValue()));
+							ir.appendInstr(Instr(Instr::VAR, ident.getValue(), 0, _status_vardef_type_str));
 						break;
 					default:
 						ERROR
@@ -1625,6 +1626,7 @@ namespace syntax{
 
 				pushStackReg("$fp", name.getValue());
 
+				ir.appendInstr({ Instr::PUSH_REGPOOL , int(val_para_list.size()) });
 				
 				tie(_find_success, func_symbol) = _symbol_table.findSymbol(name.getValue());
 				checkFind();
@@ -1653,20 +1655,20 @@ namespace syntax{
 				ERROR
 			}
 
-			ir.appendInstr({ Instr::PUSH_REGPOOL , int(val_para_list.size()) });
 
 			
 			// popStackReg("$k1");
-			// ir.appendInstr({ Instr::PLUS, "$fp", "$sp", int(val_para_list.size() * 4) });
+			ir.appendInstr({ Instr::PLUS, "$fp", "$sp", int(val_para_list.size() * 4) });
 
 			
 			ir.call(name.getValue());
 			ir.newBlock(FORMAT("after_call_{}_{}", name.getValue(), ir.newLabelCnt()));
 
+			ir.appendInstr(Instr(Instr::POP, val_para_list.size() * 4, name.getValue()));
+
 			// popRegPool();
 			ir.appendInstr({ Instr::POP_REGPOOL });
 
-			ir.popStack(val_para_list.size() * 4);
 			
 			popStackReg("$fp", name.getValue());
 

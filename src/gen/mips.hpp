@@ -233,7 +233,7 @@ namespace buaac {
 					}
 					instrs[k].source_b = i2a(reg_pool_.mempool_size);
 					push_number += reg_pool_.mempool_size;
-					instrs.insert(instrs.begin() + k + 1 + ts.size(), Instr(Instr::PLUS, "$fp", "$sp", int(push_number*4)));
+					// instrs.insert(instrs.begin() + k + 1 + ts.size(), Instr(Instr::PLUS, "$fp", "$sp", int(push_number*4)));
 				}
 				else if (instrs[k].type == Instr::POP_REGPOOL) {
 					ts = reg_pool_.t_stack.back();
@@ -314,10 +314,15 @@ namespace buaac {
 					write("li $k0, {}", instr.source_a);
 					instr.source_a = "$k0";
 				}
+				if (isNumber(instr.source_b) && ispow2(a2i(instr.source_b)) ) {
+					write("srl {}, {}, {}", instr.target, instr.source_a, static_cast<int>(std::log2(a2i(instr.source_b))));
+					break;
+				}
 				if (isNumber(instr.source_b)) {
 					write("li $k0, {}", instr.source_b);
 					instr.source_b = "$k0";
 				}
+				
 				write("div {}, {}", instr.source_a, instr.source_b);
 				write("mflo {}", instr.target);
 				break;
