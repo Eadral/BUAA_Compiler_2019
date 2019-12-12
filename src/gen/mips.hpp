@@ -391,28 +391,28 @@ namespace buaac {
 				break;
 			case Instr::BLT:
 				if (isNumber(instr.target)) {
-					write("blt {}, {}, {}", instr.source_a, instr.target, instr.source_b);
+					write("bgt {}, {}, {}", instr.source_a, instr.target, instr.source_b);
 					break;
 				}
 				write("blt {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 				break;
 			case Instr::BGT:
 				if (isNumber(instr.target)) {
-					write("bgt {}, {}, {}", instr.source_a, instr.target, instr.source_b);
+					write("blt {}, {}, {}", instr.source_a, instr.target, instr.source_b);
 					break;
 				}
 				write("bgt {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 				break;
 			case Instr::BLE:
 				if (isNumber(instr.target)) {
-					write("ble {}, {}, {}", instr.source_a, instr.target, instr.source_b);
+					write("bge {}, {}, {}", instr.source_a, instr.target, instr.source_b);
 					break;
 				}
 				write("ble {}, {}, {}", instr.target, instr.source_a, instr.source_b);
 				break;
 			case Instr::BGE:
 				if (isNumber(instr.target)) {
-					write("bge {}, {}, {}", instr.source_a, instr.target, instr.source_b);
+					write("ble {}, {}, {}", instr.source_a, instr.target, instr.source_b);
 					break;
 				}
 				write("bge {}, {}, {}", instr.target, instr.source_a, instr.source_b);

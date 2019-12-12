@@ -336,7 +336,17 @@ namespace buaac {
 			// 	}
 			// }
 
-
+			bool isALU() {
+				switch (type) {
+				case PLUS:
+				case MINUS:
+				case MULT:
+				case DIV:
+					return true;
+				default:
+					return false;
+				}
+			}
 			
 			bool isInput() {
 				switch (type) {

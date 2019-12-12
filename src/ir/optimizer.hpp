@@ -23,7 +23,8 @@ namespace buaac {
 		// OPTIMIZE
 		void optimize() {
 			removeRa(getFuncByName("main"));
-			
+
+			unitTestDefineUseChain();
 
 			removeFuncsVars();
 			inlineFuncs();
@@ -31,11 +32,12 @@ namespace buaac {
 			// ForUnroll();
 			blockMerge();
 			
-			// constantProgpagation();
+			constantProgpagation();
 			copyPropagation();
+			ALUPropagation();
 			
 			removeZeroLoad();
-			// removeZeroLoadGlobal();
+			removeZeroLoadGlobal();
 			regAssign();
 			
 		}
@@ -217,15 +219,15 @@ namespace buaac {
 			// flow_graph.addEntry(func.func_name);
 			ForBlocks(j, func.blocks, block)
 				flow_graph.addId(block.label, j);
-			if (j + 1 < blocks->size()) {
-				Instr jump_instr = getJumpInstr(block);
-				if (jump_instr.type != Instr::NOP && jump_instr.type != Instr::CALL) {
-					flow_graph.addEdge(block.label, jump_instr.getJumpTarget());
+				if (j + 1 < blocks->size()) {
+					Instr jump_instr = getJumpInstr(block);
+					if (jump_instr.type != Instr::NOP && jump_instr.type != Instr::CALL) {
+						flow_graph.addEdge(block.label, jump_instr.getJumpTarget());
+					}
+					if (jump_instr.type != Instr::JUMP) {
+						flow_graph.addEdge(blocks->at(j).label, blocks->at(j + 1).label);
+					}
 				}
-				if (jump_instr.type != Instr::JUMP) {
-					flow_graph.addEdge(blocks->at(j).label, blocks->at(j + 1).label);
-				}
-			}
 			EndFor
 
 				return flow_graph;
@@ -715,17 +717,73 @@ namespace buaac {
 
 #pragma  endregion 
 
+#pragma region ALUPropagation
+
+		void ALUPropagation() {
+			ForFuncs(i, func)
+				ALUPropagationFunc(func);
+			EndFor
+		}
+
+		void ALUPropagationFunc(Func &func) {
+			ForBlocks(j, func.blocks, block)
+				map<string, string> copy;
+
+				ForInstrs(k, block.instrs, instr)
+
+					if (
+						instr.isALU()
+						// && starts_with(instr.source_a, string("__T"))
+						// && !starts_with(instr.source_a, string("$"))
+						)
+					{
+
+						// copy[instr.target] = instr.source_a;
+						int end = findNextSave(block, k, instr.source_a) + 1;
+						end = std::min(end, findNextSave(block, k, instr.source_b) + 1);
+						end = std::min(end, (int)block.instrs.size());
+
+						replaceRangeMoveWithInstr(block, k + 1, end, instr.target, instr);
+
+					}
+
+				EndFor
+			EndFor
+		}
+
+		void replaceRangeMoveWithInstr(Block& block, int start, int end, string from, Instr to) {
+			for (int i = start; i < end; i++) {
+				auto& instr = block.instrs.at(i);
+				if (instr.type == Instr::MOVE && instr.source_a == from) {
+					to.target = instr.target;
+					instr = to;
+				}
+				
+			}
+		}
+
+		// int findNextMoveLoad(Block& block, int start, string load_name) {
+		// 	for (int i = start; i < block.instrs.size(); i++) {
+		// 		auto& instr = block.instrs.at(i);
+		// 		if (instr.type ==Instr::MOVE && !instr.getLoadName().empty() && instr.getLoadName()[0] == load_name) {
+		// 			return i;
+		// 		}
+		// 	}
+		// 	return INT32_MAX;
+		// }
+		
+#pragma endregion 
 		
 #pragma region CopyPropagation
 		
 		void copyPropagation() {
 			ForFuncs(i, func)
-				copyPropagationFunc(func);
-
+				copyPropagationFuncConservative(func);
+				copyPropagationFuncBeforeNextDef(func);
 			EndFor
 		}
 
-		void copyPropagationFunc(Func &func) {
+		void copyPropagationFuncConservative(Func &func) {
 			
 			FlowGraph flow_graph = constructFlowGraphFunc(func);
 
@@ -756,8 +814,58 @@ namespace buaac {
 					
 				EndFor
 			EndFor
+		}
 
-			
+		void copyPropagationFuncBeforeNextDef(Func &func) {
+			ForBlocks(j, func.blocks, block)
+				map<string, string> copy;
+
+					ForInstrs(k, block.instrs, instr)
+
+						if (instr.type == Instr::MOVE
+							&& starts_with(instr.source_a, string("__T"))
+							&& !starts_with(instr.source_a, string("$"))
+							)
+						{
+							
+							// copy[instr.target] = instr.source_a;
+							int end = findNextSave(block, k, instr.source_a);
+							end = std::min(end, (int)block.instrs.size());
+
+							replaceRangeLoad(block, k+1, end, instr.target, instr.source_a);
+							
+						}
+
+					EndFor
+				EndFor
+		}
+
+		void replaceRangeLoad(Block &block, int start, int end, string from, string to) {
+			for (int i = start; i < end; i++) {
+				auto& instr = block.instrs.at(i);
+				if (instr.targetIsLoad() && instr.target == from) {
+					instr.target = to;
+				}
+				if (instr.sourceAIsLoad() && instr.source_a == from) {
+					instr.source_a = to;
+				}
+				if (instr.sourceBIsLoad() && instr.source_b == from) {
+					instr.source_b = to;
+				}
+			}
+		}
+
+		int findNextSave(Block& block, int start, string save_name) {
+			if (save_name.empty() || !starts_with(save_name, string("__T"))) {
+				return INT32_MAX - 1;
+			}
+			for (int i = start; i < block.instrs.size(); i++) {
+				auto& instr = block.instrs.at(i);
+				if (instr.getStoreName() == save_name) {
+					return i;
+				}
+			}
+			return INT32_MAX - 1;
 		}
 
 
@@ -780,8 +888,28 @@ namespace buaac {
 			blockMergeEmpty();
 			blockMergeJump();
 			blockMergeSimple();
+			clearUselessJump();
 		}
 
+		void clearUselessJump() {
+			ForFuncs(i, func)
+				clearUselessJumpFunc(func);
+			EndFor
+		}
+
+		void clearUselessJumpFunc(Func &func) {
+			ForBlocks(j, func.blocks, block)
+				if (block.instrs.size() == 0 || j >= blocks->size() - 2)
+					continue;
+				auto& back_instr = block.instrs.back();
+				if (!(back_instr.type == Instr::JUMP || back_instr.type == Instr::RETURN_END)) {
+					continue;
+				}
+				auto next_label = blocks->at(j + 1).label;
+				if (back_instr.getJumpTarget() == next_label)
+					back_instr = Instr(Instr::NOP);
+			EndFor
+		}
 		
 		void blockMergeEmpty() {
 			ForFuncs(i, func)

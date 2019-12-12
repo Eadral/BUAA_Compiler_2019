@@ -6,14 +6,14 @@
 namespace buaac {
 	class RegPool {
 
-		using Id = string;
+		using Ident = string;
 		using Reg = string;
 		
 		std::map<string, int> memPool;
 	
 	public:
 		int mempool_size = 0;
-		std::map<Id, Reg> regPool;
+		std::map<Ident, Reg> regPool;
 		std::map<Reg, bool> availReg;
 		vector<vector<Reg>> t_stack;
 		vector<Reg> globalRegs = {
@@ -35,21 +35,21 @@ namespace buaac {
 			t_stack.clear();
 		}
 
-		string getRegPool(string id) {
-			if (notFound(regPool, id)) {
+		string getRegPool(string ident) {
+			if (notFound(regPool, ident)) {
 				if (haveAvailReg()) {
-					allocRegPool(id);
+					allocRegPool(ident);
 				} else {
-					return id;
+					return ident;
 				}
 			}
-			return regPool[id];
+			return regPool[ident];
 		}
 
 // #define SHOWALLOC
 		
-		void checkAndRelease(map<Id, VarRange> ident_to_range, int block_index, int block_line_number) {
-			vector<Id> erase_list;
+		void checkAndRelease(map<Ident, VarRange> ident_to_range, int block_index, int block_line_number) {
+			vector<Ident> erase_list;
 			
 			for (auto id : regPool) {
 				if (ident_to_range[id.first].out(block_index, block_line_number)) {
@@ -66,9 +66,9 @@ namespace buaac {
 			}
 		}
 		
-		void releaseRegPool(string id) {
-			
-		}
+		// void releaseRegPool(string id) {
+		// 	
+		// }
 
 		int getMemPool(string id) {
 			if (memPool.find(id) == memPool.end()) {
