@@ -9,9 +9,18 @@
 
 // #define POOLSIZE 30
 
+#define ForFuncs(i, func)	 for (int i = 0; i < ir.funcs.size(); i++) { auto& funcs = ir.funcs; auto& func = ir.funcs.at(i);
+
+#define ForBlocks(j, _blocks, block) for (int j = 0; j < _blocks->size(); j++) { auto& blocks = _blocks; auto& block = _blocks->at(j);
+
+#define ForInstrs(k, _instrs, instr) for (int k = 0; k < _instrs.size(); k++) { auto& instrs = _instrs; auto& instr = _instrs[k]; 
+
+#define EndFor }
+
 namespace buaac {
 
 	using global::GlobalDefine;
+	using lex::TokenType;
 
 	
 	class IR {
@@ -231,6 +240,33 @@ namespace buaac {
 			return FORMAT("while_{}_end", jump_cnt_stack.back());
 		}
 
+		
+		Instr getJumpInstr(string expr_lhs_expr, string expr_rhs_expr, TokenType cmp_type, string target) {
+			switch (cmp_type.type_) {
+			case TokenType::LSS:
+				return Instr(Instr::BLT, expr_lhs_expr, expr_rhs_expr, target);
+				break;
+			case TokenType::LEQ:
+				return Instr(Instr::BLE, expr_lhs_expr, expr_rhs_expr, target);
+				break;
+			case TokenType::GEQ:
+				return Instr(Instr::BGE, expr_lhs_expr, expr_rhs_expr, target);
+				break;
+			case TokenType::GRE:
+				return Instr(Instr::BGT, expr_lhs_expr, expr_rhs_expr, target);
+				break;
+			case TokenType::EQL:
+				return Instr(Instr::BEQ, expr_lhs_expr, expr_rhs_expr, target);
+				break;
+			case TokenType::NEQ:
+				return Instr(Instr::BNE, expr_lhs_expr, expr_rhs_expr, target);
+				break;
+			default:
+				return Instr(Instr::BGEZ, expr_lhs_expr, target);
+				break;
+			}
+		}
+
 		void newDoWhile() {
 			newJumpCnt();
 			jump_define_stack.push_back(DEFINE_DOWHILE);
@@ -428,7 +464,7 @@ namespace buaac {
 				obj_stack.pop_back();
 				// source_a = obj_stack.back();
 				// obj_stack.pop_back();
-				instrs.emplace_back(Instr(Instr::MINUS, temp, "$0", source_b));
+				instrs.emplace_back(Instr(Instr::MINUS, temp, "0", source_b));
 				obj_stack.push_back(temp);
 				break;
 			default:;
@@ -465,6 +501,22 @@ namespace buaac {
 		void appendInstr(Instr instr, bool show=true) {
 			instr.show = show;
 			blocks_now->back().addInstr(instr);
+		}
+
+		void appendInstrs(vector<Instr> instrs) {
+			for (auto instr: instrs) {
+				appendInstr(instr);
+			}
+		}
+
+		vector<Instr> getCondInstrs(string label) {
+			vector<Instr> ans;
+			ForBlocks(j, blocks_now, block)
+				if (label == block.label)
+					ans = block.instrs;
+			EndFor
+			ans.pop_back();
+			return ans;
 		}
 
 		void instrNotShow() {
@@ -575,11 +627,6 @@ namespace buaac {
 	
 }
 
-#define ForFuncs(i, func)	 for (int i = 0; i < ir.funcs.size(); i++) { auto& funcs = ir.funcs; auto& func = ir.funcs.at(i);
-
-#define ForBlocks(j, _blocks, block) for (int j = 0; j < _blocks->size(); j++) { auto& blocks = _blocks; auto& block = _blocks->at(j);
-
-#define ForInstrs(k, _instrs, instr) for (int k = 0; k < _instrs.size(); k++) { auto& instrs = _instrs; auto& instr = _instrs[k]; 
 
 
 

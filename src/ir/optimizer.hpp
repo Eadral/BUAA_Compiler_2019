@@ -28,17 +28,20 @@ namespace buaac {
 			removeFuncsVars();
 			inlineFuncs();
 
+			// ForUnroll();
 			blockMerge();
-			//
-			constantProgpagation();
+			
+			// constantProgpagation();
 			copyPropagation();
 			
 			removeZeroLoad();
-			removeZeroLoadGlobal();
+			// removeZeroLoadGlobal();
 			regAssign();
 			
 		}
 
+#pragma region UnitTest
+		
 		void unitTestDefineUseChain() {
 			FlowGraph flow_graph;
 			flow_graph.addEdge("B1", "B2");
@@ -117,6 +120,9 @@ namespace buaac {
 			unitTestDefineArrival();
 
 		}
+
+#pragma endregion 
+		
 		
 #pragma region Utils
 
@@ -204,6 +210,27 @@ namespace buaac {
 				}
 			}
 		}
+
+		FlowGraph constructFlowGraphFunc(Func& func) {
+			FlowGraph flow_graph;
+
+			// flow_graph.addEntry(func.func_name);
+			ForBlocks(j, func.blocks, block)
+				flow_graph.addId(block.label, j);
+			if (j + 1 < blocks->size()) {
+				Instr jump_instr = getJumpInstr(block);
+				if (jump_instr.type != Instr::NOP && jump_instr.type != Instr::CALL) {
+					flow_graph.addEdge(block.label, jump_instr.getJumpTarget());
+				}
+				if (jump_instr.type != Instr::JUMP) {
+					flow_graph.addEdge(blocks->at(j).label, blocks->at(j + 1).label);
+				}
+			}
+			EndFor
+
+				return flow_graph;
+		}
+
 #pragma endregion 
 
 		
@@ -317,6 +344,7 @@ namespace buaac {
 
 #pragma endregion
 
+		
 #pragma region FunctionInline
 
 		
@@ -452,6 +480,16 @@ namespace buaac {
 
 		void removeBeforeFuncCall(string inline_func_name, Func& fromfunc, int block_index, int line_number, vector<string> paras, int cnt) {
 			auto i = InstrIterator(fromfunc, block_index, line_number);
+			
+			int index = paras.size() - 1;
+			while (index >= 0) {
+				i.previous();
+				if (i.getInstr().type == Instr::PUSH_REG && i.getInstr().source_a == inline_func_name && i.getInstr().source_b == i2a(index)) {
+					i.getInstr() = Instr(Instr::MOVE, getInlineTempNameWithCnt(inline_func_name, index, paras[index], cnt), i.getInstr().target);
+					index--;
+				}
+			}
+
 			while (!(i.getInstr().type == Instr::PUSH_REG && i.getInstr().target == "$fp" && i.getInstr().source_a == inline_func_name)) {
 				i.previous();
 			}
@@ -459,15 +497,6 @@ namespace buaac {
 
 			i.next();
 			i.getInstr() = Instr(Instr::NOP);	// remove push regpool
-			
-			int index = 0;
-			while (index < paras.size()) {
-				i.next();
-				if (i.getInstr().type == Instr::PUSH_REG && i.getInstr().source_a == inline_func_name) {
-					i.getInstr() = Instr(Instr::MOVE, getInlineTempNameWithCnt(inline_func_name, index, paras[index], cnt), i.getInstr().target);
-					index++;
-				}
-			}
 		}
 
 		void removeAfterFuncCall(string inline_func_name, Func& fromfunc, int block_index, int line_number) {
@@ -629,38 +658,7 @@ namespace buaac {
 		
 #pragma endregion 
 
-		// FlowGraph constructFlowGraph() {
-		//
-		// 	ForFuncs(i, func)
-		// 		
-		// 		// if (func.func_name == "main") {
-		// 		// 	flow_graph.addEdge(flow_graph.entry, func.blocks->at(0).label);
-		// 		// 	flow_graph.addEdge(func.blocks->back().label, flow_graph.exit);
-		// 		// }
-		// 	EndFor
-		// 	return flow_graph;
-		// }
-
-		FlowGraph constructFlowGraphFunc(Func &func) {
-			FlowGraph flow_graph;
-
-			// flow_graph.addEntry(func.func_name);
-			ForBlocks(j, func.blocks, block)
-				flow_graph.addId(block.label, j);
-				if (j + 1 < blocks->size()) {
-					Instr jump_instr = getJumpInstr(block);
-					if (jump_instr.type != Instr::NOP && jump_instr.type != Instr::CALL) {
-						flow_graph.addEdge(block.label, jump_instr.getJumpTarget());
-					}
-					if (jump_instr.type != Instr::JUMP) {
-						flow_graph.addEdge(blocks->at(j).label, blocks->at(j + 1).label);
-					}
-				}
-			EndFor
-
-			return flow_graph;
-		}
-
+		
 #pragma region RegAssign
 		
 		void regAssign() {
@@ -717,6 +715,9 @@ namespace buaac {
 
 #pragma  endregion 
 
+		
+#pragma region CopyPropagation
+		
 		void copyPropagation() {
 			ForFuncs(i, func)
 				copyPropagationFunc(func);
@@ -759,6 +760,7 @@ namespace buaac {
 			
 		}
 
+
 		bool noSaveAfter(string save_name, Block &block, int line_number) {
 			for (int i = line_number; i < block.instrs.size(); i++) {
 				auto& instr = block.instrs.at(i);
@@ -768,6 +770,9 @@ namespace buaac {
 			}
 			return true;
 		}
+
+#pragma endregion 
+
 
 #pragma region BlockMerge
 
@@ -877,7 +882,15 @@ namespace buaac {
 		}
 		
 #pragma endregion 
-		
+
+
+#pragma region ForUnroll
+
+		void ForUnroll() {
+			
+		}
+
+#pragma endregion 
 		
 	};
 	

@@ -1394,7 +1394,7 @@ namespace syntax{
 		}
 		// ＜条件＞    ::=  ＜表达式＞＜关系运算符＞＜表达式＞
 		//				｜＜表达式＞ //表达式为0条件为假，否则为真
-		void cond() {
+		tuple<string, string, TokenType> cond() {
 			SymbolType expr_type_lhs;
 			SymbolType expr_type_rhs;
 			Token cmp_token;
@@ -1469,6 +1469,7 @@ namespace syntax{
 				ERROR
 			}
 			syntaxOutput("<条件>");
+			return make_tuple(expr_ans_lhs, expr_ans_rhs, cmp_type);
 		}
 
 		void exprPushVar(Token token) {
@@ -1498,6 +1499,11 @@ namespace syntax{
 			string step_str;
 			Token for_start_token;
 			string for_start_ans;
+
+			string expr_ans_lhs, expr_ans_rhs;
+			TokenType cmp_type;
+			
+			vector<Instr> cond_instrs;
 			
 			switch (lookTokenType()) {
 			case TokenType::DOTK:
@@ -1524,11 +1530,14 @@ namespace syntax{
 				ir.newBlock(ir.getWhileName());
 				eatToken(TokenType::WHILETK);
 				eatToken(TokenType::LPARENT);
-				cond();
+				tie(expr_ans_lhs, expr_ans_rhs, cmp_type) = cond();
 				ir.newBlock(ir.getWhileBodyName());
 				eatToken(TokenType::RPARENT);
 				statement();
-				ir.jump(ir.getWhileName());
+				// ir.jump(ir.getWhileName());
+				cond_instrs = ir.getCondInstrs(ir.getWhileName());
+				ir.appendInstrs(cond_instrs);
+				ir.appendInstr(ir.getJumpInstr(expr_ans_lhs, expr_ans_rhs, cmp_type, ir.getWhileBodyName()));
 				ir.newBlock(ir.getWhileEndName());
 				ir.endJumpDefine();
 				break;
@@ -1544,7 +1553,7 @@ namespace syntax{
 				eatToken(TokenType::SEMICN);
 				ir.newFor();
 				ir.newBlock(ir.getForStartName());
-				cond();
+				tie(expr_ans_lhs, expr_ans_rhs, cmp_type) = cond();
 				eatToken(TokenType::SEMICN);
 				for_step_ident_lhs = eatToken(TokenType::IDENFR);
 				eatToken(TokenType::ASSIGN);
@@ -1566,7 +1575,10 @@ namespace syntax{
 				ir.exprPushLiteralInt(a2i(step_str));
 				saveVar(ir.gen(), for_step_ident_lhs);
 				
-				ir.jump(ir.getForStartName());
+				// ir.jump(ir.getForStartName());
+				cond_instrs = ir.getCondInstrs(ir.getForStartName());
+				ir.appendInstrs(cond_instrs);
+				ir.appendInstr(ir.getJumpInstr(expr_ans_lhs, expr_ans_rhs, cmp_type, ir.getForBodyName()));
 				ir.newBlock(ir.getForEndName());
 				ir.endJumpDefine();
 				break;
