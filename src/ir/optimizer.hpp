@@ -48,26 +48,26 @@ namespace buaac {
 			
 
 				for (int k = 0; k < 50; k++) {
-					if (k % 10 == 0)
+					if (k % 20 == 0)
 						removeNop();
 					loopUnroll();
 					bool flag;
 					do {
 						flag = false;
 						constantProgpagation();
+						// if (oneForAll())
+						// 	flag = true;
+						// if (blockMergeJump())
+							// flag = true;
+						// if (blockMergeSimple())
+							// flag = true;
+						// constantProgpagation();
 						if (blockMergeNoEntry())
 							flag = true;
 						if (blockMergeJump())
 							flag = true;
 						if (blockMergeSimple())
 							flag = true;
-						// constantProgpagation();
-						// if (blockMergeNoEntry())
-						// 	flag = true;
-						// if (blockMergeJump())
-						// 	flag = true;
-						// if (blockMergeSimple())
-						// 	flag = true;
 					} while (flag);
 					
 					
@@ -316,8 +316,8 @@ namespace buaac {
 			ForBlocks(j, func.blocks, block)
 				flow_graph.addId(block.label, j);
 				if (j + 1 < blocks->size()) {
-					Instr jump_instr = getJumpInstr(block);
-					if (jump_instr.type != Instr::NOP && jump_instr.type != Instr::CALL) {
+					Instr &jump_instr = block.instrs.back();
+					if (jump_instr.isJump() && jump_instr.type != Instr::CALL) {
 						flow_graph.addEdge(block.label, jump_instr.getJumpTarget());
 					}
 					if (jump_instr.type != Instr::JUMP) {
@@ -1141,6 +1141,45 @@ namespace buaac {
 			return ans;
 		}
 
+		bool oneForAll() {
+			bool ans = false;
+			ForFuncs(i, func)
+				FlowGraph flow_graph = constructFlowGraphFunc(func);
+
+				ForBlocks(j, func.blocks, block)
+					if (j != 0 && (hasNoEntry(flow_graph, block.label) || hasOnlySelfLoop(flow_graph, block.label))) {
+						blocks->erase(blocks->begin() + j);
+						flow_graph = constructFlowGraphFunc(func);
+						ans = true;
+						j--;
+						continue;
+					}
+					if (!(block.instrs.empty() || j >= blocks->size() - 2) && block.instrs.back().type == Instr::JUMP && block.instrs.back().getJumpTarget() == blocks->at(j + 1).label && !hasMultiEntry(flow_graph, blocks->at(j + 1).label)) {
+						block.instrs.back() = Instr(Instr::NOP);
+						ForInstrs(k, blocks->at(j + 1).instrs, instr)
+							blocks->at(j).instrs.push_back(instr);
+						EndFor
+							blocks->erase(blocks->begin() + j + 1);
+						ans = true;
+						flow_graph = constructFlowGraphFunc(func);
+						continue;
+					}
+					if (!(block.instrs.size() == 0 || j >= blocks->size() - 2) && !block.instrs.back().isJump() && !hasMultiEntry(flow_graph, blocks->at(j + 1).label)) {
+						ForInstrs(k, blocks->at(j + 1).instrs, instr)
+							blocks->at(j).instrs.push_back(instr);
+						EndFor
+							blocks->erase(blocks->begin() + j + 1);
+						ans = true;
+						flow_graph = constructFlowGraphFunc(func);
+						continue;;
+					}
+				
+				EndFor
+			EndFor
+			endOneForAll : ;
+			return ans;
+		}
+		
 		bool blockMergeNoEntry() {
 			bool ans = false;
 			ForFuncs(i, func)

@@ -34,12 +34,12 @@ namespace buaac {
 			// if (nextNodes.find(prev) == nextNodes.end()) {
 			// 	nextNodes[prev] = vector<string>();
 			// }
-			nextNodes[prev].push_back(next);
+			nextNodes[prev].emplace_back(next);
 			
 			// if (predNodes.find(next) == predNodes.end()) {
 			// 	predNodes[next] = vector<string>();
 			// }
-			predNodes[next].push_back(prev);
+			predNodes[next].emplace_back(prev);
 		}
 
 		// void addEntry(string entry) {
