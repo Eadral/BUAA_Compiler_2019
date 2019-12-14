@@ -9,11 +9,11 @@
 
 // #define POOLSIZE 30
 
-#define ForFuncs(i, func)	 for (int i = 0; i < ir.funcs.size(); i++) { auto& funcs = ir.funcs; auto& func = ir.funcs.at(i);
+#define ForFuncs(i, func)	 for (int i = 0; i < ir.funcs.size(); i++) { auto& funcs = ir.funcs; auto& func = ir.funcs.at(i); 
 
 #define ForBlocks(j, _blocks, block) for (int j = 0; j < _blocks->size(); j++) { auto& blocks = _blocks; auto& block = _blocks->at(j);
 
-#define ForInstrs(k, _instrs, instr) for (int k = 0; k < _instrs.size(); k++) { auto& instrs = _instrs; auto& instr = _instrs[k]; 
+#define ForInstrs(k, _instrs, instr) for (int k = 0; k < _instrs.size(); k++) { auto& instrs = _instrs; auto& instr = _instrs[k]; if (instr.type == Instr::NOP) continue;
 
 #define EndFor }
 
@@ -25,6 +25,8 @@ namespace buaac {
 	
 	class IR {
 	public:
+
+		Instr nop = Instr(Instr::NOP);
 
 		map<string, map<string, VarRange>> func_to_ident_to_range;
 

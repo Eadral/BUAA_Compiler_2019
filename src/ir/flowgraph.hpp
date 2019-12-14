@@ -2,14 +2,15 @@
 
 #include "../meow/core.hpp"
 #include <map>
+#include <unordered_map>
 
 
 namespace buaac {
 	class FlowGraph {
 
-		std::map<string, vector<string>> nextNodes;
-		std::map<string, vector<string>> predNodes;
-		map<string, int> label_to_id;
+		std::unordered_map<string, vector<string>> nextNodes;
+		std::unordered_map<string, vector<string>> predNodes;
+		std::unordered_map<string, int> label_to_id;
 
 		// vector<string> entrys;
 		
@@ -17,7 +18,7 @@ namespace buaac {
 		// const string entry = "entry";
 		// const string exit = "exit";
 
-		std::map<string, vector<string>> getNextNodes() {
+		std::unordered_map<string, vector<string>> getNextNodes() {
 			return nextNodes;
 		}
 

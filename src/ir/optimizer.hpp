@@ -29,111 +29,78 @@ namespace buaac {
 			removeFuncsVars();
 			inlineFuncs();
 
-			
-			// blockMergeEmpty();
-			blockMergeJump();
-			blockMergeSimple();
-			blockMergeNoEntry();
-			clearUselessJump();
-			
+			blockMerge();
 			constantProgpagation();
 			copyPropagation();
 			ALUPropagation();
 			removeZeroLoad();
 			removeZeroLoadGlobal();
 
-
-			// blockMerge();
-			// constantProgpagation();
-			// copyPropagation();
-			// ALUPropagation();
-			// removeZeroLoadGlobal();
-			//
-			// for (int i = 0; i < 2; i++) {
-				// 
-			// for (int i = 0; i < 10; i++) {
+			
+			if (maxLoopCnt() >= 100) {
+				
 				loopUnroll();
 				blockMerge();
 
-				// blockMergeNoEntry();
-				// blockMergeJump();
+	
 				constantProgpagation();
 
-				loopUnroll();
-
-				blockMergeSimple();
-				constantProgpagation();
-				blockMergeSimple();
-			for (int i = 0; i < 10; i++) {
-				constantProgpagation();
-				blockMergeNoEntry();
-				blockMergeJump();
-				blockMergeSimple();
-			}
-
-			for (int k = 0; k < 30; k++) {
-				loopUnroll();
-				bool flag;
-				do {
-					flag = false;
-					constantProgpagation();
-					if (blockMergeNoEntry())
-						flag = true;
-					if (blockMergeJump())
-						flag = true;
-					if (blockMergeSimple())
-						flag = true;
-					constantProgpagation();
-					if (blockMergeNoEntry())
-						flag = true;
-					if (blockMergeJump())
-						flag = true;
-					if (blockMergeSimple())
-						flag = true;
-				} while (flag);
-				
-				// for (int i = 0; i < 20; i++) {
-				// 	constantProgpagation();
-				// 	blockMergeNoEntry();
-				// 	blockMergeJump();
-				// 	blockMergeSimple();
-				// }
-			}
 			
-			// loopUnroll();
-			// for (int i = 0; i < 10; i++) {
-			// 	constantProgpagation();
-			// 	blockMergeNoEntry();
-			// 	blockMergeJump();
-			// 	blockMergeSimple();
-			// }
-			// loopUnroll();
-			// for (int i = 0; i < 10; i++) {
-			// 	constantProgpagation();
-			// 	blockMergeNoEntry();
-			// 	blockMergeJump();
-			// 	blockMergeSimple();
-			// }
+
+				for (int k = 0; k < 50; k++) {
+					if (k % 10 == 0)
+						removeNop();
+					loopUnroll();
+					bool flag;
+					do {
+						flag = false;
+						constantProgpagation();
+						if (blockMergeNoEntry())
+							flag = true;
+						if (blockMergeJump())
+							flag = true;
+						if (blockMergeSimple())
+							flag = true;
+						// constantProgpagation();
+						// if (blockMergeNoEntry())
+						// 	flag = true;
+						// if (blockMergeJump())
+						// 	flag = true;
+						// if (blockMergeSimple())
+						// 	flag = true;
+					} while (flag);
+					
+					
+				}
 				
+				removeZeroLoad();
+				removeZeroLoadGlobal();
+				removeDeadSave();
+			} else {
+				constantProgpagation();
+				copyPropagation();
+				ALUPropagation();
+				removeZeroLoad();
+				removeZeroLoadGlobal();
+				removeDeadSave();
+			}
 
-				// blockMergeNoEntry();
-				// blockMergeJump();
-				// blockMergeSimple();
-				// constantProgpagation();
-			// }
-			//
-			// removeZeroLoad();
-
-			//
-			// copyPropagation();
-			// ALUPropagation();
-			removeZeroLoad();
-			removeZeroLoadGlobal();
-			removeDeadSave();
-
+			No_Need_Unroll:
 			
 			regAssign();
 			
+		}
+
+		void removeNop() {
+			ForFuncs(i, func)
+				ForBlocks(j, func.blocks, block)
+				ForInstrs(k, block.instrs, instr)
+					if (instr.type == Instr::NOP)
+						instrs.erase(instrs.begin() + k--);
+					
+					EndFor
+				EndFor
+			EndFor
 		}
 
 		void removeDeadSave() {
@@ -382,6 +349,7 @@ namespace buaac {
 			Interpreter interpreter;
 
 			ForInstrs(i, block.instrs, instr)
+				
 				interpreter.eval(instr);
 			EndFor
 		}
@@ -914,7 +882,7 @@ namespace buaac {
 
 		void copyPropagationFuncConservative(Func &func) {
 			
-			FlowGraph flow_graph = constructFlowGraphFunc(func);
+			// FlowGraph flow_graph = constructFlowGraphFunc(func);
 
 			ForBlocks(j, func.blocks, block)
 				map<string, string> copy;
@@ -1211,6 +1179,38 @@ namespace buaac {
 
 #pragma region LoopUnroll
 
+		int maxLoopCnt() {
+			int ans = -1;
+			ForFuncs(i, func)
+				ans = std::max(ans, maxLoopCntFunc(func));
+			EndFor
+			return ans;
+		}
+
+		int maxLoopCntFunc(Func &func) {
+			int ans = -1;
+			ForBlocks(k, func.blocks, block)
+				string loop_name;
+				int loop_block_index;
+				tie(loop_block_index, loop_name) = findLoopName(func, k);
+				if (loop_block_index == -9)
+					continue;;
+
+				int loop_endblock_index = findLoopEnd(func, loop_name);
+				// debugln("loop_endblock_index: {}", loop_endblock_index);
+				if (loop_endblock_index == -9)
+					continue;
+
+				int for_times = getLoopTimes(func, loop_endblock_index);
+				// debugln("for_times: {}", for_times);
+
+				if (for_times == -9)
+					continue;
+				ans = std::max(ans, for_times);
+			EndFor
+			return ans;
+		}
+		
 		void loopUnroll() {
 			ForFuncs(i, func)
 				loopUnrollFunc(func);

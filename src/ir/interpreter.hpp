@@ -4,6 +4,7 @@
 #include "ir.hpp"
 
 #include <map>
+#include <unordered_map>
 
 namespace buaac {
 
@@ -12,7 +13,7 @@ namespace buaac {
 		// std::map<string, int> temp;
 		// std::map<string, int> local_var;
 		// std::map<string, int> global_var;
-		std::map<string, int> var;
+		std::unordered_map<string, int> var;
 
 
 		
@@ -26,7 +27,7 @@ namespace buaac {
 		}
 
 		void setInstrValue(Instr &instr) {
-			if (instr.type == Instr::IR_SHOW)
+			if (instr.type == Instr::NOP || instr.type == Instr::IR_SHOW)
 				return;
 			
 			const auto &names = instr.getLoadName();
