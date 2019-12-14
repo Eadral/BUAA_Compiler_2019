@@ -180,7 +180,7 @@ namespace buaac {
 				return getWhileEndName();
 				break;
 			case DEFINE_DOWHILE:
-				return getDoWhileEndName();
+				return getDoWhileName();
 				break;
 			default: ;
 			}
@@ -212,15 +212,15 @@ namespace buaac {
 		}
 
 		string getForStartName() {
-			return FORMAT("for_{}_start", jump_cnt_stack.back());
+			return FORMAT("for_start_{}", jump_cnt_stack.back());
 		}
 
 		string getForBodyName() {
-			return FORMAT("for_{}_body", jump_cnt_stack.back());
+			return FORMAT("for_body_{}", jump_cnt_stack.back());
 		}
 
 		string getForEndName() {
-			return FORMAT("for_{}_end", jump_cnt_stack.back());
+			return FORMAT("for_end_{}", jump_cnt_stack.back());
 		}
 
 		void newWhile() {
@@ -237,7 +237,7 @@ namespace buaac {
 		}
 
 		string getWhileEndName() {
-			return FORMAT("while_{}_end", jump_cnt_stack.back());
+			return FORMAT("while_end_{}", jump_cnt_stack.back());
 		}
 
 		
@@ -283,6 +283,10 @@ namespace buaac {
 		string getDoWhileEndName() {
 			return FORMAT("dowhile_{}_end", jump_cnt_stack.back());
 		}
+
+		// string getDoWhileEndName2() {
+		// 	return FORMAT("dowhile_{}_end2", jump_cnt_stack.back());
+		// }
 
 #pragma region expr
 
@@ -603,7 +607,7 @@ namespace buaac {
 				block_index++;
 				line_number = 0;
 				if (block_index >= func.blocks->size()) {
-					panic("cross the border");
+					return false;
 				}
 			}
 			return true;
@@ -613,10 +617,11 @@ namespace buaac {
 			line_number--;
 			while (line_number < 0) {
 				block_index--;
-				line_number = getBlock().instrs.size() - 1;
 				if (block_index < 0) {
-					panic("cross the border");
+					return false;
 				}
+				line_number = getBlock().instrs.size() - 1;
+				
 			}
 			return true;
 		}

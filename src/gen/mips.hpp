@@ -389,6 +389,9 @@ namespace buaac {
 			case Instr::BLEZ:
 				write("blez {}, {}", instr.target, instr.source_a);
 				break;
+			case Instr::BGTZ:
+				write("bgtz {}, {}", instr.target, instr.source_a);
+				break;
 			case Instr::BLT:
 				if (isNumber(instr.target)) {
 					write("bgt {}, {}, {}", instr.source_a, instr.target, instr.source_b);

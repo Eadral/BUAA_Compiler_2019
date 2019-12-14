@@ -1394,7 +1394,7 @@ namespace syntax{
 		}
 		// ＜条件＞    ::=  ＜表达式＞＜关系运算符＞＜表达式＞
 		//				｜＜表达式＞ //表达式为0条件为假，否则为真
-		tuple<string, string, TokenType> cond() {
+		tuple<string, string, TokenType> cond(bool reverse=true) {
 			SymbolType expr_type_lhs;
 			SymbolType expr_type_rhs;
 			Token cmp_token;
@@ -1436,22 +1436,40 @@ namespace syntax{
 
 					switch (cmp_token.getTokenType().type_) {
 					case TokenType::LSS:
-						ir.appendInstr({ Instr::BGE, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						if (reverse)
+							ir.appendInstr({ Instr::BGE, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						else
+							ir.appendInstr({ Instr::BLT, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
 						break;
 					case TokenType::LEQ:
-						ir.appendInstr({ Instr::BGT, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						if (reverse)
+							ir.appendInstr({ Instr::BGT, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						else
+							ir.appendInstr({ Instr::BLE, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
 						break;
 					case TokenType::GEQ:
-						ir.appendInstr({ Instr::BLT, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						if (reverse)
+							ir.appendInstr({ Instr::BLT, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						else
+							ir.appendInstr({ Instr::BGE, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
 						break;
 					case TokenType::GRE:
-						ir.appendInstr({ Instr::BLE, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						if (reverse)
+							ir.appendInstr({ Instr::BLE, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						else
+							ir.appendInstr({ Instr::BGT, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
 						break;
 					case TokenType::EQL:
-						ir.appendInstr({ Instr::BNE, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						if (reverse)
+							ir.appendInstr({ Instr::BNE, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						else
+							ir.appendInstr({ Instr::BEQ, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
 						break;
 					case TokenType::NEQ:
-						ir.appendInstr({ Instr::BEQ, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						if (reverse)
+							ir.appendInstr({ Instr::BEQ, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
+						else
+							ir.appendInstr({ Instr::BNE, expr_ans_lhs, expr_ans_rhs, ir.getCondJumpName() });
 						break;
 					}
 					
@@ -1459,7 +1477,10 @@ namespace syntax{
 				case TokenType::SEMICN:
 				case TokenType::RPARENT:
 					// Emtpy
-					ir.appendInstr({ Instr::BLEZ, expr_ans_lhs, ir.getCondJumpName() });
+					if (reverse)
+						ir.appendInstr({ Instr::BLEZ, expr_ans_lhs, ir.getCondJumpName() });
+					else
+						ir.appendInstr({ Instr::BGTZ, expr_ans_lhs, ir.getCondJumpName() });
 					break;
 				default:
 					ERROR
@@ -1518,10 +1539,11 @@ namespace syntax{
 					return;
 				}
 				eatToken(TokenType::LPARENT);
-				cond();
+				cond(false);
 				eatToken(TokenType::RPARENT);
-				ir.jump(ir.getDoWhileName());
 				ir.newBlock(ir.getDoWhileEndName());
+				// ir.jump(ir.getDoWhileName());
+				// ir.newBlock(ir.getDoWhileEndName2());
 				ir.endJumpDefine();
 				break;
 			case TokenType::WHILETK:

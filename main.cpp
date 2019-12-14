@@ -38,13 +38,13 @@ int main() {
 	Optimizer optimizer(ir);
 
 	IrGen irgen_before(ir);
-	irgen_before.output("ir_before.txt");
+	irgen_before.output("16191051_朱雨聪_优化前中间代码.txt");
 	
 	optimizer.optimize();
 	IR optimized_ir = optimizer.getIR();
 
 	IrGen irgen(optimized_ir);
-	irgen.output("ir.txt");
+	irgen.output("16191051_朱雨聪_优化后中间代码.txt");
 	
 	MIPS mips(optimized_ir);
 

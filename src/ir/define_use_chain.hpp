@@ -265,22 +265,22 @@ namespace buaac {
 		
 	private:
 
-		vector<VarRange> getLoops(FlowGraph &flow_graph) {
-			vector<VarRange> loops;
+		vector<NodeRange> getLoops(FlowGraph &flow_graph) {
+			vector<NodeRange> loops;
 			for (auto next_edge: flow_graph.getNextNodes()) {
 				auto from = next_edge.first;
 				for (auto to : next_edge.second) {
 					int from_id = flow_graph.getId(from);
 					int to_id = flow_graph.getId(to);
 					if (to_id <= from_id) {
-						loops.push_back(VarRange(Node(to_id, to, 0), Node(from_id, from, INT32_MAX)));
+						loops.push_back(NodeRange(Node(to_id, to, 0), Node(from_id, from, INT32_MAX)));
 					}
 				}
 			}
 			return loops;
 		}
 
-		void fixChainLoop(Chain &chain, vector<VarRange> &loops) {
+		void fixChainLoop(Chain &chain, vector<NodeRange> &loops) {
 			bool flag;
 			do {
 				flag = false;
@@ -306,18 +306,23 @@ namespace buaac {
 			// BlockLine ans_max = make_tuple(INT32_MIN, INT32_MIN);
 			if (webs.empty()) {
 				// TODO: fix this
-				return VarRange(DefineUseNode(0, "Global", 0), DefineUseNode(INT32_MAX, "Global", INT32_MAX));
+				return VarRange(
+					NodeRange(DefineUseNode(0, "Global", 0), DefineUseNode(INT32_MAX, "Global", INT32_MAX))
+				);
 			}
 			auto first = webs.begin()->chains.begin()->def;
-			VarRange range = VarRange(first);
+			
+			VarRange range;
 
 			for (auto web : webs) {
+				NodeRange node_range = NodeRange(first);
 				for (auto chain : web.chains) {
-					range = VarRange::merge(range, chain.def);
+					node_range = NodeRange::merge(node_range, chain.def);
 					for (auto use : chain.uses) {
-						range = VarRange::merge(range, use);
+						node_range = NodeRange::merge(node_range, use);
 					}
 				}
+				range.addRange(node_range);
 			}
 
 			return range;

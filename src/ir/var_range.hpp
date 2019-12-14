@@ -43,17 +43,16 @@ public:
 	}
 };
 
-class VarRange {
+class NodeRange {
 public:
 
-	// int block_index, block_line_number;
 	DefineUseNode first, last;
-	VarRange() {}
-	VarRange(DefineUseNode node) : first(node), last(node) {}
-	VarRange(DefineUseNode first, DefineUseNode last) : first(std::min(first, last)), last(std::max(first, last)) {}
+	NodeRange() {}
+	NodeRange(DefineUseNode node) : first(node), last(node) {}
+	NodeRange(DefineUseNode first, DefineUseNode last) : first(std::min(first, last)), last(std::max(first, last)) {}
 
-	static VarRange merge(VarRange lhs, VarRange rhs) {
-		return VarRange(std::min(lhs.first, rhs.first), std::max(lhs.last, rhs.last));
+	static NodeRange merge(NodeRange lhs, NodeRange rhs) {
+		return NodeRange(std::min(lhs.first, rhs.first), std::max(lhs.last, rhs.last));
 	}
 
 	bool in(int block_index, int block_line_number) {
@@ -64,13 +63,35 @@ public:
 	bool out(int block_index, int block_line_number) {
 		return !in(block_index, block_line_number);
 	}
+	
+};
 
-private:
-	// bool inBlock(int block_index) {
-	// 	return first.block_index <= block_index && block_index <= last.block_index;
+class VarRange {
+public:
+
+	// int block_index, block_line_number;
+	vector<NodeRange> ranges;
+	VarRange() {}
+	VarRange(NodeRange range) {
+		ranges.push_back(range);
+	}
+	// VarRange(DefineUseNode first, DefineUseNode last) {
+	// 	ranges.push_back(NodeRange(first, last));
 	// }
-	//
-	// bool inLine(int line_number) {
-	// 	return first.line_number <= line_number && line_number <= last.line_number;
-	// }
+	
+	void addRange(NodeRange range) {
+		ranges.push_back(range);
+	}
+
+	bool in(int block_index, int block_line_number) {
+		for (auto &range: ranges) {
+			if (range.in(block_index, block_line_number))
+				return true;
+		}
+		return false;
+	}
+
+	bool out(int block_index, int block_line_number) {
+		return !in(block_index, block_line_number);
+	}
 };

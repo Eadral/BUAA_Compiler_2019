@@ -24,23 +24,152 @@ namespace buaac {
 		void optimize() {
 			removeRa(getFuncByName("main"));
 
-			unitTestDefineUseChain();
+			// unitTestDefineUseChain();
 
 			removeFuncsVars();
 			inlineFuncs();
 
-			// ForUnroll();
-			blockMerge();
+			
+			// blockMergeEmpty();
+			blockMergeJump();
+			blockMergeSimple();
+			blockMergeNoEntry();
+			clearUselessJump();
 			
 			constantProgpagation();
 			copyPropagation();
 			ALUPropagation();
-			
 			removeZeroLoad();
 			removeZeroLoadGlobal();
+
+
+			// blockMerge();
+			// constantProgpagation();
+			// copyPropagation();
+			// ALUPropagation();
+			// removeZeroLoadGlobal();
+			//
+			// for (int i = 0; i < 2; i++) {
+				// 
+			// for (int i = 0; i < 10; i++) {
+				loopUnroll();
+				blockMerge();
+
+				// blockMergeNoEntry();
+				// blockMergeJump();
+				constantProgpagation();
+
+				loopUnroll();
+
+				blockMergeSimple();
+				constantProgpagation();
+				blockMergeSimple();
+			for (int i = 0; i < 10; i++) {
+				constantProgpagation();
+				blockMergeNoEntry();
+				blockMergeJump();
+				blockMergeSimple();
+			}
+
+			for (int k = 0; k < 30; k++) {
+				loopUnroll();
+				bool flag;
+				do {
+					flag = false;
+					constantProgpagation();
+					if (blockMergeNoEntry())
+						flag = true;
+					if (blockMergeJump())
+						flag = true;
+					if (blockMergeSimple())
+						flag = true;
+					constantProgpagation();
+					if (blockMergeNoEntry())
+						flag = true;
+					if (blockMergeJump())
+						flag = true;
+					if (blockMergeSimple())
+						flag = true;
+				} while (flag);
+				
+				// for (int i = 0; i < 20; i++) {
+				// 	constantProgpagation();
+				// 	blockMergeNoEntry();
+				// 	blockMergeJump();
+				// 	blockMergeSimple();
+				// }
+			}
+			
+			// loopUnroll();
+			// for (int i = 0; i < 10; i++) {
+			// 	constantProgpagation();
+			// 	blockMergeNoEntry();
+			// 	blockMergeJump();
+			// 	blockMergeSimple();
+			// }
+			// loopUnroll();
+			// for (int i = 0; i < 10; i++) {
+			// 	constantProgpagation();
+			// 	blockMergeNoEntry();
+			// 	blockMergeJump();
+			// 	blockMergeSimple();
+			// }
+				
+
+				// blockMergeNoEntry();
+				// blockMergeJump();
+				// blockMergeSimple();
+				// constantProgpagation();
+			// }
+			//
+			// removeZeroLoad();
+
+			//
+			// copyPropagation();
+			// ALUPropagation();
+			removeZeroLoad();
+			removeZeroLoadGlobal();
+			removeDeadSave();
+
+			
 			regAssign();
 			
 		}
+
+		void removeDeadSave() {
+			ForFuncs(i, func)
+				removeDeadSaveFunc(func);
+			EndFor
+		}
+
+		void removeDeadSaveFunc(Func &func) {
+			ForBlocks(j, func.blocks, block)
+				map<string, bool> is_dead_save;
+				for (int i = block.instrs.size()-1; i >= 0; i--) {
+					auto& instr = block.instrs.at(i);
+
+					auto save = instr.getStoreName();
+					if (!save.empty()
+						&& (instr.target == "$v0" || !starts_with(save, string("$")))
+						&& !starts_with(save, string("__g"))
+						&& !instr.doNotDelDead()
+						&& is_dead_save[save] == true
+						
+						) {
+						instr = Instr(Instr::NOP);
+						continue;
+					}
+					is_dead_save[save] = true;
+
+					auto loads = instr.getLoadName();
+					for (auto &load : loads) {
+						is_dead_save[load] = false;
+					}
+					
+				}
+			EndFor
+		}
+
 
 #pragma region UnitTest
 		
@@ -272,7 +401,7 @@ namespace buaac {
 							// TODO: remove this
 							auto save_name = instr.getStoreName();
 							if (!save_name.empty()
-								&& !starts_with(save_name, string("$"))
+								&& (!starts_with(save_name, string("$")))
 								&& !starts_with(save_name, string("__G"))
 								&& !instr.doNotDelDead()
 								&& load_cnt.find(save_name) == load_cnt.end()) {
@@ -282,9 +411,9 @@ namespace buaac {
 						}
 
 						auto load_names = instr.getLoadName();
-						if (instr.isMemorySave()) {
-							load_names.push_back(instr.target);
-						}
+						// if (instr.isMemorySave()) {
+						// 	load_names.push_back(instr.target);
+						// }
 						for (int j = 0; j < load_names.size(); j++) {
 							auto& name = load_names[j];
 							if (load_cnt.find(name) == load_cnt.end()) {
@@ -325,8 +454,8 @@ namespace buaac {
 					auto save_name = instr.getStoreName();
 					if (!save_name.empty()
 						&& !starts_with(save_name, string("$"))
-						&& !starts_with(save_name, string("__G"))
-						// && !instr.doNotDelDead()
+						&& !starts_with(save_name, string("__g"))
+						&& !instr.doNotDelDead()
 						&& load_cnt.find(save_name) == load_cnt.end()) {
 						instr.type = Instr::NOP;
 						continue;
@@ -733,7 +862,7 @@ namespace buaac {
 
 					if (
 						instr.isALU()
-						// && starts_with(instr.source_a, string("__T"))
+						&& instr.type != Instr::DIV
 						// && !starts_with(instr.source_a, string("$"))
 						)
 					{
@@ -888,7 +1017,9 @@ namespace buaac {
 			blockMergeEmpty();
 			blockMergeJump();
 			blockMergeSimple();
+			blockMergeNoEntry();
 			clearUselessJump();
+			blockMergeSimple();
 		}
 
 		void clearUselessJump() {
@@ -936,54 +1067,86 @@ namespace buaac {
 				EndFor
 			EndFor
 		}
+
+		void changeJumpInBlocks(vector<Block> &blocks, string from, string to) {
+			for (auto &block : blocks) {
+				ForInstrs(k, block.instrs, instr)
+					if (instr.isJump() && instr.getJumpTarget() == from) {
+						instr.changeJumpTarget(to);
+					}
+				EndFor
+			}
+		}
 		
-		void blockMergeJump() {
+		bool blockMergeJump() {
+			bool ans = false;
 			ForFuncs(i, func)
-				blockMergeJumpFunc(func);
+				if (blockMergeJumpFunc(func)) {
+					ans = true;
+				}
 			EndFor
+			return ans;
 		}
 
-		void blockMergeJumpFunc(Func &func) {
-
+		bool blockMergeJumpFunc(Func &func) {
+			bool ans = false;
 			bool flag;
 			do {
 				flag = false;
 				FlowGraph flow_graph = constructFlowGraphFunc(func);
 
 				ForBlocks(j, func.blocks, block)
-					if (block.instrs.size() == 0 || j >= blocks->size() - 2)
+					if (block.instrs.empty() || j >= blocks->size() - 2)
+						break;
+					auto& back_instr = block.instrs.back();
+					if (!(back_instr.type == Instr::JUMP)) {
 						continue;
-				auto& back_instr = block.instrs.back();
-				if (!(back_instr.type == Instr::JUMP || back_instr.type == Instr::RETURN_END)) {
-					continue;
-				}
-				auto next_label = blocks->at(j + 1).label;
-				if (back_instr.getJumpTarget() == next_label && !hasMultiEntry(flow_graph, next_label)) {
-					back_instr = Instr(Instr::NOP);
-					ForInstrs(k, blocks->at(j + 1).instrs, instr)
-						blocks->at(j).instrs.push_back(instr);
-					EndFor
-					blocks->erase(blocks->begin() + j + 1);
-					flag = true;
-				}
+					}
+					auto next_label = blocks->at(j + 1).label;
+					if (back_instr.getJumpTarget() == next_label && !hasMultiEntry(flow_graph, next_label)) {
+						back_instr = Instr(Instr::NOP);
+						ForInstrs(k, blocks->at(j + 1).instrs, instr)
+							blocks->at(j).instrs.push_back(instr);
+						EndFor
+						blocks->erase(blocks->begin() + j + 1);
+						flag = true;
+						ans = true;
+					}
 				EndFor
 				
 			} while (flag);
-			
+				return ans;
 			
 		}
 
+		bool hasNoEntry(FlowGraph &flow_graph, string label) {
+			return flow_graph.getPreds(label).size() == 0;
+		}
+
+		bool hasOnlySelfLoop(FlowGraph& flow_graph, string label) {
+			auto preds = flow_graph.getPreds(label);
+			if (preds.size() == 1 && preds[0] == label) {
+				return true;
+			}
+			return false;
+		}
+		
 		bool hasMultiEntry(FlowGraph &flow_graph, string label) {
 			return flow_graph.getPreds(label).size() > 1;
 		}
 
-		void blockMergeSimple() {
+		bool blockMergeSimple() {
+			bool ans = false;
 			ForFuncs(i, func)
-				blockMergeSimpleFunc(func);
+				if (blockMergeSimpleFunc(func)) {
+					ans = true;
+				}
 			EndFor
+			return ans;
 		}
 
-		void blockMergeSimpleFunc(Func &func) {
+		bool blockMergeSimpleFunc(Func &func) {
+			bool ans = false;
 			bool flag;
 			do {
 				flag = false;
@@ -1003,21 +1166,272 @@ namespace buaac {
 					EndFor
 					blocks->erase(blocks->begin() + j + 1);
 					flag = true;
+					ans = true;
 				}
 				EndFor
 			} while (flag);
-		
+			return ans;
+		}
+
+		bool blockMergeNoEntry() {
+			bool ans = false;
+			ForFuncs(i, func)
+				if (blockMergeNoEntryFunc(func)) {
+					ans = true;
+				}
+			EndFor
+			return ans;
+		}
+
+		bool blockMergeNoEntryFunc(Func &func) {
+			bool ans = false;
+			bool flag;
+			do {
+				flag = false;
+				FlowGraph flow_graph = constructFlowGraphFunc(func);
+
+				ForBlocks(j, func.blocks, block)
+					if (j == 0)
+						continue;
+					if (hasNoEntry(flow_graph, block.label) || hasOnlySelfLoop(flow_graph, block.label)) {
+						blocks->erase(blocks->begin() + j);
+						j--;
+						flag = true;
+						ans = true;
+						continue;
+					}
+					
+				EndFor
+			} while (flag);
+			return ans;
 		}
 		
 #pragma endregion 
 
 
-#pragma region ForUnroll
+#pragma region LoopUnroll
 
-		void ForUnroll() {
-			
+		void loopUnroll() {
+			ForFuncs(i, func)
+				loopUnrollFunc(func);
+			EndFor
 		}
 
+		void loopUnrollFunc(Func &func) {
+			int factor = 10;
+			// bool flag;
+			// do {
+			// 	flag = false;
+
+				ForBlocks(k, func.blocks, block)
+					// auto& blocks = func.blocks;
+					if (k > 1000)
+						break;
+
+					string loop_name;
+					int loop_block_index;
+					tie(loop_block_index, loop_name) = findLoopName(func, k);
+					if (loop_block_index == -9)
+						continue;;
+
+					int loop_endblock_index = findLoopEnd(func, loop_name);
+					// debugln("loop_endblock_index: {}", loop_endblock_index);
+					if (loop_endblock_index == -9)
+						continue;
+
+					int for_times = getLoopTimes(func, loop_endblock_index);
+					// debugln("for_times: {}", for_times);
+
+					if (for_times == -9)
+						continue;
+					factor = 10;
+					auto& jump_instr = blocks->at(loop_endblock_index).instrs.back();
+					if (for_times <= factor || !isNumber(jump_instr.source_a)) {
+
+						// Unroll
+						vector<Block> loop_blocks;
+						for (int i = loop_block_index; i <= loop_endblock_index; i++) {
+							loop_blocks.push_back(blocks->at(loop_block_index));
+							blocks->erase(blocks->begin() + loop_block_index);
+						}
+						loop_blocks.back().instrs.pop_back();
+						// Block loop_block = func.blocks->at(loop_block_index);
+						// loop_block.instrs.pop_back();
+						//
+						// func.blocks->erase(func.blocks->begin() + loop_block_index);
+						//
+						vector<string> block_names;
+						for (int i = 0; i < loop_blocks.size(); i++) {
+							block_names.push_back(loop_blocks[i].label);
+						}
+
+						for (int i = 0; i < for_times; i++) {
+							// change name
+							vector<Block> new_blocks = loop_blocks;
+							for (int j = 0; j < loop_blocks.size(); j++) {
+								changeJumpInBlocks(new_blocks, new_blocks[j].label, getUnrollName(block_names[j], i));
+								new_blocks[j].label = getUnrollName(block_names[j], i);
+							}
+							// insert
+							for (int j = new_blocks.size() - 1; j >= 0; j--) {
+								blocks->insert(blocks->begin() + loop_block_index, new_blocks[j]);
+							}
+						}
+					} else {
+
+						
+						
+						// Unroll
+						vector<Block> loop_blocks;
+						for (int i = loop_block_index; i <= loop_endblock_index; i++) {
+							loop_blocks.push_back(blocks->at(i));
+							// blocks->erase(blocks->begin() + loop_block_index);
+						}
+						loop_blocks.back().instrs.pop_back();
+
+						auto& jump_instr = blocks->at(loop_endblock_index).instrs.back();
+						if (isNumber(jump_instr.source_a)) {
+							jump_instr.source_a = i2a(a2i(jump_instr.source_a) - factor);
+						}
+						else {
+							string source_a = jump_instr.source_a;
+							Instr sub_instr = Instr(Instr::MINUS, FORMAT("{}_unroll", source_a), source_a, factor);
+							auto& end_instrs = blocks->at(loop_endblock_index).instrs;
+							end_instrs.insert(end_instrs.end() - 1, sub_instr);
+							auto& jump_instr = blocks->at(loop_endblock_index).instrs.back();
+							jump_instr.source_a = FORMAT("{}_unroll", source_a);
+						}
+						// Block loop_block = func.blocks->at(loop_block_index);
+						// loop_block.instrs.pop_back();
+						//
+						// func.blocks->erase(func.blocks->begin() + loop_block_index);
+						//
+						vector<string> block_names;
+						for (int i = 0; i < loop_blocks.size(); i++) {
+							block_names.push_back(loop_blocks[i].label);
+						}
+
+						for (int i = 0; i < factor; i++) {
+							// change name
+							vector<Block> new_blocks = loop_blocks;
+							for (int j = 0; j < loop_blocks.size(); j++) {
+								changeJumpInBlocks(new_blocks, new_blocks[j].label, getUnrollName(block_names[j], i));
+								new_blocks[j].label = getUnrollName(block_names[j], i);
+							}
+							// insert
+							for (int j = new_blocks.size() - 1; j >= 0; j--) {
+								blocks->insert(blocks->begin() + loop_block_index, new_blocks[j]);
+							}
+						}
+					}
+			
+
+
+					return;
+
+				EndFor
+				
+				
+
+				
+			// } while (flag);
+
+		}
+
+		string getUnrollName(string origin_name, int time) {
+			return FORMAT("{}_unroll_{}", origin_name, time);
+		}
+
+		int findLoopEnd(Func &func, string loop_name) {
+			ForBlocks(j, func.blocks, block)
+				Instr jump_instr = getJumpInstr(block);
+				if (jump_instr.isJump() && jump_instr.getJumpTarget() == loop_name)
+					return j;
+			EndFor
+			return -9;
+		}
+
+		tuple<int, string> findLoopName(Func &func, int block_index) {
+			// ForBlocks(j, func.blocks, block)
+			auto& block = func.blocks->at(block_index);
+				if (starts_with(block.label, string("for_body")) 
+					|| starts_with(block.label, string("while_body"))
+					)
+				{
+					string loop_name = block.label;
+					return make_tuple(block_index, loop_name);
+				}
+			// EndFor
+			return make_tuple(-9, "None");
+		}
+
+		int getLoopTimes(Func &func, int for_block_index) {
+			InstrIterator i(func, for_block_index, func.blocks->at(for_block_index).instrs.size() - 1);
+			// i.previous();
+			int loop_times = -9;
+
+			Instr loop_branch_instr = i.getInstr();
+			string loop_var = i.getInstr().target;
+			
+			// debugln("loop_var: {}", loop_var);
+
+			int loop_end;
+			if (i.getInstr().has_source_a_value) {
+				loop_end = i.getInstr().source_a_value;
+			} else {
+				loop_end = getLoopEnd(func, i, i.getInstr().source_a);
+			}
+			// debugln("loop_start: {}", loop_end);
+			
+			//
+			string loop_start_var;
+			while (i.previous()) {
+				if ((i.getInstr().type == Instr::PLUS && i.getInstr().target == loop_var)) {
+					if (i.getInstr().source_b_value != 1)
+						break;
+					loop_start_var = i.getInstr().source_a;
+					break;
+				}
+			}
+			// debugln("loop_start_var: {}", loop_start_var);
+
+			int loop_start = -9;
+			while (i.previous()) {
+				if (i.getInstr().type == Instr::LI && i.getInstr().target == loop_start_var) {
+					loop_start = i.getInstr().source_a_value;
+					break;
+				}
+			}
+			// debugln("loop_start: {}", loop_start);
+
+			if (loop_start != -9 && loop_end != -9) {
+				switch (loop_branch_instr.type) {
+				case Instr::BLT:
+					loop_times = loop_end - loop_start;
+					break;
+				case Instr::BLE:
+					loop_times = loop_end - loop_start + 1;
+				default:;
+				}
+				
+			}
+			
+			return loop_times;
+		}
+
+		int getLoopEnd(Func &func, InstrIterator i, string source_a) {
+			int end = -9;
+			while (i.previous()) {
+				if (i.getInstr().type == Instr::LI && i.getInstr().target == source_a) {
+					end = a2i(i.getInstr().source_a);
+					break;
+				}
+				if (i.getInstr().getStoreName() == source_a)
+					break;
+			}
+			return end;
+		}
+		
 #pragma endregion 
 		
 	};

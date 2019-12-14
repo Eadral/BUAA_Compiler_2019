@@ -53,6 +53,7 @@ namespace buaac {
 				JUMP,
 				BGEZ,
 				BLEZ,
+				BGTZ,
 				BLT,
 				BGT,
 				BLE,
@@ -173,6 +174,7 @@ namespace buaac {
 				case PUSH_REG:
 				case BGEZ:
 				case BLEZ:
+				case BGTZ:
 				case BLT:
 				case BGT:
 				case BLE:
@@ -416,17 +418,17 @@ namespace buaac {
 			}
 
 			void setValue(string reg, int value) {
-				if (target == reg) {
+				if (targetIsLoad() && target == reg) {
 					target_value = value;
 					has_target_value = true;
 					target = i2a(value);
 				}
-				if (source_a == reg) {
+				if (sourceAIsLoad() && source_a == reg) {
 					source_a_value = value;
 					has_source_a_value = true;
 					source_a = i2a(value);
 				}
-				if (source_b == reg) {
+				if (sourceBIsLoad() && source_b == reg) {
 					source_b_value = value;
 					has_source_b_value = true;
 					source_b = i2a(value);
@@ -482,7 +484,7 @@ namespace buaac {
 					has_ans = true;
 					break;
 				case LI:
-					ans = source_a_value;
+					ans = a2i(source_a);
 					has_ans = true;
 					break;
 				case BGEZ:
@@ -490,6 +492,9 @@ namespace buaac {
 					break;
 				case BLEZ:
 					ans = target_value <= 0 ? 1 : 0;
+					break;
+				case BGTZ:
+					ans = target_value > 0 ? 1 : 0;
 					break;
 				case BLT:
 					ans = target_value < source_a_value ? 1 : 0;
@@ -532,6 +537,7 @@ namespace buaac {
 					break;
 				case BGEZ:
 				case BLEZ:
+				case BGTZ:
 					if (ans == 1) {
 						type = JUMP;
 						target = source_a;
@@ -586,6 +592,7 @@ namespace buaac {
 				case JUMP: 
 				case BGEZ: 
 				case BLEZ: 
+				case BGTZ: 
 				case BLT: 
 				case BGT:
 				case BLE: 
@@ -606,6 +613,7 @@ namespace buaac {
 					return target;
 				case BGEZ:
 				case BLEZ:
+				case BGTZ:
 					return source_a;
 				case BLT:
 				case BGT:
@@ -628,6 +636,7 @@ namespace buaac {
 					break;
 				case BGEZ:
 				case BLEZ:
+				case BGTZ:
 					source_a = new_target;
 					break;
 				case BLT:
