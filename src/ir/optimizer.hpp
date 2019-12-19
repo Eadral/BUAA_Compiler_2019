@@ -28,62 +28,65 @@ namespace buaac {
 
 			removeFuncsVars();
 			inlineFuncs();
-
-			blockMerge();
-			constantProgpagation();
-			copyPropagation();
-			ALUPropagation();
-			removeZeroLoad();
-			removeZeroLoadGlobal();
-
-			
-			if (maxLoopCnt() >= 100) {
-				
+			for (int i = 0; i < 3; i++) {
 				loopUnroll();
 				blockMerge();
-
-	
 				constantProgpagation();
-
+				// copyPropagation();
+				// ALUPropagation();
+				removeZeroLoad();
+				removeZeroLoadGlobal();
+			}
 			
 
-				for (int k = 0; k < 50; k++) {
-					if (k % 20 == 0)
-						removeNop();
-					loopUnroll();
-					bool flag;
-					do {
-						flag = false;
-						constantProgpagation();
-						// if (oneForAll())
-						// 	flag = true;
-						// if (blockMergeJump())
-							// flag = true;
-						// if (blockMergeSimple())
-							// flag = true;
-						// constantProgpagation();
-						if (blockMergeNoEntry())
-							flag = true;
-						if (blockMergeJump())
-							flag = true;
-						if (blockMergeSimple())
-							flag = true;
-					} while (flag);
-					
-					
-				}
-				
-				removeZeroLoad();
-				removeZeroLoadGlobal();
-				removeDeadSave();
-			} else {
-				constantProgpagation();
-				copyPropagation();
-				ALUPropagation();
-				removeZeroLoad();
-				removeZeroLoadGlobal();
-				removeDeadSave();
-			}
+			
+			// if (maxLoopCnt() >= 100) {
+			// 	
+			// 	loopUnroll();
+			// 	blockMerge();
+			//
+			//
+			// 	constantProgpagation();
+			//
+			//
+			//
+			// 	for (int k = 0; k < 50; k++) {
+			// 		if (k % 20 == 0)
+			// 			removeNop();
+			// 		loopUnroll();
+			// 		bool flag;
+			// 		do {
+			// 			flag = false;
+			// 			constantProgpagation();
+			// 			// if (oneForAll())
+			// 			// 	flag = true;
+			// 			// if (blockMergeJump())
+			// 				// flag = true;
+			// 			// if (blockMergeSimple())
+			// 				// flag = true;
+			// 			// constantProgpagation();
+			// 			if (blockMergeNoEntry())
+			// 				flag = true;
+			// 			if (blockMergeJump())
+			// 				flag = true;
+			// 			if (blockMergeSimple())
+			// 				flag = true;
+			// 		} while (flag);
+			// 		
+			// 		
+			// 	}
+			// 	
+			// 	removeZeroLoad();
+			// 	removeZeroLoadGlobal();
+			// 	removeDeadSave();
+			// } else {
+			// 	constantProgpagation();
+			// 	copyPropagation();
+			// 	ALUPropagation();
+			// 	removeZeroLoad();
+			// 	removeZeroLoadGlobal();
+			// 	removeDeadSave();
+			// }
 
 			No_Need_Unroll:
 			
@@ -1256,6 +1259,8 @@ namespace buaac {
 			EndFor
 		}
 
+		int unroll_cnt = 0;
+
 		void loopUnrollFunc(Func &func) {
 			int factor = 10;
 			// bool flag;
@@ -1305,11 +1310,12 @@ namespace buaac {
 						}
 
 						for (int i = 0; i < for_times; i++) {
+							unroll_cnt++;
 							// change name
 							vector<Block> new_blocks = loop_blocks;
 							for (int j = 0; j < loop_blocks.size(); j++) {
-								changeJumpInBlocks(new_blocks, new_blocks[j].label, getUnrollName(block_names[j], i));
-								new_blocks[j].label = getUnrollName(block_names[j], i);
+								changeJumpInBlocks(new_blocks, new_blocks[j].label, getUnrollName(block_names[j]));
+								new_blocks[j].label = getUnrollName(block_names[j]);
 							}
 							// insert
 							for (int j = new_blocks.size() - 1; j >= 0; j--) {
@@ -1351,11 +1357,12 @@ namespace buaac {
 						}
 
 						for (int i = 0; i < factor; i++) {
+							unroll_cnt++;
 							// change name
 							vector<Block> new_blocks = loop_blocks;
 							for (int j = 0; j < loop_blocks.size(); j++) {
-								changeJumpInBlocks(new_blocks, new_blocks[j].label, getUnrollName(block_names[j], i));
-								new_blocks[j].label = getUnrollName(block_names[j], i);
+								changeJumpInBlocks(new_blocks, new_blocks[j].label, getUnrollName(block_names[j]));
+								new_blocks[j].label = getUnrollName(block_names[j]);
 							}
 							// insert
 							for (int j = new_blocks.size() - 1; j >= 0; j--) {
@@ -1377,8 +1384,8 @@ namespace buaac {
 
 		}
 
-		string getUnrollName(string origin_name, int time) {
-			return FORMAT("{}_unroll_{}", origin_name, time);
+		string getUnrollName(string origin_name) {
+			return FORMAT("{}_unroll_{}", origin_name, unroll_cnt);
 		}
 
 		int findLoopEnd(Func &func, string loop_name) {
