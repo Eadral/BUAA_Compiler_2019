@@ -166,6 +166,12 @@ namespace buaac {
 
 		void assignRegister(string &reg) {
 			if (starts_with(reg, string("__T"))) {
+				reg = reg_pool_.getAndAllocRegPool(reg);
+			}
+		}
+
+		void getRegister(string &reg) {
+			if (starts_with(reg, string("__T"))) {
 				reg = reg_pool_.getRegPool(reg);
 			}
 		}
@@ -186,23 +192,44 @@ namespace buaac {
 				if (instr.block_line_number != -1) {
 					reg_pool_.checkAndRelease(ir.func_to_ident_to_range[func.func_name], j, instr.block_line_number);
 				}
-				assignRegister(instrs[k].target);
-				assignRegister(instrs[k].source_a);
-				assignRegister(instrs[k].source_b);
+
+				if (instrs[k].targetIsSave()) {
+					assignRegister(instrs[k].target);
+				} else {
+					getRegister(instrs[k].target);
+				}
+
+				if (instrs[k].sourceAIsSave()) {
+					assignRegister(instrs[k].source_a);
+				}
+				else {
+					getRegister(instrs[k].source_a);
+				}
+
+				if (instrs[k].sourceBIsSave()) {
+					assignRegister(instrs[k].source_b);
+				}
+				else {
+					getRegister(instrs[k].source_b);
+				}
+			
 
 				if (NOT_ASSIGN(target)) {
+					// panic("not assign");
 					if (instrs[k].targetIsLoad())
 						REGPOOL_LOAD(target, $a0);
 					if (instrs[k].targetIsSave())
 						REGPOOL_SAVE(target, $a0);
 				}
 				if (NOT_ASSIGN(source_a)) {
+					// panic("not assign");
 					if (instrs[k].sourceAIsLoad())
 						REGPOOL_LOAD(source_a, $a1);
 					if (instrs[k].sourceAIsSave())
 						REGPOOL_SAVE(source_a, $a1);
 				}
 				if (NOT_ASSIGN(source_b)) {
+					// panic("not assign");
 					if (instrs[k].sourceBIsLoad())
 						REGPOOL_LOAD(source_b, $a2);
 					if (instrs[k].sourceBIsSave())

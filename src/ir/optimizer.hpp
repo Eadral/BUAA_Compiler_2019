@@ -28,65 +28,16 @@ namespace buaac {
 
 			removeFuncsVars();
 			inlineFuncs();
-			// for (int i = 0; i < 3; i++) {
-			// 	loopUnroll();
-				blockMerge();
-			// 	constantProgpagation();
-			// 	// copyPropagation();
-			// 	// ALUPropagation();
-			// 	removeZeroLoad();
-			// 	removeZeroLoadGlobal();
-			// }
 			
-
+			blockMerge();
 			
-			// if (maxLoopCnt() >= 100) {
-			// 	
-			// 	loopUnroll();
-			// 	blockMerge();
-			//
-			//
-			// 	constantProgpagation();
-			//
-			//
-			//
-			// 	for (int k = 0; k < 50; k++) {
-			// 		if (k % 20 == 0)
-			// 			removeNop();
-			// 		loopUnroll();
-			// 		bool flag;
-			// 		do {
-			// 			flag = false;
-			// 			constantProgpagation();
-			// 			// if (oneForAll())
-			// 			// 	flag = true;
-			// 			// if (blockMergeJump())
-			// 				// flag = true;
-			// 			// if (blockMergeSimple())
-			// 				// flag = true;
-			// 			// constantProgpagation();
-			// 			if (blockMergeNoEntry())
-			// 				flag = true;
-			// 			if (blockMergeJump())
-			// 				flag = true;
-			// 			if (blockMergeSimple())
-			// 				flag = true;
-			// 		} while (flag);
-			// 		
-			// 		
-			// 	}
-			// 	
-			// 	removeZeroLoad();
-			// 	removeZeroLoadGlobal();
-			// 	removeDeadSave();
-			// } else {
-				constantProgpagation();
-				copyPropagation();
-				ALUPropagation();
-				// removeZeroLoad();
-				removeZeroLoadGlobal();
-				removeDeadSave();
-			// }
+			// constantProgpagation();
+			copyPropagation();
+			ALUPropagation();
+			// removeZeroLoad(); // TODO: FIXME
+			removeZeroLoadGlobal();
+			removeDeadSave();
+			
 
 			No_Need_Unroll:
 			

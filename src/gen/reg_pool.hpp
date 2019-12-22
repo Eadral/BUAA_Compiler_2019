@@ -35,13 +35,20 @@ namespace buaac {
 			t_stack.clear();
 		}
 
-		string getRegPool(string ident) {
+		string getAndAllocRegPool(string ident) {
 			if (notFound(regPool, ident)) {
 				if (haveAvailReg()) {
 					allocRegPool(ident);
 				} else {
 					return ident;
 				}
+			}
+			return regPool[ident];
+		}
+
+		string getRegPool(string ident) {
+			if (notFound(regPool, ident)) {
+					return ident;
 			}
 			return regPool[ident];
 		}
