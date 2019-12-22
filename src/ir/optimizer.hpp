@@ -29,15 +29,18 @@ namespace buaac {
 			removeFuncsVars();
 			inlineFuncs();
 			
-			blockMerge();
+			removeFuncsParas();
 			
-			// constantProgpagation();
+			blockMerge();
+			//
+			constantProgpagation();
 			copyPropagation();
 			ALUPropagation();
 			removeZeroLoadGlobal();
-			removeZeroLoad(); // TODO: FIXME
-
+			removeZeroLoad(); 
 			removeDeadSave();
+
+			// DAG();
 			
 			regAssign();
 			
@@ -663,6 +666,41 @@ namespace buaac {
 			ForFuncs(i, func)
 				auto idents = getFuncVars(func);
 				removeFuncVars(func, idents);
+			EndFor
+		}
+
+		void removeFuncsParas() {
+			ForFuncs(i, func)
+				removeFuncParas(func);
+			EndFor
+		}
+
+		void removeFuncParas(Func &func) {
+			auto paras = getParas(func);
+			ForBlocks(j, func.blocks, block)
+				ForInstrs(k, block.instrs, instr)
+					if (instr.type == Instr::PARA) {
+						string type = instr.target;
+						string show_as = instr.source_a;
+						int index = getFoundIndex(paras, instr.source_a);
+						if (index == -1)
+							continue;
+						instr = Instr(Instr::LOAD_STA, getVarTempName(instr.source_a), -index*4);
+						instr.showas = FORMAT("para {} {}", type, show_as);
+					} else
+					if (instr.type == Instr::LOAD_STA) {
+						int index = getFoundIndex(paras, instr.showas);
+						if (index == -1)
+							continue;
+						instr = Instr(Instr::MOVE, instr.target, getVarTempName(instr.showas));
+					} else
+					if (instr.type == Instr::SAVE_STA) {
+						int index = getFoundIndex(paras, instr.showas);
+						if (index == -1)
+							continue;
+						instr = Instr(Instr::MOVE, getVarTempName(instr.showas), instr.target);
+					}
+				EndFor
 			EndFor
 		}
 

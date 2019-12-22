@@ -285,7 +285,7 @@ namespace buaac {
 					pushPoolSize.pop_back();
 					reg_pool_.popMemPool();
 				} else if (instrs[k].type == Instr::CALL) {
-					if (need_push_stack.back() == instrs[k].target) {
+					if (need_push_stack.back() == instr.target) {
 						pushPoolSize.push_back(reg_pool_.mempool_size);
 						instrs[k].source_a = i2a(4 * pushPoolSize.back());
 						// write("addi $k1, $k1, {}", 4 * pushPoolSize.back());
