@@ -1669,7 +1669,7 @@ namespace syntax{
 
 				pushStackReg("$fp", name.getValue());
 
-				ir.appendInstr({ Instr::PUSH_REGPOOL , int(val_para_list.size()) });
+				ir.appendInstr({ Instr::PUSH_REGPOOL , name.getValue() });
 				
 				tie(_find_success, func_symbol) = _symbol_table.findSymbol(name.getValue());
 				checkFind();

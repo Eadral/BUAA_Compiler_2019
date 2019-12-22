@@ -33,6 +33,8 @@ namespace buaac {
 			genGlobal();
 			// genRegPool();
 			write(".text");
+			write("addi $k1, $gp, {}", REGPOOL_START);
+
 			write("j main");
 			genFuncs();
 			// genText();
@@ -46,7 +48,7 @@ namespace buaac {
 			}
 		}
 
-#define REGPOOL_START 2000 * 4
+		const int REGPOOL_START = (2000 * 4);
 		// #define REGPOOL "REGPOOL"
 // #define POOLSIZE 100
 		
@@ -92,7 +94,7 @@ namespace buaac {
 			if (starts_with(instr.ir_reg, string("__T"))) {	\
 				int loc = 4 * reg_pool_.getMemPool(instr.ir_reg.substr(3));	\
 				instr.ir_reg = #assign_reg;	\
-				insertBefore(instrs, k, Instr(Instr::LOAD_GLO, #assign_reg, REGPOOL_START+loc));	\
+				insertBefore(instrs, k, Instr(Instr::LOAD_POOL, #assign_reg, loc));	\
 			}	\
 		} while(0)
 
@@ -102,7 +104,7 @@ namespace buaac {
 			if (starts_with(instr.ir_reg, string("__T"))) {	\
 				int loc = 4 * reg_pool_.getMemPool(instr.ir_reg.substr(3));	\
 				instr.ir_reg = #assign_reg;	\
-				insertAfter(instrs, k, Instr(Instr::SAVE_GLO, #assign_reg, REGPOOL_START+loc));	\
+				insertAfter(instrs, k, Instr(Instr::SAVE_POOL, #assign_reg, loc));	\
 			}	\
 		} while(0)
 
@@ -123,25 +125,28 @@ namespace buaac {
 
 		vector<string> ts;
 		vector<int> pushPoolSize;
+		// vector<int> reg_pool_size_stack;
 		
-		void pushRegPool(int size) {
-			pushPoolSize.push_back(size);
-			for (int i = 0; i < size; i++) {
-				write("lw {}, {}($gp)", "$k0", REGPOOL_START + 4 * i);
-				write("sw {}, ($sp)", "$k0");
-				write("addi $sp, $sp, -4");
-			}
-		}
-		
-
-		void popRegPool() {
-			for (int i = pushPoolSize.back()-1; i >= 0; i--) {
-				write("addi $sp, $sp, 4");
-				write("lw {}, ($sp)", "$k0");
-				write("sw {}, {}($gp)", "$k0", REGPOOL_START+4 * i);
-			}
-			pushPoolSize.pop_back();
-		}
+		// void pushRegPool(int size) {
+		// 	pushPoolSize.push_back(size);
+		// 	// for (int i = 0; i < size; i++) {
+		// 	// 	write("lw {}, {}($gp)", "$k0", REGPOOL_START + 4 * i);
+		// 	// 	write("sw {}, ($sp)", "$k0");
+		// 	// 	write("addi $sp, $sp, -4");
+		// 	// }
+		// }
+		//
+		//
+		// void popRegPool() {
+		// 	// for (int i = pushPoolSize.back()-1; i >= 0; i--) {
+		// 	// 	write("addi $sp, $sp, 4");
+		// 	// 	write("lw {}, ($sp)", "$k0");
+		// 	// 	write("sw {}, {}($gp)", "$k0", REGPOOL_START+4 * i);
+		// 	// }
+		// 	REGPOOL_START -= 4 * pushPoolSize.back();
+		// 	pushPoolSize.pop_back();
+		// 	reg_pool_.popMemPool();
+		// }
 
 		void insertBefore(vector<Instr> &instrs, int &i, Instr instr) {
 			instrs.insert(instrs.begin() + i, instr);
@@ -189,30 +194,33 @@ namespace buaac {
 					// if (starts_with(instrs[k].target, string("__T"))) {
 					// 	instrs[k].target = reg_pool_.getRegPool(instrs[k].target);
 					// }
-				if (instr.block_line_number != -1) {
+				if (!ir.func_to_ident_to_range.empty()) {
+					if (instr.block_line_number != -1) {
 					reg_pool_.checkAndRelease(ir.func_to_ident_to_range[func.func_name], j, instr.block_line_number);
-				}
+					}
+					
+					if (instrs[k].targetIsSave()) {
+						assignRegister(instrs[k].target);
+					} else {
+						getRegister(instrs[k].target);
+					}
+					
+					if (instrs[k].sourceAIsSave()) {
+						assignRegister(instrs[k].source_a);
+					}
+					else {
+						getRegister(instrs[k].source_a);
+					}
+					
+					if (instrs[k].sourceBIsSave()) {
+						assignRegister(instrs[k].source_b);
+					}
+					else {
+						getRegister(instrs[k].source_b);
+					}
 
-				if (instrs[k].targetIsSave()) {
-					assignRegister(instrs[k].target);
-				} else {
-					getRegister(instrs[k].target);
 				}
-
-				if (instrs[k].sourceAIsSave()) {
-					assignRegister(instrs[k].source_a);
-				}
-				else {
-					getRegister(instrs[k].source_a);
-				}
-
-				if (instrs[k].sourceBIsSave()) {
-					assignRegister(instrs[k].source_b);
-				}
-				else {
-					getRegister(instrs[k].source_b);
-				}
-			
+				
 
 				if (NOT_ASSIGN(target)) {
 					// panic("not assign");
@@ -239,7 +247,7 @@ namespace buaac {
 				if (instrs[k].type == Instr::PUSH_REGPOOL) {
 
 					// case Instr::PUSH_REGPOOL:
-					int push_number = a2i(instr.target);
+					// int push_number = a2i(instr.target);
 
 					ts.clear();
 					for (int x = 0; x < reg_pool_.globalRegs.size(); x++) {
@@ -256,11 +264,13 @@ namespace buaac {
 					reg_pool_.t_stack.push_back(ts);
 					for (int y = 0; y < ts.size(); y++) {
 						insertAfter(instrs, k, { Instr::PUSH_REG, ts[y] });
-						push_number++;
+						// push_number++;
 					}
 					instrs[k].source_b = i2a(reg_pool_.mempool_size);
-					push_number += reg_pool_.mempool_size;
+					// push_number += reg_pool_.mempool_size;
 					// instrs.insert(instrs.begin() + k + 1 + ts.size(), Instr(Instr::PLUS, "$fp", "$sp", int(push_number*4)));
+					need_push_stack.push_back(instrs[k].target);
+					// 
 				}
 				else if (instrs[k].type == Instr::POP_REGPOOL) {
 					ts = reg_pool_.t_stack.back();
@@ -268,7 +278,26 @@ namespace buaac {
 					for (int y = 0; y < ts.size(); y++) {
 						insertBefore(instrs, k, { Instr::POP_REG, ts[y] });
 					}
+
+					instrs[k].source_a = i2a(-4 * pushPoolSize.back());
+					// write("addi $k1, $k1, {}", -4 * pushPoolSize.back());
+					// REGPOOL_START -= -4 * pushPoolSize.back();
+					pushPoolSize.pop_back();
+					reg_pool_.popMemPool();
+				} else if (instrs[k].type == Instr::CALL) {
+					if (need_push_stack.back() == instrs[k].target) {
+						pushPoolSize.push_back(reg_pool_.mempool_size);
+						instrs[k].source_a = i2a(4 * pushPoolSize.back());
+						// write("addi $k1, $k1, {}", 4 * pushPoolSize.back());
+						// REGPOOL_START += 4 * ;
+						reg_pool_.pushMemPool();
+
+						need_push_stack.pop_back();
+					} else {
+						instrs[k].source_a = "";
+					}
 				}
+
 
 				EndFor
 			// }
@@ -383,6 +412,12 @@ namespace buaac {
 				}
 				write("sw {}, {}($gp)", instr.target, instr.source_a);
 				break;
+			case Instr::LOAD_POOL:
+				write("lw {}, {}($k1)", instr.target, instr.source_a);
+				break;
+			case Instr::SAVE_POOL:
+				write("sw {}, {}($k1)", instr.target, instr.source_a);
+				break;;
 			// case Instr::LOAD_LAB_IMM:
 			// 	write("lw {}, {}+{}", instr.target, instr.source_a, instr.source_b);
 			// 	break;
@@ -401,9 +436,7 @@ namespace buaac {
 				write("addi $sp, $sp, 4");
 				write("lw {}, ($sp)", instr.target);
 				break;
-			case Instr::CALL:
-				write("jal {}", instr.target);
-				break;
+			
 			case Instr::RETURN_END:
 				write("jr $ra");
 				break;
@@ -584,10 +617,30 @@ namespace buaac {
 				write("li {}, {}", instr.target, instr.source_a);
 				break;
 			case Instr::PUSH_REGPOOL:
-				pushRegPool(a2i(instr.source_b));
+				// if (need_push_pool > 0) {
+				// 	
+				// }
+				// need_push_stack.push_back(instr.target);
+				// need_push_pool--;
+				// need_push_pool++;
+				break;
+			case Instr::CALL:
+				// if (need_push_stack.back() == instr.target) {
+					// pushPoolSize.push_back(reg_pool_.mempool_size);
+				if (isNumber(instr.source_a)) {
+					write("addi $k1, $k1, {}", instr.source_a);
+
+				}
+					// REGPOOL_START += 4 * ;
+					// reg_pool_.pushMemPool();
+
+					// need_push_stack.pop_back();
+				// }
+
+				write("jal {}", instr.target);
 				break;
 			case Instr::POP_REGPOOL:
-				popRegPool();
+				write("addi $k1, $k1, {}", instr.source_a);
 				break;
 			case Instr::IR_SHOW: break;
 			case Instr::NOP: break;
@@ -596,6 +649,8 @@ namespace buaac {
 
 			}
 		}
+
+		vector<string> need_push_stack;
 
 		
 

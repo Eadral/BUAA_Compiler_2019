@@ -34,12 +34,10 @@ namespace buaac {
 			// constantProgpagation();
 			copyPropagation();
 			ALUPropagation();
-			// removeZeroLoad(); // TODO: FIXME
 			removeZeroLoadGlobal();
-			removeDeadSave();
-			
+			removeZeroLoad(); // TODO: FIXME
 
-			No_Need_Unroll:
+			removeDeadSave();
 			
 			regAssign();
 			
@@ -308,29 +306,42 @@ namespace buaac {
 			EndFor
 		}
 
+		set<int> getLoops(FlowGraph& flow_graph) {
+			set<int> loops;
+			for (auto next_edge : flow_graph.getNextNodes()) {
+				auto from = next_edge.first;
+				for (auto to : next_edge.second) {
+					int from_id = flow_graph.getId(from);
+					int to_id = flow_graph.getId(to);
+					if (to_id <= from_id) {
+						
+						for (int i = to_id; i <= from_id; i++) {
+							loops.insert(i);
+						}
+						
+					}
+				}
+			}
+			return loops;
+		}
+		
 		void removeZeroLoad() {
 			load_cnt.clear();
 			ForFuncs(i, func)
+
+				FlowGraph flow_graph = constructFlowGraphFunc(func);
+				set<int> block_in_loop = getLoops(flow_graph);
+			
 				for (int j = func.blocks->size()-1; j >= 0; j--) {
 					auto& blocks = func.blocks;
 					auto& block = func.blocks->at(j);
+
+					// auto& jump = getJumpInstr(block);
+					
+					
 					
 					for (int i = block.instrs.size() - 1; i >= 0; i--) {
 						auto& instr = block.instrs.at(i);
-
-						if (!blockHasJump(block)) {
-							// TODO: change to down jump
-							// TODO: remove this
-							auto save_name = instr.getStoreName();
-							if (!save_name.empty()
-								&& (!starts_with(save_name, string("$")))
-								&& !starts_with(save_name, string("__G"))
-								&& !instr.doNotDelDead()
-								&& load_cnt.find(save_name) == load_cnt.end()) {
-								instr.type = Instr::NOP;
-								continue;
-							}
-						}
 
 						auto load_names = instr.getLoadName();
 						// if (instr.isMemorySave()) {
@@ -338,10 +349,30 @@ namespace buaac {
 						// }
 						for (int j = 0; j < load_names.size(); j++) {
 							auto& name = load_names[j];
-							if (load_cnt.find(name) == load_cnt.end()) {
+							if (load_cnt[name] = 0) {
 								load_cnt[name] = 1;
 							}
 						}
+
+						if (notFound(block_in_loop, flow_graph.getId(block.label))) {
+							// TODO: change to down jump
+							// TODO: remove this
+							auto save_name = instr.getStoreName();
+							if (!save_name.empty()
+								&& (!starts_with(save_name, string("$")))
+								&& !starts_with(save_name, string("__g"))
+								&& !instr.doNotDelDead()
+								&& load_cnt.find(save_name) == load_cnt.end()) 
+							{
+								debugln("delete {}:{}", block.label, instr.getStoreName());
+
+								instr = Instr( Instr::NOP );
+								// continue;
+							}
+							load_cnt[save_name] = 0;
+						}
+
+						
 
 					}
 

@@ -46,6 +46,8 @@ namespace buaac {
 				LOAD_ARR_GLO,
 				SAVE_ARR_STA,
 				LOAD_ARR_STA,
+				LOAD_POOL,
+				SAVE_POOL,
 
 				// JUMP
 				CALL,
