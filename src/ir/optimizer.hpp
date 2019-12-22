@@ -35,7 +35,9 @@ namespace buaac {
 			//
 			constantProgpagation();
 			copyPropagation();
+			copyPropagation();
 			ALUPropagation();
+			copyPropagation();
 			removeZeroLoadGlobal();
 			removeZeroLoad(); 
 			removeDeadSave();
@@ -859,11 +861,11 @@ namespace buaac {
 					{
 
 						// copy[instr.target] = instr.source_a;
-						int end = findNextSave(block, k, instr.source_a) + 1;
-						end = std::min(end, findNextSave(block, k, instr.source_b) + 1);
+						int end = findNextSave(block, k, instr.source_a) ;
+						end = std::min(end, findNextSave(block, k, instr.source_b) );
 						end = std::min(end, (int)block.instrs.size());
 
-						replaceRangeMoveWithInstr(block, k + 1, end, instr.target, instr);
+						replaceRangeInstrWithMove(block, k + 1, end, instr, instr.target);
 
 					}
 
@@ -871,6 +873,45 @@ namespace buaac {
 			EndFor
 		}
 
+
+		void replaceRangeInstrWithMove(Block& block, int start, int end, Instr from, string to) {
+			for (int i = start; i < end; i++) {
+				auto& instr = block.instrs.at(i);
+				if (instr.type == from.type && instr.source_a == from.source_a && instr.source_b == from.source_b) {
+					// to.target = instr.target;
+					instr = Instr(Instr::MOVE, instr.target, to);
+				}
+
+			}
+		}
+
+
+		void ALUPropagationCopyFunc(Func& func) {
+			ForBlocks(j, func.blocks, block)
+				map<string, string> copy;
+
+			ForInstrs(k, block.instrs, instr)
+
+				if (
+					instr.isALU()
+					&& instr.type != Instr::DIV
+					// && !starts_with(instr.source_a, string("$"))
+					)
+				{
+
+					// copy[instr.target] = instr.source_a;
+					int end = findNextSave(block, k, instr.source_a) + 1;
+					end = std::min(end, findNextSave(block, k, instr.source_b) + 1);
+					end = std::min(end, (int)block.instrs.size());
+
+					replaceRangeMoveWithInstr(block, k + 1, end, instr.target, instr);
+
+				}
+
+			EndFor
+				EndFor
+		}
+		
 		void replaceRangeMoveWithInstr(Block& block, int start, int end, string from, Instr to) {
 			for (int i = start; i < end; i++) {
 				auto& instr = block.instrs.at(i);
@@ -900,6 +941,7 @@ namespace buaac {
 			ForFuncs(i, func)
 				copyPropagationFuncConservative(func);
 				copyPropagationFuncBeforeNextDef(func);
+				copyPropagationFuncBeforeNextDefArray(func);
 			EndFor
 		}
 
@@ -960,6 +1002,44 @@ namespace buaac {
 				EndFor
 		}
 
+		void copyPropagationFuncBeforeNextDefArray(Func &func) {
+			ForBlocks(j, func.blocks, block)
+				map<string, string> copy;
+
+				ForInstrs(k, block.instrs, instr)
+
+					if ((instr.type == Instr::LOAD_ARR_STA || instr.type == Instr::LOAD_ARR_GLO)
+						// && starts_with(instr.source_a, string("__T"))
+						// && !starts_with(instr.source_a, string("$"))
+						)
+					{
+
+						// copy[instr.target] = instr.source_a;
+						int end = findNextSave(block, k, instr.source_b);
+						end = std::min(end, findNextSave(block, k, instr.showas));
+						end = std::min(end, (int)block.instrs.size());
+
+						replaceRangeArrayLoad(block, k + 1, end, instr.showas, instr.source_b, instr.target);
+
+					}
+
+				EndFor
+			EndFor
+		}
+
+		void replaceRangeArrayLoad(Block& block, int start, int end, string from_arr, string from_b, string to) {
+			for (int i = start; i < end; i++) {
+				auto& instr = block.instrs.at(i);
+				if ((instr.type == Instr::LOAD_ARR_STA || instr.type == Instr::LOAD_ARR_GLO )
+					&& instr.showas == from_arr
+					&& instr.source_b == from_b
+					) {
+					instr = Instr(Instr::MOVE, instr.target, to);
+				}
+				
+			}
+		}
+
 		void replaceRangeLoad(Block &block, int start, int end, string from, string to) {
 			for (int i = start; i < end; i++) {
 				auto& instr = block.instrs.at(i);
@@ -976,7 +1056,7 @@ namespace buaac {
 		}
 
 		int findNextSave(Block& block, int start, string save_name) {
-			if (save_name.empty() || !starts_with(save_name, string("__T"))) {
+			if (save_name.empty() || (!starts_with(save_name, string("__T")) && !starts_with(save_name, string("g_")))) {
 				return INT32_MAX - 1;
 			}
 			for (int i = start; i < block.instrs.size(); i++) {
