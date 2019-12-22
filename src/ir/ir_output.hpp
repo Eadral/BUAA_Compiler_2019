@@ -263,7 +263,8 @@ namespace buaac {
 		
 		IrGen(IR ir): ir(ir) {}
 
-		void output(string filename) {
+		// template <typename T>
+		void output(std::string filename) {
 			fout.open(filename);
 
 			write("// BUAAC IR, Build: {}, qaq", __TIMESTAMP__);

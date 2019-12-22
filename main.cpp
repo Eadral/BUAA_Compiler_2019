@@ -16,15 +16,23 @@
 using namespace std;
 using namespace buaac;
 
+#ifdef WIN32
+#define IR_BEFORE "16191051_zhuyucong_ir_before_optimization.txt"
+#define IR_AFTER "16191051_zhuyucong_ir_after_optimization.txt"
+#else
+#define IR_BEFORE "16191051_Êú±Èõ®ËÅ™_‰ºòÂåñÂâç‰∏≠Èó¥‰ª£Á†Å.txt"
+#define IR_AFTER "16191051_Êú±Èõ®ËÅ™_‰ºòÂåñÂêé‰∏≠Èó¥‰ª£Á†Å.txt"
+#endif
 
-int main() {
+int main(int argc, char **argv) {
 	// Output::getInstance()->init();
+	// std::locale::global(std::locale(""));
 	
 	string source = readFileToString("testfile.txt");
-	ofstream fout("output.txt");
-	// cout.rdbuf(fout.rdbuf());
+	ofstream fout("error.txt");
+	cout.rdbuf(fout.rdbuf());
 
-	auto output_setting = "";
+	auto output_setting = "e";
 	// auto output_setting = "ve";
 	
 	lex::LexParser lex_parser(source, output_setting);
@@ -32,19 +40,22 @@ int main() {
 	
 	IR ir = syntax_parser.start();
 
+	if (syntax_parser.hasError() || lex_parser.hasError()) {
+		return 0;
+	}
+	
 	// ir.output("ir.txt");
 	
-
 	Optimizer optimizer(ir);
 
 	IrGen irgen_before(ir);
-	irgen_before.output("16191051_÷Ï”Í¥œ_”≈ªØ«∞÷–º‰¥˙¬Î.txt");
+	irgen_before.output(IR_BEFORE);
 	
 	optimizer.optimize();
 	IR optimized_ir = optimizer.getIR();
 
 	IrGen irgen(optimized_ir);
-	irgen.output("16191051_÷Ï”Í¥œ_”≈ªØ∫Û÷–º‰¥˙¬Î.txt");
+	irgen.output(IR_AFTER);
 	
 	MIPS mips(optimized_ir);
 

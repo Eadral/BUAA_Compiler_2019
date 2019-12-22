@@ -38,8 +38,8 @@
         eprintf("\t");              \
         eprintf(__VA_ARGS__);        \
         eprintf("\n");    \
-		throw;	\
-        exit(-1);        \
+		\
+        exit(0);        \
     } while(0)
 
 #ifdef _DEBUG

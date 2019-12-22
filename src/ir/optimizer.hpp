@@ -28,15 +28,15 @@ namespace buaac {
 
 			removeFuncsVars();
 			inlineFuncs();
-			for (int i = 0; i < 3; i++) {
-				loopUnroll();
+			// for (int i = 0; i < 3; i++) {
+			// 	loopUnroll();
 				blockMerge();
-				constantProgpagation();
-				// copyPropagation();
-				// ALUPropagation();
-				removeZeroLoad();
-				removeZeroLoadGlobal();
-			}
+			// 	constantProgpagation();
+			// 	// copyPropagation();
+			// 	// ALUPropagation();
+			// 	removeZeroLoad();
+			// 	removeZeroLoadGlobal();
+			// }
 			
 
 			
@@ -80,12 +80,12 @@ namespace buaac {
 			// 	removeZeroLoadGlobal();
 			// 	removeDeadSave();
 			// } else {
-			// 	constantProgpagation();
-			// 	copyPropagation();
-			// 	ALUPropagation();
-			// 	removeZeroLoad();
-			// 	removeZeroLoadGlobal();
-			// 	removeDeadSave();
+				constantProgpagation();
+				copyPropagation();
+				ALUPropagation();
+				// removeZeroLoad();
+				removeZeroLoadGlobal();
+				removeDeadSave();
 			// }
 
 			No_Need_Unroll:

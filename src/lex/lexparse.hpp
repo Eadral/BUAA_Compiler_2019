@@ -42,6 +42,11 @@ namespace buaac {
 
 		class LexParser {
 		public:
+
+			bool hasError() {
+				return has_error_;
+			}
+			
 			LexParser(string source, string output) : source_(source){
 				pointer_ = source_;
 				if (output.find('v') != string::npos) {
@@ -70,6 +75,10 @@ namespace buaac {
 			int getLineNumber() const {
 				return line_;
 			}
+
+			bool LastIsLine() {
+				return last_is_line_;
+			}
 			
 		private:
 			const string source_;
@@ -79,7 +88,10 @@ namespace buaac {
 			int line_ = 1;
 			int col = 1;
 
+			bool last_is_line_ = false;
 
+			bool has_error_ = false;
+			
 			bool isString(char c) {
 				return (c >= 35 && c <= 126) || c == 32 || c == 33;
 			}
@@ -112,18 +124,22 @@ namespace buaac {
 				auto begin = in.cbegin();
 				auto end = in.cend();
 
+				if (last_is_line_)
+					last_is_line_ = false;
+				
 				while (begin < end && isspace(*begin)) {
 					if (*begin == '\n' && advance) {
 						line_++;
 						col = 1;
+						last_is_line_ = true;
 					}
 					++begin;
 				}
 					
-
 				in = in.substr(begin - in.cbegin());
 				begin = in.cbegin();
 				end = in.cend();
+
 
 				simpleMatch("+", PLUS);
 				simpleMatch("-", MINU);
@@ -252,6 +268,7 @@ namespace buaac {
 			}
 
 			void error(char code = 'a') {
+				has_error_ = true;
 				if (output_error_) std::cout << getLineNumber() << " " << code << std::endl;
 				// panic("aho");
 			}

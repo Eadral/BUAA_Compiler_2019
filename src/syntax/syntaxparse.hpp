@@ -10,7 +10,7 @@
 #include <map>
 #include <cstdlib>
 
-#define ERROR ;	// ignore all error
+#define ERROR error('z');
 
 namespace buaac {
 namespace syntax{
@@ -30,6 +30,7 @@ namespace syntax{
 		SymbolTable _symbol_table;
 
 		IR ir;
+		bool has_error_ = false;
 		
 	public:
 		SyntaxParser(lex::LexParser& lex_parser, string output): lex_parser_(lex_parser) {
@@ -41,6 +42,10 @@ namespace syntax{
 			}
 		}
 
+		bool hasError() {
+			return has_error_;
+		}
+		
 		IR start() {
 			program();
 			return ir;
@@ -954,6 +959,9 @@ namespace syntax{
 			}
 			
 			syntaxOutput("<表达式>");
+			// if (hasError()) {
+			// 	return make_tuple(expr_type, "ERROR");
+			// }
 			return make_tuple(expr_type, ir.gen());
 		}
 		// // ［＋｜－］
@@ -2039,7 +2047,7 @@ namespace syntax{
 						return Token(TokenType::ERR);
 					}
 					
-					panic("unimplemented");
+					error('z');
 				}
 			}
 			return token;
@@ -2067,9 +2075,28 @@ namespace syntax{
 			}
 			_error_status.pop_back();
 		}
+
+		int error_z_cnt_ = 0;
 		
 		void error(char code) {
-			if (output_error_) std::cout << getLineNumber() << " " << code << std::endl;
+			has_error_ = true;
+			ir.stop();
+
+			if (code == 'z') {
+				error_z_cnt_++;
+				if (error_z_cnt_ > 100)
+					exit(0);
+				return;
+			}
+			
+			if (output_error_) {
+				if (code == 'k' && lex_parser_.LastIsLine()) {
+					std::cout << getLineNumber()-1 << " " << code << std::endl;
+
+				} else {
+					std::cout << getLineNumber() << " " << code << std::endl;
+				}
+			}
 			// panic("aho");
 
 		}

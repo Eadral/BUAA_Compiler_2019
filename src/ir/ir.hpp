@@ -17,6 +17,8 @@
 
 #define EndFor }
 
+#define CHECK_STOP(DO) if (stop_) DO;
+
 namespace buaac {
 
 	using global::GlobalDefine;
@@ -39,6 +41,12 @@ namespace buaac {
 		
 		BlocksPtr blocks_now;
 
+		bool stop_ = false;
+
+		void stop() {
+			stop_ = true;
+		}
+
 		IR() {
 			// main_blocks = std::make_shared<Blocks>();
 			// main_blocks->emplace_back(Block("main"));
@@ -56,6 +64,7 @@ namespace buaac {
 			funcs.emplace_back(Func(func_name));
 			blocks_now = funcs.back().blocks;
 			this->func_name = func_name;
+			
 		}
 
 		string getReturnLabel() {
@@ -400,15 +409,22 @@ namespace buaac {
 			op_stack.clear();
 			obj_stack.clear();
 		}
+
+		bool has_error_ = false;
 		
 		string gen() {
+			
 			// if (not_gen > 0) {
 			// 	not_gen--;
 			// 	return "NOTGEN";
 			// }
-			while (!op_stack.empty()) {
+			while (!op_stack.empty() && !has_error_) {
 				pop_op();
 			}
+			if (obj_stack.empty())
+				has_error_ = true;
+			if (has_error_)
+				return "ERROR";
 			string ans = obj_stack.back();
 			obj_stack.pop_back();
 			assert(obj_stack.empty());
@@ -436,6 +452,7 @@ namespace buaac {
 		}
 
 #define DOBLE_OP(OP)	\
+		if (obj_stack.size() < 2) { has_error_ = true; return; } \
 		temp = newTemp();	\
 		source_b = obj_stack.back();	\
 		obj_stack.pop_back();	\
@@ -453,6 +470,7 @@ namespace buaac {
 			case PARE_L: break;
 			case PARE_R: break;
 			case PLUS:
+				
 				DOBLE_OP(PLUS)
 				break;
 			case MINUS:
