@@ -32,7 +32,6 @@ namespace buaac {
 			removeFuncsParas();
 			
 			blockMerge();
-			//
 			constantProgpagation();
 			copyPropagation();
 			copyPropagation();
@@ -41,7 +40,20 @@ namespace buaac {
 			removeZeroLoadGlobal();
 			removeZeroLoad(); 
 			removeDeadSave();
+			removeNop();
+			loopHoisting();
 
+			// blockMerge();
+			constantProgpagation();
+			copyPropagation();
+			copyPropagation();
+			ALUPropagation();
+			copyPropagation();
+			removeZeroLoadGlobal();
+			removeZeroLoad();
+			removeDeadSave();
+			removeNop();
+			loopHoisting();
 			// DAG();
 			
 			regAssign();
@@ -1578,6 +1590,137 @@ namespace buaac {
 			return end;
 		}
 		
+#pragma endregion 
+
+#pragma LoopHoisting
+
+		void loopHoisting() {
+			ForFuncs(i, func)
+				loopHositingFunc(func);
+			EndFor
+		}
+
+		vector<pair<int, int>> getLoopRange(FlowGraph& flow_graph) {
+			vector<pair<int, int>> loops;
+			for (auto next_edge : flow_graph.getNextNodes()) {
+				auto from = next_edge.first;
+				for (auto to : next_edge.second) {
+					int from_id = flow_graph.getId(from);
+					int to_id = flow_graph.getId(to);
+					if (to_id <= from_id) {
+
+						loops.push_back(pair<int, int>(to_id, from_id));
+
+					}
+				}
+			}
+			return loops;
+		}
+
+		
+		void loopHositingFunc(Func &func) {
+			FlowGraph flow_graph = constructFlowGraphFunc(func);
+			vector<pair<int, int>> loops = getLoopRange(flow_graph);
+			Blocks& blocks = *(func.blocks);
+
+			for (auto loop: loops) {
+				int start = loop.first;
+				int end = loop.second;
+
+				vector<Instr> const_instrs;
+
+				for (int i = start; i <= end; i++) {
+					Block& block = blocks[i];
+					ForInstrs(k, block.instrs, instr)
+						if (!(
+							instr.isALU()
+							|| instr.isMemory()
+							// || instr.isSave()
+							))
+							continue;
+						if (!starts_with(instr.target, string("__T")))
+							continue;
+						bool flag = true;
+						auto loads = instr.getLoadName();
+						for (auto load: loads) {
+							if (hasDefInLoops(func, start, end, load, instr)) {
+								flag = false;
+							}
+						}
+						if (hasDefInLoops(func, start, end, instr.getStoreName(), instr)) {
+							flag = false;
+						}
+						if (flag) {
+							debugln("hosited: {}:{}", block.label, instr.target);
+							const_instrs.push_back(instr);
+							instr = Instr(Instr::NOP);
+							total_cnt++;
+						}
+					EndFor
+					
+				}
+
+				if (!const_instrs.empty())
+				insertInstrsToBlockBeforeJump(blocks[start - 1], const_instrs);
+				for (auto const_instr : const_instrs) {
+					string name = const_instr.target;
+					string new_name = FORMAT("__Thosit{}", a2i(name.substr(3)));
+
+					changeNameInFunc(func, name, new_name);
+				}
+
+			}
+			
+		}
+
+		void changeNameInFunc(Func &func, string from, string to) {
+			ForBlocks(j, func.blocks, block)
+				ForInstrs(k, block.instrs, instr)
+				if (instr.target == from)
+					instr.target = to;
+				if (instr.source_a == from)
+					instr.source_a = to;
+				if (instr.source_b == from)
+					instr.source_b = to;
+				EndFor
+			EndFor
+		}
+
+		int total_cnt = 0;
+
+		bool hasDefInLoops(Func &func, int start, int end, string name, Instr exclude) {
+			if (isNumber(name))
+				return false;
+			// ForBlocks(j, func.blocks, block)
+			for (int j = start; j <= end; j++) {
+				auto& block = func.blocks->at(j);
+				ForInstrs(k, block.instrs, instr)
+					if (instr == exclude)
+						continue;
+				if (instr.getStoreName() == name)
+					return true;
+				EndFor
+			}
+				
+			// EndFor
+			return false;
+		}
+
+		void insertInstrsToBlockBeforeJump(Block& block, vector<Instr> const_instrs) {
+			auto& instrs = block.instrs;
+			int insert_index = instrs.size();
+			if (!instrs.empty() && instrs.back().isJump())
+				insert_index--;
+
+			for (auto const_instr: const_instrs) {
+				instrs.insert(instrs.begin() + insert_index, const_instr);
+
+				
+			}
+
+			
+		}
+
 #pragma endregion 
 		
 	};

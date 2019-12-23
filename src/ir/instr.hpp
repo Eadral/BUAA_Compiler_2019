@@ -403,6 +403,23 @@ namespace buaac {
 					return false;
 				}
 			}
+
+			bool isMemory() {
+				switch (type) {
+
+					case LOAD_GLO: 
+					case LOAD_STA: 
+					case SAVE_GLO: 
+					case SAVE_STA: 
+				case SAVE_ARR_GLO:
+				case LOAD_ARR_GLO:
+				case SAVE_ARR_STA:
+				case LOAD_ARR_STA:
+					return true;
+				default:
+					return false;
+				}
+			}
 			
 			bool isGlobal() {
 				switch (type) {
@@ -653,7 +670,23 @@ namespace buaac {
 					panic("not jump instr");
 				}
 			}
-		
+
+
+			friend bool operator==(const Instr& lhs, const Instr& rhs) {
+				return std::tie(lhs.type, lhs.target, lhs.source_a, lhs.source_b, lhs.target_value, lhs.source_a_value,
+				                lhs.source_b_value, lhs.has_target_value, lhs.has_source_a_value,
+				                lhs.has_source_b_value, lhs.ans, lhs.has_ans, lhs.show, lhs.showas,
+				                lhs.block_line_number) == std::tie(rhs.type, rhs.target, rhs.source_a, rhs.source_b,
+				                                                   rhs.target_value, rhs.source_a_value,
+				                                                   rhs.source_b_value, rhs.has_target_value,
+				                                                   rhs.has_source_a_value, rhs.has_source_b_value,
+				                                                   rhs.ans, rhs.has_ans, rhs.show, rhs.showas,
+				                                                   rhs.block_line_number);
+			}
+
+			friend bool operator!=(const Instr& lhs, const Instr& rhs) {
+				return !(lhs == rhs);
+			}
 		};
 			
 			

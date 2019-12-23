@@ -92,6 +92,7 @@ using std::vector;
 using std::map;
 using std::set;
 using std::string;
+using std::pair;
 
 #include "util.hpp"
 
