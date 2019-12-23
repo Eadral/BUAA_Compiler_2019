@@ -9,7 +9,7 @@ namespace buaac {
 // #define DO_NOT_ASSIGN_REGS
 
 	
-	
+#define ENABLE_DOUBLE_STACK
 
 	class MIPS {
 
@@ -627,10 +627,12 @@ namespace buaac {
 			case Instr::CALL:
 				// if (need_push_stack.back() == instr.target) {
 					// pushPoolSize.push_back(reg_pool_.mempool_size);
+#ifdef ENABLE_DOBLE_STACK
 				if (isNumber(instr.source_a)) {
 					write("addi $k1, $k1, {}", instr.source_a);
 
 				}
+#endif
 					// REGPOOL_START += 4 * ;
 					// reg_pool_.pushMemPool();
 
@@ -640,7 +642,10 @@ namespace buaac {
 				write("jal {}", instr.target);
 				break;
 			case Instr::POP_REGPOOL:
+#ifdef ENABLE_DOBLE_STACK
 				write("addi $k1, $k1, {}", instr.source_a);
+#endif
+
 				break;
 			case Instr::IR_SHOW: break;
 			case Instr::NOP: break;

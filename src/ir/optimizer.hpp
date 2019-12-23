@@ -7,6 +7,8 @@
 #include "define_arrival.hpp"
 #include "define_use_chain.hpp"
 
+// #define ENABLE_UNROLL
+
 namespace buaac {
 
 	class Optimizer {
@@ -28,10 +30,54 @@ namespace buaac {
 
 			removeFuncsVars();
 			inlineFuncs();
-			
 			removeFuncsParas();
+
+#ifdef ENABLE_UNROLL
+			blockMergeJump();
+			blockMergeSimple();
+			blockMergeNoEntry();
+			clearUselessJump();
+
+			constantProgpagation();
+			copyPropagation();
+			ALUPropagation();
+			removeZeroLoad();
+			removeZeroLoadGlobal();
+
+			loopUnroll();
+			blockMerge();
+
+			constantProgpagation();
+
+			for (int k = 0; k < 50; k++) {
+				if (k % 10 == 0)
+					removeNop();
+				loopUnroll();
+				bool flag;
+				do {
+					flag = false;
+					constantProgpagation();
+					if (blockMergeNoEntry())
+						flag = true;
+					if (blockMergeJump())
+						flag = true;
+					if (blockMergeSimple())
+						flag = true;
+					constantProgpagation();
+					if (blockMergeNoEntry())
+						flag = true;
+					if (blockMergeJump())
+						flag = true;
+					if (blockMergeSimple())
+						flag = true;
+				} while (flag);
+
+			}
+#endif
 			
 			blockMerge();
+
+			//
 			constantProgpagation();
 			copyPropagation();
 			copyPropagation();
@@ -43,7 +89,6 @@ namespace buaac {
 			removeNop();
 			loopHoisting();
 
-			// blockMerge();
 			constantProgpagation();
 			copyPropagation();
 			copyPropagation();
@@ -54,6 +99,20 @@ namespace buaac {
 			removeDeadSave();
 			removeNop();
 			loopHoisting();
+			
+			ALUPropagationCopy();
+			removeZeroLoadGlobal();
+			removeZeroLoad();
+			removeDeadSave();
+
+			copyPropagation();
+			copyPropagation();
+			ALUPropagation();
+			copyPropagation();
+			removeZeroLoadGlobal();
+			removeZeroLoad();
+			removeDeadSave();
+
 			// DAG();
 			
 			regAssign();
@@ -897,7 +956,12 @@ namespace buaac {
 			}
 		}
 
-
+		void ALUPropagationCopy() {
+			ForFuncs(i, func)
+				ALUPropagationCopyFunc(func);
+			EndFor
+		}
+		
 		void ALUPropagationCopyFunc(Func& func) {
 			ForBlocks(j, func.blocks, block)
 				map<string, string> copy;
