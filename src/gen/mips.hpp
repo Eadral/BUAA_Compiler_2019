@@ -218,7 +218,7 @@ namespace buaac {
 					else {
 						getRegister(instrs[k].source_b);
 					}
-
+				
 				}
 				
 
@@ -627,7 +627,7 @@ namespace buaac {
 			case Instr::CALL:
 				// if (need_push_stack.back() == instr.target) {
 					// pushPoolSize.push_back(reg_pool_.mempool_size);
-#ifdef ENABLE_DOBLE_STACK
+#ifdef ENABLE_DOUBLE_STACK
 				if (isNumber(instr.source_a)) {
 					write("addi $k1, $k1, {}", instr.source_a);
 
@@ -642,7 +642,7 @@ namespace buaac {
 				write("jal {}", instr.target);
 				break;
 			case Instr::POP_REGPOOL:
-#ifdef ENABLE_DOBLE_STACK
+#ifdef ENABLE_DOUBLE_STACK
 				write("addi $k1, $k1, {}", instr.source_a);
 #endif
 

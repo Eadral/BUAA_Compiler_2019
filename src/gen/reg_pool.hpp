@@ -21,10 +21,11 @@ namespace buaac {
 		std::map<Reg, bool> availReg;
 		vector<vector<Reg>> t_stack;
 		vector<Reg> globalRegs = {
-			"$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$t8", "$t9",
+			"$t0", "$t1", "$t2",
+			"$t3", "$t4", "$t5", "$t6", "$t7", "$t8", "$t9",
 			"$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7",
 			"$v1",
-			// "$k1",
+			// 
 
 		};
 		

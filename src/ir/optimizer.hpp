@@ -77,7 +77,7 @@ namespace buaac {
 			
 			blockMerge();
 
-			//
+			
 			constantProgpagation();
 			copyPropagation();
 			copyPropagation();
@@ -88,7 +88,7 @@ namespace buaac {
 			removeDeadSave();
 			removeNop();
 			loopHoisting();
-
+			
 			constantProgpagation();
 			copyPropagation();
 			copyPropagation();
@@ -104,7 +104,7 @@ namespace buaac {
 			removeZeroLoadGlobal();
 			removeZeroLoad();
 			removeDeadSave();
-
+			
 			copyPropagation();
 			copyPropagation();
 			ALUPropagation();

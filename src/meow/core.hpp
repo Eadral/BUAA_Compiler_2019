@@ -96,6 +96,6 @@ using std::pair;
 
 #include "util.hpp"
 
-// #define SHOWALLOC
+#define SHOWALLOC
 
 #endif
